@@ -12,7 +12,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.11.1';
+const VERSION = 'v1.12.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -194,6 +194,7 @@ async function saveSettings(next, { refetch = true } = {}) {
   renderAll();
   checkRedAlert();
   FU.relayShared(next);
+  if (deck.lights && JSON.stringify((prev || {}).lighting) !== JSON.stringify(next.lighting)) deck.lights.configure(next.lighting).catch(() => {});
 }
 
 // ---------------------------------------------------------------- toast & log
@@ -204,6 +205,20 @@ function toast(msg, ms = 2600) {
   el.classList.add('on');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('on'), ms);
+}
+
+// ---- Rig lighting (iCUE, see src/lighting.js): moments light up the rig, then iCUE takes back over.
+let lightState = { status: 'off', devices: [] };
+function lights(name, on = true, data) {
+  if (!deck.lights) return;
+  // Overnight, only timers and alarms light up the rig, the same way sounds go quiet.
+  if (on && isQuiet() && !(name === 'alert' && data && data.wake)) return;
+  deck.lights.moment(name, on, data);
+}
+function wireLights() {
+  if (!deck.lights) return;
+  deck.lights.get().then((s) => { lightState = s; }).catch(() => {});
+  deck.lights.onState((s) => { lightState = s; });
 }
 
 // ---- Automatic updates (see main.js): a chip appears once a new version is downloaded.
@@ -703,6 +718,7 @@ function applyReplies(changes) {
 function scheduleActivity(events) {
   if (!events.length) return;
   const change = events.some((e) => e.state === 'change');
+  lights('crew', true, { kind: change ? 'change' : 'ok' });
   if (change) sounds.reminder(); else sounds.add();
   events.slice(-3).forEach((e) => pushLog(e.state === 'change' ? 'err' : 'ok', e.text));
   toast(events[events.length - 1].text, change ? 6000 : 3500);
@@ -1066,6 +1082,7 @@ function postProjectLog(projectId, text) {
 function guestActivity(events) {
   if (!events.length) return;
   sounds.add();
+  lights('crew', true, { kind: 'ok' });
   if (events.length > 3) {
     const projects = [...new Set(events.map((e) => e.project).filter(Boolean))];
     pushLog('ok', `${events.length} crew updates${projects.length === 1 ? ` on ${projects[0]}` : ''}.`);
@@ -1659,6 +1676,7 @@ const VOICE_TEXT = {
 };
 
 function setVoiceState(state) {
+  if ((state === 'speaking') !== (S.voice === 'speaking')) lights('speaking', state === 'speaking');
   S.voice = state;
   document.body.dataset.voice = state;
   const [status, title, sub] = VOICE_TEXT[state] || VOICE_TEXT.idle;
@@ -1885,18 +1903,20 @@ function showAlert(alert) {
   S.alert = { ...alert, at: Date.now() };
   S.lastAlert = S.alert;
   const el = $('#alertStrip');
-  const doneBtn = alert.type === 'reminder' ? '<button type="button" class="al-btn" data-al="done">MARK DONE</button>' : '';
+  const doneBtn = alert.type === 'reminder' || alert.type === 'pastdue' ? '<button type="button" class="al-btn" data-al="done">MARK DONE</button>' : '';
   el.dataset.type = alert.type;
   el.innerHTML = `<span class="al-dot"></span>
     <div class="al-text"><div class="al-title">${esc(alert.title)}</div>${alert.sub ? `<div class="al-sub">${esc(alert.sub)}</div>` : ''}</div>
     <div class="al-btns"><button type="button" class="al-btn" data-al="snooze">SNOOZE ${S.settings.snoozeMinutes || 10} MIN</button>${doneBtn}<button type="button" class="al-btn ghost" data-al="dismiss">DISMISS</button></div>`;
   el.hidden = false;
+  if (['timer', 'alarm', 'pastdue', 'event'].includes(alert.type)) lights('alert', true, { wake: alert.type === 'timer' || alert.type === 'alarm' });
   clearTimeout(showAlert.t);
   showAlert.t = setTimeout(() => hideAlert(), alert.type === 'alarm' ? 10 * 60000 : 3 * 60000);
 }
 
 function hideAlert() {
   stopRinging();
+  lights('alert', false);
   $('#alertStrip').hidden = true;
   S.alert = null;
 }
@@ -1907,7 +1927,7 @@ function snooze(seconds) {
   const sec = seconds || (S.settings.snoozeMinutes || 10) * 60;
   hideAlert();
   S.lastAlert = null;
-  if (target.type === 'reminder') {
+  if (target.type === 'reminder' || target.type === 'pastdue') {
     const t = S.tasks.find((x) => x.id === target.ref.id);
     if (!t || t.done) return 'That task is already done.';
     t.snoozeUntil = new Date(Date.now() + sec * 1000).toISOString();
@@ -1972,9 +1992,42 @@ function reminderTime(t) {
   return at;
 }
 
+// Past due: a timed task reaches its due time without being done. Shown on screen (red on the rig
+// when lighting is on), with MARK DONE / SNOOZE / DISMISS. Once per due time.
+function checkPastDue(now) {
+  let changed = false;
+  for (const t of activeTasks()) {
+    if (!t.due || !t.dueHasTime || t.overdueFor === t.due || (t.snoozeUntil && now < new Date(t.snoozeUntil))) continue;
+    const due = new Date(t.due);
+    if (now < due) continue;
+    t.overdueFor = t.due;
+    changed = true;
+    if (now - due > 2 * 60000) continue; // added late, or long overdue at startup: the red-alert frame covers that
+    // Its reminder is already on screen (a reminder set for "at due time"): just turn the rig red.
+    if (S.alert && S.alert.ref && S.alert.ref.id === t.id) { lights('alert', true); continue; }
+    showAlert({ type: 'pastdue', title: `PAST DUE · ${t.title.toUpperCase()}`, sub: `Was due ${U.fmtTimeShort(due, S.settings.clock24)}`, ref: { id: t.id } });
+    pushLog('err', `Past due: ${t.title}.`);
+  }
+  return changed;
+}
+
+// Calendar events starting now get a heads-up on screen (and red on the rig when lighting is on).
+const eventsStarted = new Set();
+function checkEventStarts(now) {
+  for (const e of allEvents()) {
+    if (e.allDay) continue;
+    const key = `${e.id || e.title}@${+e.start}`;
+    if (eventsStarted.has(key) || e.start > now || now - e.start > 2 * 60000) continue;
+    eventsStarted.add(key);
+    showAlert({ type: 'event', title: `NOW · ${String(e.title || 'Event').toUpperCase()}`, sub: [U.fmtTimeShort(e.start, S.settings.clock24), e.location].filter(Boolean).join(' · '), ref: { label: e.title } });
+    pushLog('c', `Starting now: ${e.title}.`);
+  }
+}
+
 function checkReminders() {
   const now = new Date();
-  let changed = false;
+  let changed = checkPastDue(now);
+  checkEventStarts(now);
   for (const t of activeTasks()) {
     if (t.snoozeUntil && now >= new Date(t.snoozeUntil)) {
       t.snoozeUntil = null;
@@ -2390,6 +2443,7 @@ async function start() {
   Motion.start();
   if (deck.onAway) deck.onAway((away) => Motion.setAway(away));
   wireUpdates();
+  wireLights();
   applySettings();
   initGrid();
   applySettings();
@@ -2400,6 +2454,10 @@ async function start() {
   wireSchedule();
 
   initModals({
+    lightInfo: () => ({ ...lightState }),
+    lightsPreview: (cfg) => (deck.lights ? deck.lights.configure(cfg).then((s) => { if (s) lightState = s; return s; }).catch(() => null) : Promise.resolve(null)),
+    lightsTest: (name) => (deck.lights ? deck.lights.test(name) : Promise.resolve(false)),
+    lightsRescan: () => (deck.lights ? deck.lights.rescan().then((s) => { if (s) lightState = s; return s; }).catch(() => null) : Promise.resolve(null)),
     updateInfo: () => ({ ...updateState, text: updateText() }),
     checkUpdates: async () => { if (deck.updates) showUpdate(await deck.updates.check().catch(() => ({ state: 'error' }))); return { ...updateState, text: updateText() }; },
     installUpdate: () => (deck.updates ? deck.updates.install() : Promise.resolve(false)),
@@ -2506,7 +2564,9 @@ async function start() {
   fetchWeather();
   fetchCalendars(true);
 
+  lights('boot', true);
   await bootSequence();
+  lights('boot', false);
 
   if (!S.settings.setupComplete) {
     openSettings(true);

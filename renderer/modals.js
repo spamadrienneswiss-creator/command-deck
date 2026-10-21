@@ -766,6 +766,7 @@ const TABS = [
   ['tasks', 'TASKS & CREW'],
   ['system', 'SYSTEM'],
   ['alerts', 'ALERTS'],
+  ['lighting', 'LIGHTING'],
   ['fieldunit', 'FIELD UNIT'],
   ['data', 'DATA']
 ];
@@ -789,6 +790,7 @@ export function openSettings(welcome = false) {
     app.previewInk(app.S.settings.ink || 'theme');
     app.previewFrame(app.S.settings.frame || 'dark');
     app.previewTrim(app.S.settings.trim || 'none');
+    app.lightsPreview(app.S.settings.lighting);
   };
 
   const m = mount(`
@@ -903,6 +905,29 @@ export function openSettings(welcome = false) {
         <div class="f"><span class="f-label">UPDATES</span>
           <div class="toggle-row"><span id="sUpd">${esc(app.updateInfo().text)}</span><button type="button" class="btn line" id="sUpdBtn">${app.updateInfo().state === 'ready' ? 'RESTART TO UPDATE' : 'CHECK NOW'}</button></div>
           <div class="f-hint">New versions download in the background. When one is ready, UPDATE READY appears at the top; tap it to restart, or it installs the next time Command Deck closes.</div></div>`;
+    },
+    lighting() {
+      const L = { enabled: false, boot: true, alert: true, speaking: true, crew: true, brightness: 80, ...(draft.lighting || {}) };
+      draft.lighting = L;
+      const moment = (key, title, sub) => `<div class="toggle-row"><span>${title}<span class="f-hint" style="display:block;margin-top:3px">${sub}</span></span>${switchHtml(`lt_${key}`, L[key], title)}</div>`;
+      return `<div id="ltRoot">
+        <div class="lt-link" id="ltLink"></div>
+        <div class="f"><div class="toggle-row"><span>Command Deck lights up for these moments<span class="f-hint" style="display:block;margin-top:3px">The rest of the time your iCUE profile runs as usual. Each moment hands the lights back to it when it ends.</span></span>${switchHtml('lt_enabled', L.enabled, 'Rig lighting')}</div></div>
+        <div class="lt-grid">
+          <div class="f"><span class="f-label">MOMENTS</span>
+            ${moment('boot', 'Boot sweep', 'Amber sweep while Command Deck loads, green when it is ready.')}
+            ${moment('alert', 'Red Alert', 'Red pulse when a timer or alarm goes off, or a task or event is past due. Stops when you dismiss or snooze it, or after 2 minutes.')}
+            ${moment('speaking', 'Computer speaking', 'Blue pulse while Command Deck talks.')}
+            ${moment('crew', 'Crew signals', 'Green blip for GOT IT or a check-off, coral for a change request.')}
+          </div>
+          <div class="f"><label class="f-label" for="ltBright" style="display:flex;justify-content:space-between"><span>BRIGHTNESS</span><span id="ltBrightVal" class="amber-t">${L.brightness}%</span></label>
+            <input id="ltBright" class="range" type="range" min="10" max="100" step="5" value="${L.brightness}">
+            <span class="f-label" style="margin-top:18px">TRY THEM</span>
+            <div class="inline" style="flex-wrap:wrap;gap:8px;margin-top:8px">
+              <button type="button" class="btn line" data-lt-try="boot">BOOT</button><button type="button" class="btn line" data-lt-try="alert">RED ALERT</button><button type="button" class="btn line" data-lt-try="speaking">SPEAKING</button><button type="button" class="btn line" data-lt-try="crew">CREW</button>
+            </div></div>
+        </div>
+        <div class="f-hint">Needs iCUE running, with iCUE › ⚙ Settings › SDK › <b>iCUE SDK</b> turned on. The first time, Command Deck downloads Corsair's free iCUE SDK (about 350 KB) straight from Corsair. Overnight quiet hours keep the rig dark except for timers and alarms.</div></div>`;
     },
     alerts() {
       return `
@@ -1245,6 +1270,42 @@ export function openSettings(welcome = false) {
           enabled: true, engine: draft.voiceEngine, voice: draft.voiceName, neuralVoice: draft.neuralVoice, fx: draft.voiceFx, depth: draft.voiceDepth, strength: draft.voiceFxStrength, rate: draft.voiceRate
         });
       });
+    },
+    lighting() {
+      const L = draft.lighting;
+      const paint = () => {
+        const s = app.lightInfo();
+        const el = $('#ltLink', body);
+        if (!el) return;
+        const n = (s.devices || []).length;
+        const ok = s.status === 'connected';
+        const bad = ['error', 'refused', 'unsupported'].includes(s.status);
+        const head = ok ? `ICUE LINK · CONNECTED · ${n} DEVICE${n === 1 ? '' : 'S'}`
+          : s.status === 'off' ? 'ICUE LINK · OFF' : s.status === 'downloading' ? 'ICUE LINK · GETTING THE SDK' : bad ? 'ICUE LINK · PROBLEM' : 'ICUE LINK · SEARCHING';
+        el.className = `lt-link ${ok ? 'ok' : bad ? 'bad' : ''}`;
+        el.innerHTML = `<div><div class="lt-head"><i></i>${esc(head)}</div>
+          ${ok && n ? `<div class="lt-chips">${s.devices.map((d) => `<span class="lt-chip" title="${esc(d.model || '')}">${esc(String(d.kind || 'device').toUpperCase())}</span>`).join('')}</div>` : ''}
+          ${s.message ? `<div class="lt-msg">${esc(s.message)}</div>` : s.status === 'off' ? '<div class="lt-msg">Switch it on below to connect.</div>' : ''}</div>
+          ${s.status !== 'off' ? '<button type="button" class="btn line" id="ltScan">RESCAN</button>' : ''}`;
+      };
+      paint();
+      const tick = setInterval(() => { if (tab !== 'lighting' || !document.body.contains(body)) { clearInterval(tick); return; } paint(); }, 700);
+      cleanups.push(() => clearInterval(tick));
+      $('#ltRoot', body).addEventListener('click', async (e) => {
+        if (e.target.closest('#ltScan')) { await app.lightsRescan(); paint(); return; }
+        const t = e.target.closest('[data-lt-try]');
+        if (!t) return;
+        if (!L.enabled) { app.toast('Switch on rig lighting first'); return; }
+        await app.lightsPreview(L);
+        app.lightsTest(t.dataset.ltTry);
+      });
+      wireSwitch($('#lt_enabled', body), (on) => { L.enabled = on; app.lightsPreview(L); });
+      for (const k of ['boot', 'alert', 'speaking', 'crew']) wireSwitch($(`#lt_${k}`, body), (on) => { L[k] = on; });
+      const r = $('#ltBright', body);
+      const fill = () => r.style.setProperty('--fill', `${((Number(r.value) - 10) / 90) * 100}%`);
+      fill();
+      r.addEventListener('input', () => { fill(); L.brightness = Number(r.value); $('#ltBrightVal', body).textContent = `${r.value}%`; });
+      r.addEventListener('change', () => { if (L.enabled) app.lightsPreview(L); });
     },
     alerts() {
       wireSwitch($('#swQuiet', body), (on) => { draft.quietEnabled = on; });

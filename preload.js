@@ -20,6 +20,14 @@ contextBridge.exposeInMainWorld('deck', {
   hostname: () => ipcRenderer.invoke('sys:hostname'),
   onShown: (fn) => ipcRenderer.on('deck:shown', () => fn()),
   onAway: (fn) => ipcRenderer.on('deck:away', (_e, away) => fn(away)),
+  lights: {
+    get: () => ipcRenderer.invoke('lights:get'),
+    configure: (cfg) => ipcRenderer.invoke('lights:configure', cfg),
+    rescan: () => ipcRenderer.invoke('lights:rescan'),
+    test: (name) => ipcRenderer.invoke('lights:test', name),
+    moment: (name, on, data) => ipcRenderer.send('lights:moment', name, on, data),
+    onState: (fn) => ipcRenderer.on('lights:state', (_e, s) => fn(s))
+  },
   updates: {
     get: () => ipcRenderer.invoke('update:get'),
     check: () => ipcRenderer.invoke('update:check'),

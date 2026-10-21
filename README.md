@@ -163,6 +163,22 @@ Panel 07 holds notes, shared with Field Unit on the phone.
 
 ---
 
+### Rig lighting (Corsair iCUE)
+
+Command Deck can light up your Corsair gear (fans, RAM, keyboard, mouse, strips) for a few moments, then hand it straight back to your iCUE profile. Everything else about your lighting stays exactly as iCUE has it.
+
+1. In iCUE: ⚙ **Settings › SDK** (older versions: **Software and Games**) › turn on **iCUE SDK**.
+2. In Command Deck: **Settings › LIGHTING** › switch on **Command Deck lights up for these moments**. The first time, it downloads Corsair's free iCUE SDK (about 350 KB) directly from Corsair. The panel then shows **ICUE LINK · CONNECTED** and your devices.
+3. Pick the moments, set the brightness, and use **TRY THEM** to see each one, then **SAVE**.
+
+The moments:
+- **Boot sweep:** amber travels across the rig while Command Deck loads (inside the case first, then the desk) and turns green when it's ready.
+- **Red Alert:** a red pulse when a timer or alarm goes off, a task reaches its due time without being done, or a calendar event starts. It stops when you dismiss or snooze the alert on the deck, or after 2 minutes.
+- **Computer speaking:** a blue pulse while Command Deck talks.
+- **Crew signals:** a green blip when someone taps GOT IT or checks off a shared task, coral for a change request.
+
+During quiet hours only timers and alarms light the rig. If the panel says it's waiting for iCUE, check that iCUE is running and the SDK switch is on; **RESCAN** looks again. If Armoury Crate (or another lighting app) also controls a device, give that device to one app only, or they'll flicker as they take turns.
+
 ## 4 · Field Unit (iPhone)
 
 Once set up (see [FIELD-UNIT-SETUP.md](FIELD-UNIT-SETUP.md)), **Settings › Field Unit** shows the uplink status, a **Show pairing code** button (QR code plus a 6-character code, valid 10 minutes), the list of paired phones with **Unpair**, and **Unlink this console**.
@@ -238,6 +254,7 @@ A push to main with a version that isn't released yet starts the full `.github/w
 - `main.js`: window, tray, storage, IPC, private `deck://` file protocol
 - `src/commands.js`: natural-language parsing (chrono-node)
 - `src/calendar.js`: iCal feed download and recurring-event expansion (node-ical)
+- `src/lighting.js` + `src/icue.js`: rig lighting moments through Corsair's iCUE SDK (koffi); `test/fixtures/fake-icue.c` stands in for the SDK in tests
 - `shared/`: the sync engine (`sync.js`) and the bundled Firebase + parser (`core.js`), used by both apps
 - `renderer/fieldunit.js`: the uplink (linking, pairing, sync, phone notifications via Web Push)
 - `field-unit/`: the iPhone web app; `firestore.rules`: who can read what

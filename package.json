@@ -1,7 +1,7 @@
 {
   "name": "command-deck",
   "productName": "Command Deck",
-  "version": "1.11.1",
+  "version": "1.12.0",
   "description": "A sci-fi HUD desktop console for Windows: clock, calendar, weather, tasks and a voice-driven ship's computer.",
   "main": "main.js",
   "author": "Command Deck",
@@ -10,7 +10,7 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win nsis",
-    "test": "node test/run-tests.js && node test/sync-test.mjs && node test/manifest-test.mjs && node test/roster-test.mjs && node --no-warnings test/console-join-test.mjs",
+    "test": "node test/run-tests.js && node test/sync-test.mjs && node test/manifest-test.mjs && node test/roster-test.mjs && node --no-warnings test/console-join-test.mjs && node test/lighting-test.mjs",
     "build:core": "esbuild shared/core-entry.js --bundle --format=esm --platform=browser --minify --target=es2020 --outfile=shared/core.js --legal-comments=none",
     "build:field": "node scripts/build-field.js",
     "deploy": "npm run build:field && npx --yes firebase-tools@15 deploy --only hosting,firestore:rules",
@@ -36,6 +36,7 @@
     "chrono-node": "^2.10.3",
     "electron-updater": "^6.8.9",
     "gridstack": "^10.3.1",
+    "koffi": "^2.16.3",
     "kokoro-js": "^1.2.1",
     "node-ical": "^0.27.3",
     "qrcode": "^1.5.4",
@@ -89,7 +90,11 @@
       "!node_modules/gridstack/dist/angular/**",
       "!node_modules/gridstack/dist/src/**",
       "!node_modules/esbuild/**",
-      "!node_modules/@esbuild/**"
+      "!node_modules/@esbuild/**",
+      "!node_modules/koffi/build/koffi/!(win32_x64)/**",
+      "!node_modules/koffi/src/**",
+      "!node_modules/koffi/vendor/**",
+      "!node_modules/koffi/doc/**"
     ],
     "win": {
       "target": "nsis",
@@ -102,7 +107,9 @@
       "shortcutName": "Command Deck",
       "artifactName": "Command-Deck-Setup-${version}.${ext}"
     },
-    "asarUnpack": [],
+    "asarUnpack": [
+      "node_modules/koffi/**"
+    ],
     "publish": [
       {
         "provider": "github",

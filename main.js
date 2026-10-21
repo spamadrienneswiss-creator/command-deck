@@ -10,6 +10,7 @@ const { pathToFileURL } = require('url');
 const store = require('./src/store');
 const { parseCommand } = require('./src/commands');
 const { fetchCalendars } = require('./src/calendar');
+const { Lighting, fetchSdkWindows } = require('./src/lighting');
 
 let webpush = null; // loaded on first use
 let QRCode = null;
@@ -268,6 +269,11 @@ function registerIpc() {
     return QRCode.toDataURL(String(text), { margin: 2, scale: 8, errorCorrectionLevel: 'M', color: { dark: '#14151BFF', light: '#F4EFE9FF' } });
   });
 
+  ipcMain.handle('lights:get', () => (lights ? lights.status() : { status: 'off', devices: [] }));
+  ipcMain.handle('lights:configure', (_e, cfg) => (lights ? lights.configure(cfg) : null));
+  ipcMain.handle('lights:rescan', () => (lights ? lights.scan() : null));
+  ipcMain.handle('lights:test', (_e, name) => (lights ? lights.test(name) : false));
+  ipcMain.on('lights:moment', (_e, name, on, data) => { if (lights) lights.moment(name, on, data || {}); });
   ipcMain.handle('update:get', () => ({ ...updateState, current: app.getVersion() }));
   ipcMain.handle('update:check', async () => {
     if (!updater) return { ...updateState, current: app.getVersion() };
@@ -393,6 +399,21 @@ function setupUpdates() {
   setInterval(check, UPDATE_EVERY);
 }
 
+// ---- Rig lighting (iCUE): see src/lighting.js ------------------------------------------------
+let lights = null;
+function setupLighting() {
+  const fake = process.env.DECK_FAKE_ICUE; // development: a stand-in SDK library (test/fixtures/fake-icue.c)
+  lights = new Lighting({
+    dir: path.join(app.getPath('userData'), 'icue'),
+    platform: fake ? 'win32' : process.platform,
+    loadSdk: (dll) => require('./src/icue').loadIcue(dll),
+    fetchSdk: fake ? async () => fake : (dir) => fetchSdkWindows(dir, { fetch: (u) => net.fetch(u), execFile: require('child_process').execFile }),
+    onState: (s) => { if (win && !win.isDestroyed()) win.webContents.send('lights:state', s); }
+  });
+  const cfg = (store.get().settings || {}).lighting;
+  if (cfg && cfg.enabled) lights.configure(cfg).catch(() => {});
+}
+
 function watchAway() {
   setInterval(checkAway, 2000);
   powerMonitor.on('lock-screen', () => { screenLocked = true; checkAway(); });
@@ -420,12 +441,14 @@ app.whenReady().then(() => {
   createTray();
   applyAutoStart();
   setupUpdates();
+  setupLighting();
 
   globalShortcut.register('Control+Alt+Space', toggleWindow);
 });
 
 app.on('before-quit', () => {
   app.isQuitting = true;
+  if (lights) lights.shutdown(); // hand the lights back to iCUE
   store.flush();
 });
 

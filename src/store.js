@@ -57,7 +57,9 @@ const DEFAULTS = {
     morningBriefing: true,
     defaultReminder: 15,
     layoutLocked: true,
-    fieldUnit: { url: '', config: null, deckId: null, role: 'main' }
+    fieldUnit: { url: '', config: null, deckId: null, role: 'main' },
+    // Rig lighting through iCUE (off until switched on in Settings › LIGHTING)
+    lighting: { enabled: false, boot: true, alert: true, speaking: true, crew: true, brightness: 80 }
   },
   tasks: [],
   localEvents: [],

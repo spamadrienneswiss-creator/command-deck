@@ -12,7 +12,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.12.0';
+const VERSION = 'v1.13.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -195,6 +195,7 @@ async function saveSettings(next, { refetch = true } = {}) {
   checkRedAlert();
   FU.relayShared(next);
   if (deck.lights && JSON.stringify((prev || {}).lighting) !== JSON.stringify(next.lighting)) deck.lights.configure(next.lighting).catch(() => {});
+  if (!prev || prev.layoutMode !== next.layoutMode) applyLayout();
 }
 
 // ---------------------------------------------------------------- toast & log
@@ -2134,6 +2135,76 @@ async function maybeBriefing() {
 }
 
 // ---------------------------------------------------------------- grid layout
+// Two layouts share the same panels: the standard 12-column grid, and the Xeneon Edge layout
+// (24 columns) for a wide, short touch strip like Corsair's 2560 x 720 Xeneon Edge.
+// AUTO picks by the window's shape; each layout remembers its own rearrangements.
+const LAYOUTS = {
+  standard: { columns: 12, key: 'layout', defaults: { clock: [0, 0, 5, 4], weather: [5, 0, 3, 4], computer: [8, 0, 4, 4], calendar: [0, 4, 4, 8], events: [4, 4, 3, 4], notes: [4, 8, 3, 4], tasks: [7, 4, 5, 8] } },
+  edge: { columns: 24, key: 'layoutEdge', defaults: { clock: [0, 0, 4, 6], weather: [0, 6, 4, 6], calendar: [4, 0, 5, 12], events: [9, 0, 4, 6], notes: [9, 6, 4, 6], tasks: [13, 0, 7, 12], computer: [20, 0, 4, 12] } }
+};
+const EDGE_RATIO = 2.6; // a window at least this many times wider than tall counts as an Edge
+let layoutNow = null;
+let applyingLayout = false;
+
+function wantedLayout() {
+  const m = S.settings.layoutMode || 'auto';
+  if (m === 'edge' || m === 'standard') return m;
+  return window.innerWidth / Math.max(1, window.innerHeight) >= EDGE_RATIO ? 'edge' : 'standard';
+}
+
+// gridstack ships column CSS up to 12; the Edge layout's 24 columns get theirs here.
+function columnCss(n) {
+  if (document.getElementById(`gs-css-${n}`)) return;
+  let css = '';
+  for (let i = 1; i <= n; i++) {
+    css += `.gs-${n} > .grid-stack-item[gs-w="${i}"] { width: ${(i / n) * 100}%; }\n.gs-${n} > .grid-stack-item[gs-x="${i - 1}"] { left: ${((i - 1) / n) * 100}%; }\n`;
+  }
+  const el = document.createElement('style');
+  el.id = `gs-css-${n}`;
+  el.textContent = css;
+  document.head.appendChild(el);
+}
+
+function placePanels(mode) {
+  const L = LAYOUTS[mode];
+  const saved = Array.isArray(S.data[L.key]) && S.data[L.key].length ? S.data[L.key] : null;
+  const pos = saved ? Object.fromEntries(saved.map((it) => [it.id, [it.x, it.y, it.w, it.h]])) : L.defaults;
+  grid.batchUpdate();
+  Object.entries({ ...L.defaults, ...pos }).forEach(([id, [x, y, w, h]]) => {
+    const el = document.querySelector(`.grid-stack-item[gs-id="${CSS.escape(id)}"]`);
+    if (el) grid.update(el, { x, y, w, h });
+  });
+  grid.batchUpdate(false);
+}
+
+function applyLayout(force = false) {
+  if (!grid) return;
+  const mode = wantedLayout();
+  if (mode === layoutNow && !force) return;
+  applyingLayout = true;
+  layoutNow = mode;
+  document.body.dataset.layout = mode;
+  columnCss(LAYOUTS[mode].columns);
+  grid.column(LAYOUTS[mode].columns, 'none');
+  placePanels(mode);
+  applyingLayout = false;
+  const chip = $('#layoutChip');
+  if (chip) {
+    chip.classList.toggle('on', mode === 'edge');
+    chip.querySelector('span').textContent = mode === 'edge' ? 'EDGE LAYOUT' : 'STANDARD LAYOUT';
+    chip.title = mode === 'edge' ? 'Switch to the standard layout' : 'Switch to the Xeneon Edge layout';
+  }
+  fitGrid();
+}
+
+/** The header chip: flip between the two layouts right now (and stay there until switched back). */
+function toggleLayout() {
+  const next = layoutNow === 'edge' ? 'standard' : 'edge';
+  sounds.click();
+  saveSettings({ ...S.settings, layoutMode: next }, { refetch: false });
+  toast(next === 'edge' ? 'Edge layout' : 'Standard layout');
+}
+
 function fitGrid() {
   if (!grid) return;
   const h = $('.grid-wrap').clientHeight;
@@ -2164,34 +2235,27 @@ function initGrid() {
       saved.push({ id: 'notes', x: 0, y: bottom, w: 4, h: 4 });
     }
   }
-  if (Array.isArray(saved) && saved.length) {
-    grid.batchUpdate();
-    saved.forEach((it) => {
-      const el = document.querySelector(`.grid-stack-item[gs-id="${CSS.escape(it.id)}"]`);
-      if (el) grid.update(el, { x: it.x, y: it.y, w: it.w, h: it.h });
-    });
-    grid.batchUpdate(false);
-  }
+  S.data.layout = saved;
+  applyLayout(true);
   grid.on('change', () => {
+    if (applyingLayout || !layoutNow) return;
     const layout = grid.save(false).map((n) => ({ id: n.id, x: n.x, y: n.y, w: n.w, h: n.h }));
-    S.data.layout = layout;
-    deck.save('layout', layout);
+    const key = LAYOUTS[layoutNow].key;
+    S.data[key] = layout;
+    deck.save(key, layout);
   });
   fitGrid();
   let t = null;
-  window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(fitGrid, 60); });
+  window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { applyLayout(); fitGrid(); }, 60); });
+  const chip = $('#layoutChip');
+  if (chip) chip.addEventListener('click', toggleLayout);
 }
 
 function resetLayout() {
-  const defaults = { clock: [0, 0, 5, 4], weather: [5, 0, 3, 4], computer: [8, 0, 4, 4], calendar: [0, 4, 4, 8], events: [4, 4, 3, 4], notes: [4, 8, 3, 4], tasks: [7, 4, 5, 8] };
-  grid.batchUpdate();
-  Object.entries(defaults).forEach(([id, [x, y, w, h]]) => {
-    const el = document.querySelector(`.grid-stack-item[gs-id="${id}"]`);
-    if (el) grid.update(el, { x, y, w, h });
-  });
-  grid.batchUpdate(false);
-  S.data.layout = null;
-  deck.save('layout', null);
+  const key = LAYOUTS[layoutNow || 'standard'].key;
+  S.data[key] = null;
+  deck.save(key, null);
+  applyLayout(true);
   toast('Layout restored');
 }
 

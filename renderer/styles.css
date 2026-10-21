@@ -1071,3 +1071,27 @@ body[data-ink]:not([data-ink="theme"]) { --text: var(--ink-text); --text-hi: var
 .lt-chip { height: 22px; padding: 0 8px; display: inline-flex; align-items: center; font: 500 9.5px/1 var(--mono); letter-spacing: 0.14em; color: var(--text-2, var(--text)); box-shadow: inset 0 0 0 1px var(--line-3, #3A3D4C); }
 .lt-msg { margin-top: 8px; font: 400 11px/1.45 var(--mono); color: var(--muted); }
 .lt-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 26px; }
+
+/* ---- Layout chip (top bar) ----------------------------------------------------------------- */
+.layout-chip { height: 28px; padding: 0 10px; border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; background: transparent; box-shadow: inset 0 0 0 1px var(--ctl-line, #3A3D4C); color: var(--muted); font: 500 10px/1 var(--mono); letter-spacing: 0.16em; }
+.layout-chip:hover { color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); }
+.layout-chip.on { color: var(--amber); background: rgba(var(--accent-rgb), 0.08); box-shadow: inset 0 0 0 1px var(--amber); }
+
+/* ---- Xeneon Edge layout: same panels, a little larger for fingertips --------------------------- */
+body[data-layout="edge"] .tk { grid-template-columns: 28px minmax(0, 1fr) auto; padding: 13px 0; }
+body[data-layout="edge"] .tk-box { width: 28px; height: 28px; }
+body[data-layout="edge"] .tk-title { font-size: 18px; }
+body[data-layout="edge"] .tk-meta { font-size: 11px; }
+body[data-layout="edge"] .ev-title { font-size: 17px; }
+body[data-layout="edge"] .mini-btn { height: 32px; padding: 0 12px; font-size: 11px; }
+body[data-layout="edge"] .icon-btn, body[data-layout="edge"] .layout-chip, body[data-layout="edge"] .upd-chip { height: 34px; }
+body[data-layout="edge"] .icon-btn { width: 34px; }
+body[data-layout="edge"] .seg button { min-height: 34px; padding-left: 14px; padding-right: 14px; }
+body[data-layout="edge"] .sc-row { padding-top: 13px; padding-bottom: 13px; }
+/* On the Edge the computer gets a tall column: stack the hail button over its readout, larger. */
+body[data-layout="edge"] .cmp-row { flex-direction: column; text-align: center; gap: 16px; margin-top: 10px; }
+body[data-layout="edge"] .hail-wrap { width: 132px; height: 132px; }
+body[data-layout="edge"] .cmp-side { width: 100%; }
+body[data-layout="edge"] .wave { justify-content: center; }
+body[data-layout="edge"] .cmp-title, body[data-layout="edge"] .cmp-sub { white-space: normal; }
+body[data-layout="edge"] .cmp-log { margin-top: auto; }

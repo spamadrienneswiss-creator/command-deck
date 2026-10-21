@@ -902,6 +902,9 @@ export function openSettings(welcome = false) {
           <div class="toggle-row"><span>Start with Windows</span>${switchHtml('swAuto', draft.autoStart, 'Start with Windows')}</div>
           <div class="toggle-row"><span>Daily briefing the first time the console opens each day</span>${switchHtml('swBrief', draft.morningBriefing, 'Daily briefing')}</div>
         </div>
+        <div class="f"><span class="f-label">LAYOUT</span>
+          <div class="pills" data-key="layoutMode">${pills([['auto', 'AUTO'], ['standard', 'STANDARD'], ['edge', 'XENEON EDGE']], draft.layoutMode || 'auto')}</div>
+          <div class="f-hint">AUTO uses the Edge layout on a wide, short screen like the Xeneon Edge and the standard layout anywhere else, switching as you move the window. The <b>LAYOUT</b> chip at the top of the deck flips between the two on the spot. Each layout remembers its own panel arrangement.</div></div>
         <div class="f"><span class="f-label">UPDATES</span>
           <div class="toggle-row"><span id="sUpd">${esc(app.updateInfo().text)}</span><button type="button" class="btn line" id="sUpdBtn">${app.updateInfo().state === 'ready' ? 'RESTART TO UPDATE' : 'CHECK NOW'}</button></div>
           <div class="f-hint">New versions download in the background. When one is ready, UPDATE READY appears at the top; tap it to restart, or it installs the next time Command Deck closes.</div></div>`;

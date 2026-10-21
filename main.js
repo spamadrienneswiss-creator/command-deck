@@ -72,8 +72,8 @@ function createWindow() {
 
   win = new BrowserWindow({
     ...b,
-    minWidth: 960,
-    minHeight: 640,
+    minWidth: 720,
+    minHeight: 400,
     frame: false,
     transparent: true,
     resizable: false, // resized by the console's own corner grip

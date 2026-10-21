@@ -163,6 +163,15 @@ Panel 07 holds notes, shared with Field Unit on the phone.
 
 ---
 
+### Layouts: standard and Xeneon Edge
+
+Command Deck has two arrangements of the same panels. The **standard** layout suits a normal monitor. The **Xeneon Edge** layout re-stacks all seven panels across a wide, short touch strip like Corsair's 14.5" Xeneon Edge (2560 × 720), with slightly larger text and buttons for fingertips. Themes, fonts, ink, frames and trims work the same in both.
+
+- **Settings › System › LAYOUT:** **AUTO** (the default) uses the Edge layout whenever the window is much wider than it is tall and the standard layout otherwise, switching as you move the window between screens. **STANDARD** or **XENEON EDGE** keeps one layout everywhere.
+- **The LAYOUT chip** at the top of the deck flips between the two on the spot.
+- Each layout remembers its own panel arrangement (unlock the layout to drag and resize), and **Reset layout** restores the one you're looking at.
+- On the Xeneon Edge, Windows display scale of 100% or 125% gives the panels the most room; 150% works, but lists show fewer rows.
+
 ### Rig lighting (Corsair iCUE)
 
 Command Deck can light up your Corsair gear (fans, RAM, keyboard, mouse, strips) for a few moments, then hand it straight back to your iCUE profile. Everything else about your lighting stays exactly as iCUE has it.

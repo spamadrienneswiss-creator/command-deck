@@ -57,6 +57,7 @@ const DEFAULTS = {
     morningBriefing: true,
     defaultReminder: 15,
     layoutLocked: true,
+    layoutMode: 'auto', // auto (Edge layout on a wide, short screen) | standard | edge
     fieldUnit: { url: '', config: null, deckId: null, role: 'main' },
     // Rig lighting through iCUE (off until switched on in Settings › LIGHTING)
     lighting: { enabled: false, boot: true, alert: true, speaking: true, crew: true, brightness: 80 }
@@ -68,6 +69,7 @@ const DEFAULTS = {
   notes: [], // { id, title, body, pinned, src: typed|voice|scan, createdAt, editedAt, editedOn }
   schedule: [], // { id, type, title, date: 'YYYY-MM-DD', note, replies: { [linkToken]: { state: ok|change, comment, at, by } }, createdAt }
   layout: null,
+  layoutEdge: null, // panel positions for the Xeneon Edge layout (24 columns)
   window: { bounds: null },
   meta: { lastBriefingDate: null, lastLaunch: null },
   push: { publicKey: null, privateKey: null }

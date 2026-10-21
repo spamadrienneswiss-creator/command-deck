@@ -29,6 +29,13 @@ jobs:
           java-version: '21'
       - run: npm ci
       - name: Unit tests
-        run: npm test
+        run: |
+          set -o pipefail
+          if ! npm test 2>&1 | tee test.log; then
+            # Surface the failing check on the run page.
+            msg=$(grep -v '^\s*at ' test.log | tail -n 30 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+            echo "::error title=Unit tests failed::$msg"
+            exit 1
+          fi
       - name: Firestore security rules
         run: npx --yes firebase-tools@15 emulators:exec --only firestore --project demo-command-deck "node test/rules-test.mjs"

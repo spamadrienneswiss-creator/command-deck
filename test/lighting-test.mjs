@@ -195,7 +195,8 @@ if (cc && process.platform === 'linux') {
     const sdk = loadIcue(lib);
     const states = [];
     assert.strictEqual(sdk.connect((s) => states.push(s)), 0);
-    await new Promise((r) => setTimeout(r, 250));
+    // The stand-in connects from its own thread; give a busy machine up to 5 seconds.
+    for (let i = 0; i < 100 && !states.includes('CONNECTED'); i++) await new Promise((r) => setTimeout(r, 50));
     assert.deepStrictEqual(states, ['CONNECTING', 'CONNECTED']);
     const devs = sdk.devices();
     assert.deepStrictEqual(devs.map((d) => [d.id, d.kind, d.model, d.ledCount]), [['{KB-1}', 'keyboard', 'K70 RGB', 3], ['{FANS-1}', 'fans', 'Commander Core', 2]]);

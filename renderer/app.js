@@ -12,7 +12,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.11.0';
+const VERSION = 'v1.11.1';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -232,6 +232,12 @@ function showUpdate(u) {
   }
 }
 function wireUpdates() {
+  // After an update installs, say so once in the log.
+  try {
+    const last = localStorage.getItem('deck.lastVersion');
+    if (last !== VERSION) { pushLog('ok', `Now running ${VERSION}. All systems nominal.`); renderLog(); if (last) toast(`Command Deck updated to ${VERSION}`); }
+    localStorage.setItem('deck.lastVersion', VERSION);
+  } catch (e) { /* storage blocked */ }
   if (!deck.updates) return;
   deck.updates.get().then(showUpdate).catch(() => {});
   deck.updates.onState(showUpdate);

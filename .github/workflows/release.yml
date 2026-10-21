@@ -34,8 +34,9 @@ jobs:
         run: |
           tag="v$(node -p "require('./package.json').version")"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          draft=$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2>/dev/null || echo missing)
-          if [ "$draft" = "false" ]; then
+          # Released = published and carrying latest.yml (what installed copies read to find updates).
+          done=$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,assets --jq '(.isDraft | not) and ([.assets[].name] | index("latest.yml") != null)' 2>/dev/null || echo false)
+          if [ "$done" = "true" ]; then
             echo "new=false" >> "$GITHUB_OUTPUT"; echo "$tag is already released; checks only."
           else
             echo "new=true" >> "$GITHUB_OUTPUT"; echo "Releasing $tag."
@@ -62,19 +63,36 @@ jobs:
         run: |
           v="v$(node -p "require('./package.json').version")"
           if [ "$v" != "$GITHUB_REF_NAME" ]; then echo "::error::package.json says $v but the tag is $GITHUB_REF_NAME"; exit 1; fi
-      - name: Build installer and publish the release
+      - name: Build the installer
         shell: bash
         run: |
           set -o pipefail
-          if ! npx electron-builder --win nsis --publish always 2>&1 | tee build.log; then
+          if ! npx electron-builder --win nsis --publish never 2>&1 | tee build.log; then
             # Surface the end of the log as an annotation, so the failure can be read on the run page.
             msg=$(tail -n 40 build.log | sed 's/\x1b\[[0-9;]*m//g' | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
             echo "::error title=Installer build failed::$msg"
             exit 1
           fi
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Publish the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.version.outputs.tag }}
+        run: |
+          set -e
+          ls -la release
+          files=(release/*.exe release/*.exe.blockmap release/latest.yml)
+          for f in "${files[@]}"; do [ -f "$f" ] || { echo "::error::Missing $f"; exit 1; }; done
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            git log -1 --pretty=%B > notes.txt
+            gh release create "$TAG" --title "Command Deck $TAG" --notes-file notes.txt --target "$GITHUB_SHA" --draft
+          fi
+          # latest.yml goes up last: installed copies only see the update once everything it points to is there.
+          gh release upload "$TAG" release/*.exe release/*.exe.blockmap --clobber
+          gh release upload "$TAG" release/latest.yml --clobber
+          gh release edit "$TAG" --draft=false --latest
 
   field-unit:
     needs: [version, checks, windows]

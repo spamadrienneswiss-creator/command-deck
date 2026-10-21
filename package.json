@@ -1,0 +1,119 @@
+{
+  "name": "command-deck",
+  "productName": "Command Deck",
+  "version": "1.11.0",
+  "description": "A sci-fi HUD desktop console for Windows: clock, calendar, weather, tasks and a voice-driven ship's computer.",
+  "main": "main.js",
+  "author": "Command Deck",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis",
+    "test": "node test/run-tests.js && node test/sync-test.mjs && node test/manifest-test.mjs && node test/roster-test.mjs && node --no-warnings test/console-join-test.mjs",
+    "build:core": "esbuild shared/core-entry.js --bundle --format=esm --platform=browser --minify --target=es2020 --outfile=shared/core.js --legal-comments=none",
+    "build:field": "node scripts/build-field.js",
+    "deploy": "npm run build:field && npx --yes firebase-tools@15 deploy --only hosting,firestore:rules",
+    "firebase-login": "npx --yes firebase-tools@15 login",
+    "release": "electron-builder --win nsis --publish always",
+    "test:rules": "npx --yes firebase-tools@15 emulators:exec --only firestore --project demo-command-deck \"node test/rules-test.mjs\"",
+    "bump": "node scripts/bump.js"
+  },
+  "dependencies": {
+    "@fontsource/b612-mono": "^5.3.0",
+    "@fontsource/chakra-petch": "^5.3.0",
+    "@fontsource/exo-2": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/major-mono-display": "^5.3.0",
+    "@fontsource/michroma": "^5.3.0",
+    "@fontsource/orbitron": "^5.3.0",
+    "@fontsource/oxanium": "^5.3.0",
+    "@fontsource/rajdhani": "^5.3.0",
+    "@fontsource/share-tech-mono": "^5.3.0",
+    "@fontsource/space-mono": "^5.3.0",
+    "@fontsource/vt323": "^5.3.0",
+    "@huggingface/transformers": "^3.8.1",
+    "chrono-node": "^2.10.3",
+    "electron-updater": "^6.8.9",
+    "gridstack": "^10.3.1",
+    "kokoro-js": "^1.2.1",
+    "node-ical": "^0.27.3",
+    "qrcode": "^1.5.4",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "@tesseract.js-data/eng": "^1.0.0",
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
+    "firebase": "^11.10.0",
+    "tesseract.js": "^7.0.0"
+  },
+  "build": {
+    "appId": "com.commanddeck.app",
+    "productName": "Command Deck",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "shared/core.js",
+      "shared/sync.js",
+      "shared/manifest.js",
+      "shared/roster.js",
+      "shared/package.json",
+      "renderer/**/*",
+      "assets/**/*",
+      "package.json",
+      "!node_modules/onnxruntime-node/**",
+      "!node_modules/onnxruntime-web/**",
+      "!node_modules/onnxruntime-common/**",
+      "!node_modules/sharp/**",
+      "!node_modules/@img/**",
+      "!node_modules/tar/**",
+      "!node_modules/global-agent/**",
+      "!node_modules/@huggingface/transformers/src/**",
+      "!node_modules/@huggingface/transformers/types/**",
+      "!node_modules/@huggingface/transformers/dist/*.map",
+      "!node_modules/@huggingface/transformers/dist/transformers.node*",
+      "!node_modules/@huggingface/transformers/dist/transformers.web*",
+      "!node_modules/@huggingface/transformers/dist/transformers.js",
+      "!node_modules/@fontsource/*/files/*-ext-*",
+      "!node_modules/@fontsource/*/files/*vietnamese*",
+      "!node_modules/@fontsource/*/files/*thai*",
+      "!node_modules/@fontsource/*/files/*cyrillic*",
+      "!node_modules/gridstack/dist/es5/**",
+      "!node_modules/gridstack/dist/angular/**",
+      "!node_modules/gridstack/dist/src/**",
+      "!node_modules/esbuild/**",
+      "!node_modules/@esbuild/**"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Command Deck",
+      "artifactName": "Command-Deck-Setup-${version}.${ext}"
+    },
+    "asarUnpack": [],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "spamadrienneswiss-creator",
+        "repo": "command-deck",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/spamadrienneswiss-creator/command-deck.git"
+  }
+}

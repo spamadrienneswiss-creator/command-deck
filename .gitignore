@@ -1,0 +1,10 @@
+node_modules/
+release/
+# Made by scripts/build-field.js (the release workflow runs it before publishing Field Unit)
+field-unit/lib/
+field-unit/fonts/
+field-unit/vendor/
+field-unit/version.json
+# Firebase CLI cache and logs
+.firebase/
+*-debug.log

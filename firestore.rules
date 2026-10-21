@@ -1,0 +1,127 @@
+rules_version = '2';
+
+// Command Deck / Field Unit security rules.
+// A "deck" is one Command Deck install. Only its members (the desktop that
+// created it, plus phones paired with a short-lived code) can read or write it.
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function deckDoc(deckId) { return get(/databases/$(db)/documents/decks/$(deckId)); }
+    function isOwner(deckId) { return signedIn() && deckDoc(deckId).data.owner == request.auth.uid; }
+    function isMember(deckId) {
+      return signedIn() && exists(/databases/$(db)/documents/decks/$(deckId)/members/$(request.auth.uid));
+    }
+
+    match /decks/{deckId} {
+      allow create: if signedIn() && request.resource.data.owner == request.auth.uid;
+      allow read: if isMember(deckId);
+      allow update: if signedIn() && resource.data.owner == request.auth.uid
+                    && request.resource.data.owner == resource.data.owner;
+      allow delete: if signedIn() && resource.data.owner == request.auth.uid;
+
+      match /members/{uid} {
+        allow read: if isMember(deckId);
+        // The owner adds itself; a phone joins only with the current, unexpired pairing code.
+        allow create: if signedIn() && uid == request.auth.uid && (
+          isOwner(deckId) || (
+            deckDoc(deckId).data.pairCode != null &&
+            request.resource.data.code == deckDoc(deckId).data.pairCode &&
+            request.time < deckDoc(deckId).data.pairExpires
+          ));
+        allow update: if signedIn() && uid == request.auth.uid && isMember(deckId)
+                      && request.resource.data.code == resource.data.code;
+        allow delete: if signedIn() && (uid == request.auth.uid || isOwner(deckId));
+      }
+
+      // Tasks, events, timers, push subscriptions and relayed metadata.
+      match /{col}/{docId} {
+        allow read, write: if col != 'members' && isMember(deckId);
+      }
+    }
+
+    // Project Manifest: one project shared with a guest through a secret link.
+    // The link's long random token is the key: a guest can open exactly one manifest
+    // by its id, never list them. Deck members manage them.
+    function manifest(token) { return get(/databases/$(db)/documents/manifests/$(token)).data; }
+    function live(m) { return m.get('closed', false) != true && (m.get('expiresAt', null) == null || request.time < m.expiresAt); }
+    function owns(m) { return isMember(m.deckId); }
+    function guestKeys(level) {
+      return level == 'helper' ? ['done', 'doneAt', 'doneBy', 'comments', 'title', 'due', 'dueHasTime', 'deleted', 'pending', 'gBy', 'gAt']
+           : level == 'notes' ? ['done', 'doneAt', 'doneBy', 'comments', 'pending', 'gBy', 'gAt']
+           : ['done', 'doneAt', 'doneBy', 'pending', 'gBy', 'gAt'];
+    }
+    function guestWrite(m) {
+      return signedIn() && live(m) && request.resource.data.pending == true
+        && request.resource.data.gAt is number && request.resource.data.gBy is string && request.resource.data.gBy.size() <= 40;
+    }
+
+    match /manifests/{token} {
+      allow get: if signedIn();
+      allow list: if isMember(resource.data.deckId);
+      allow create: if isMember(request.resource.data.deckId) && token.size() >= 20;
+      allow update: if isMember(resource.data.deckId) && request.resource.data.deckId == resource.data.deckId;
+      allow delete: if isMember(resource.data.deckId);
+
+      match /tasks/{taskId} {
+        allow read: if signedIn() && (live(manifest(token)) || owns(manifest(token)));
+        allow write: if owns(manifest(token));
+        // Guests change only what their access level allows.
+        allow update: if guestWrite(manifest(token))
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(guestKeys(manifest(token).level))
+          && (!('title' in request.resource.data) || request.resource.data.title.size() <= 200);
+        allow create: if guestWrite(manifest(token)) && manifest(token).level == 'helper'
+          && request.resource.data.id == taskId && request.resource.data.title is string
+          && request.resource.data.title.size() <= 200
+          && request.resource.data.keys().hasOnly(['id', 'title', 'due', 'dueHasTime', 'done', 'doneAt', 'doneBy', 'comments', 'addedBy', 'pending', 'gBy', 'gAt']);
+      }
+
+      match /log/{entryId} {
+        allow read: if signedIn() && (live(manifest(token)) || owns(manifest(token)));
+        allow write: if owns(manifest(token));
+        allow create: if signedIn() && live(manifest(token)) && manifest(token).level in ['notes', 'helper']
+          && request.resource.data.id == entryId && request.resource.data.text is string
+          && request.resource.data.text.size() <= 1000 && request.resource.data.by is string
+          && request.resource.data.by.size() <= 40
+          && request.resource.data.keys().hasOnly(['id', 'by', 'text', 'at']);
+      }
+    }
+
+    // Schedule links: one person sees the owner's schedule and can reply to each entry
+    // with GOT IT or a CHANGE REQUEST (a note is optional). Same secret-token idea as above.
+    function roster(token) { return get(/databases/$(db)/documents/rosters/$(token)).data; }
+    function validReply(r) {
+      return r is map && r.keys().hasOnly(['state', 'comment', 'at'])
+        && r.state in ['ok', 'change']
+        && (!('comment' in r) || (r.comment is string && r.comment.size() <= 500));
+    }
+
+    match /rosters/{token} {
+      allow get: if signedIn();
+      allow list: if isMember(resource.data.deckId);
+      allow create: if isMember(request.resource.data.deckId) && token.size() >= 20;
+      allow update: if isMember(resource.data.deckId) && request.resource.data.deckId == resource.data.deckId;
+      allow delete: if isMember(resource.data.deckId);
+
+      match /entries/{entryId} {
+        allow read: if signedIn() && (live(roster(token)) || owns(roster(token)));
+        allow write: if owns(roster(token));
+        // The guest only ever replies.
+        allow update: if signedIn() && live(roster(token))
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reply', 'pending', 'gBy', 'gAt'])
+          && request.resource.data.pending == true
+          && request.resource.data.gAt is number
+          && request.resource.data.gBy is string && request.resource.data.gBy.size() <= 40
+          && validReply(request.resource.data.reply);
+      }
+    }
+
+    // Short pairing codes point a phone at the right deck for 10 minutes.
+    match /pairCodes/{code} {
+      allow get: if signedIn() && resource.data.expires > request.time;
+      allow list: if false;
+      allow create: if signedIn() && request.resource.data.owner == request.auth.uid;
+      allow delete: if signedIn() && resource.data.owner == request.auth.uid;
+    }
+  }
+}

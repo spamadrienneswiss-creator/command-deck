@@ -1,0 +1,90 @@
+/* ============================================================
+   LOAD-UP SCREENS
+   Field Unit: "signal lock" radar. Shared links: DECK RELAY.
+   The markup is inline in each page so it paints before any script loads;
+   boot.js moves it along as the app really connects, then fades it out.
+   ============================================================ */
+.boot {
+  position: fixed; inset: 0; z-index: 9000; overflow: hidden;
+  background: var(--bg, #0B0C11); color: var(--text, #ECE7E1);
+  font-family: var(--display, 'Chakra Petch', sans-serif);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: var(--safe-top, 0) 0 var(--safe-bottom, 0);
+  transition: opacity 0.45s ease, visibility 0s linear 0.45s;
+}
+.boot.out { opacity: 0; visibility: hidden; pointer-events: none; }
+.bt-word { font: 500 22px/1 var(--display, 'Chakra Petch', sans-serif); letter-spacing: 0.32em; padding-left: 0.32em; color: var(--text-hi, #F4EFE9); }
+.bt-hi { height: 18px; margin-top: 26px; font: 400 15px/1 var(--display, sans-serif); letter-spacing: 0.06em; color: var(--text-hi, #F4EFE9); opacity: 0; transform: translateY(4px); transition: opacity 0.35s ease, transform 0.35s ease; }
+.boot.locked .bt-hi { opacity: 1; transform: none; }
+.bt-mono { font: 500 11px/1 var(--mono, 'IBM Plex Mono', monospace); letter-spacing: 0.24em; }
+
+/* ---- Field Unit · signal lock ---------------------------------------------------------- */
+.boot.radar { background-image: linear-gradient(rgba(var(--accent-rgb, 242, 166, 90), 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--accent-rgb, 242, 166, 90), 0.04) 1px, transparent 1px); background-size: 26px 26px; }
+.bt-radar { position: relative; width: 240px; height: 240px; margin: 48px 0 40px; }
+.bt-ring { position: absolute; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb, 242, 166, 90), 0.35); animation: btRing 0.6s ease-out both; }
+.bt-ring.r1 { inset: 0; }
+.bt-ring.r2 { inset: 40px; opacity: 0.7; animation-delay: 0.08s; }
+.bt-ring.r3 { inset: 80px; opacity: 0.5; animation-delay: 0.16s; }
+@keyframes btRing { from { transform: scale(0.4); opacity: 0; } }
+.bt-cross::before, .bt-cross::after { content: ''; position: absolute; background: rgba(var(--accent-rgb, 242, 166, 90), 0.12); }
+.bt-cross::before { left: 50%; top: 0; bottom: 0; width: 1px; }
+.bt-cross::after { top: 50%; left: 0; right: 0; height: 1px; }
+.bt-sweep { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, rgba(var(--accent-rgb, 242, 166, 90), 0.32), rgba(var(--accent-rgb, 242, 166, 90), 0) 70deg, transparent 360deg); animation: btSweep 1.6s linear infinite; transition: opacity 0.3s ease; }
+@keyframes btSweep { to { transform: rotate(360deg); } }
+.bt-blip { position: absolute; width: 6px; height: 6px; background: var(--amber, #F2A65A); box-shadow: 0 0 8px var(--amber, #F2A65A); opacity: 0; animation: btBlip 0.3s ease-out forwards; }
+.bt-blip.b1 { left: 92px; top: 64px; animation-delay: 0.5s; }
+.bt-blip.b2 { left: 198px; top: 118px; animation-delay: 0.9s; }
+.bt-blip.b3 { left: 70px; top: 170px; animation-delay: 1.3s; }
+.bt-blip.b4 { left: 168px; top: 196px; animation-delay: 1.7s; }
+@keyframes btBlip { to { opacity: 1; } }
+.bt-core { position: absolute; left: 88px; top: 88px; width: 64px; height: 64px; border-radius: 50%; color: var(--amber, #F2A65A); transition: color 0.25s ease, box-shadow 0.4s ease; }
+.bt-core svg { display: block; }
+.boot.locked .bt-core { color: var(--lime, #B8E27A); box-shadow: 0 0 22px rgba(184, 226, 122, 0.45); }
+.boot.locked .bt-sweep { opacity: 0; }
+.bt-status { position: relative; height: 16px; width: 100%; text-align: center; }
+.bt-status > span { position: absolute; left: 0; right: 0; transition: opacity 0.2s ease, transform 0.3s ease; }
+.bt-acq { color: var(--amber, #F2A65A); }
+.bt-lock { color: var(--lime, #B8E27A); opacity: 0; transform: scale(1.15); }
+.boot.locked .bt-acq { opacity: 0; }
+.boot.locked .bt-lock { opacity: 1; transform: none; }
+.bt-dots::after { content: ''; animation: btDots 0.9s steps(1) infinite; }
+@keyframes btDots { 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+.bt-sub { margin-top: 20px; font: 400 10px/1 var(--mono, monospace); letter-spacing: 0.18em; color: var(--muted-2, #8E8A97); min-height: 10px; }
+
+/* ---- Shared links · DECK RELAY ----------------------------------------------------------- */
+.boot.relay { background: radial-gradient(ellipse 90% 50% at 50% 42%, #1A1620 0%, var(--bg, #0B0C11) 70%); }
+.boot.relay::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 3px); pointer-events: none; }
+.bt-scanline { position: absolute; left: 0; right: 0; top: 0; height: 40px; background: linear-gradient(180deg, transparent, rgba(var(--accent-rgb, 242, 166, 90), 0.1), transparent); animation: btScan 2.4s linear infinite; pointer-events: none; }
+@keyframes btScan { from { transform: translateY(-40px); } to { transform: translateY(110vh); } }
+.bt-emblem { width: 104px; height: 104px; color: var(--amber, #F2A65A); }
+.bt-emblem svg { display: block; overflow: visible; }
+.bt-draw { stroke-dasharray: 340; stroke-dashoffset: 340; animation: btDraw 0.8s cubic-bezier(0.6, 0, 0.2, 1) forwards; }
+@keyframes btDraw { to { stroke-dashoffset: 0; } }
+.bt-glyph { opacity: 0; animation: btFlick 0.25s steps(1) 0.7s forwards; }
+@keyframes btFlick { 0% { opacity: 1; } 40% { opacity: 0.2; } 70%, 100% { opacity: 1; } }
+/* Signal arcs: amber ripples outward while receiving; green arcs take over once synced. */
+.bt-a0, .bt-a1 { opacity: 0.15; animation: btWave 1.1s ease-in-out infinite; transition: opacity 0.15s ease; }
+.bt-a1 { animation-delay: 0.22s; }
+@keyframes btWave { 0%, 100% { opacity: 0.15; } 35% { opacity: 1; } 75% { opacity: 0.15; } }
+.bt-g, .bt-gg, .bt-dg { opacity: 0; transition: opacity 0.25s ease; }
+.boot.locked .bt-a0, .boot.locked .bt-a1, .boot.locked .bt-da { animation: none; opacity: 0; }
+.boot.locked .bt-g, .boot.locked .bt-dg { opacity: 1; }
+.boot.locked .bt-gg { opacity: 0.12; }
+.relay .bt-word { margin-top: 26px; }
+.bt-log { width: calc(100% - 68px); max-width: 360px; margin-top: 90px; display: flex; flex-direction: column; gap: 11px; min-height: 58px; }
+.bt-line { display: flex; gap: 8px; font: 500 10.5px/1 var(--mono, monospace); letter-spacing: 0.14em; color: var(--text-2, #C9C4CE); opacity: 0; transform: translateY(4px); transition: opacity 0.25s ease, transform 0.25s ease; }
+.bt-line.on { opacity: 1; transform: none; }
+.bt-line > i { font-style: normal; color: var(--amber, #F2A65A); }
+.bt-line .t { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; }
+.bt-line .t::after { content: ' ································································'; color: var(--line-3, #3A3D4C); }
+.bt-line .r { color: var(--lime, #B8E27A); }
+.bt-prog { width: calc(100% - 68px); max-width: 360px; margin-top: 54px; }
+.bt-ph { display: flex; justify-content: space-between; font: 500 9.5px/1 var(--mono, monospace); letter-spacing: 0.2em; color: var(--muted-2, #8E8A97); }
+.bt-ph b { font-weight: 500; color: var(--amber, #F2A65A); }
+.bt-bar { margin-top: 9px; height: 3px; background: rgba(var(--ink-rgb, 236, 231, 225), 0.08); }
+.bt-bar i { display: block; height: 100%; width: 0; background: var(--amber, #F2A65A); box-shadow: 0 0 10px rgba(var(--accent-rgb, 242, 166, 90), 0.6); transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .boot *, .boot::before { animation-duration: 0.01s !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; }
+  .bt-a0, .bt-a1 { opacity: 0.6; }
+}

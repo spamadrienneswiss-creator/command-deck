@@ -1,0 +1,54 @@
+{
+  "hosting": {
+    "public": "field-unit",
+    "ignore": [
+      "**/.*"
+    ],
+    "rewrites": [
+      { "source": "/m", "destination": "/manifest.html" },
+      { "source": "/s", "destination": "/schedule.html" },
+      { "source": "/s/**", "destination": "/schedule.html" }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css|json|html)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "/manifest.webmanifest",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/manifest+json"
+          },
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "emulators": {
+    "auth": {
+      "port": 9099
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "hosting": {
+      "port": 5000
+    },
+    "ui": {
+      "enabled": false
+    }
+  }
+}

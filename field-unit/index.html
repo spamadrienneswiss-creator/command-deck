@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0B0C11">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Field Unit">
+<title>Field Unit</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<!-- iPhone launch images: shown for a split second before the page runs, so there is no white flash. -->
+<link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/icons/launch/fieldunit-1320x2868.png">
+<link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/icons/launch/fieldunit-1290x2796.png">
+<link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/icons/launch/fieldunit-1284x2778.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/icons/launch/fieldunit-1242x2688.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/icons/launch/fieldunit-828x1792.png">
+<link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/icons/launch/fieldunit-1206x2622.png">
+<link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/icons/launch/fieldunit-1179x2556.png">
+<link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/icons/launch/fieldunit-1170x2532.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/icons/launch/fieldunit-1125x2436.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/icons/launch/fieldunit-750x1334.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="boot.css">
+</head>
+<body data-theme="dusk">
+<!-- Load-up screen (signal lock). Inline so it shows before any script runs; boot.js takes it from here. -->
+<div id="boot" class="boot radar" aria-hidden="true">
+  <div class="bt-word">FIELD UNIT</div>
+  <div class="bt-radar">
+    <i class="bt-ring r1"></i><i class="bt-ring r2"></i><i class="bt-ring r3"></i><i class="bt-cross"></i>
+    <div class="bt-sweep"></div>
+    <i class="bt-blip b1"></i><i class="bt-blip b2"></i><i class="bt-blip b3"></i><i class="bt-blip b4"></i>
+    <div class="bt-core"><svg width="64" height="64" viewBox="-4 -4 100 100"><polygon points="20.5,2 71.5,2 90,20.5 90,71.5 71.5,90 20.5,90 2,71.5 2,20.5" fill="var(--bg, #0B0C11)" stroke="currentColor" stroke-width="3"/><g transform="translate(-5 -1)"><path d="M38 36 L48 46 L38 56" fill="none" stroke="currentColor" stroke-width="3.2"/><path d="M52 58 H64" stroke="currentColor" stroke-width="3.2"/></g></svg></div>
+  </div>
+  <div class="bt-status bt-mono"><span class="bt-acq">ACQUIRING COMMAND DECK<span class="bt-dots"></span></span><span class="bt-lock">◆ SIGNAL LOCKED</span></div>
+  <div class="bt-sub" data-sub></div>
+  <div class="bt-hi" data-hi></div>
+</div>
+<script>
+  // Paint the load-up screen in the saved theme, not the default, from the very first frame.
+  try {
+    var s = JSON.parse(localStorage.getItem('fu.settings') || '{}');
+    if (s.theme) document.body.dataset.theme = s.theme;
+    var sh = JSON.parse(localStorage.getItem('fu.shared') || 'null');
+    var loc = sh && sh.location;
+    if (loc && loc.lat != null) document.querySelector('[data-sub]').textContent =
+      Math.abs(loc.lat).toFixed(2) + '\u00b0 ' + (loc.lat >= 0 ? 'N' : 'S') + ' \u00b7 ' + Math.abs(loc.lon).toFixed(2) + '\u00b0 ' + (loc.lon >= 0 ? 'E' : 'W');
+  } catch (e) {}
+</script>
+<div id="app">
+  <main id="view" class="view"></main>
+
+  <nav class="tabbar" aria-label="Main">
+    <button type="button" class="tab" data-view="today">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 9 L10 3 L17 9 V17 H3 Z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>TODAY</button>
+    <button type="button" class="tab" data-view="tasks">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5 H5 M8 5 H17 M3 10 H5 M8 10 H17 M3 15 H5 M8 15 H17" stroke="currentColor" stroke-width="1.5"/></svg>TASKS</button>
+    <button type="button" class="tab hail-tab" id="hailBtn" aria-label="Open comms terminal">
+      <span class="hail-oct"><svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="true"><path d="M6 9 L12 15 L6 21" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15 22 H24" stroke="currentColor" stroke-width="2.4"/></svg></span></button>
+    <button type="button" class="tab" data-view="calendar">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="14" height="13" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 8 H17 M7 2 V6 M13 2 V6" stroke="currentColor" stroke-width="1.5"/></svg>CALENDAR</button>
+    <button type="button" class="tab" data-view="notes">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 2 H13 L16 5 V18 H4 Z M13 2 V5 H16 M7 9 H13 M7 12 H13 M7 15 H11" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>NOTES</button>
+  </nav>
+</div>
+
+<input type="file" id="scanInput" accept="image/*" class="offscreen" tabindex="-1" aria-hidden="true">
+<div id="overlay"></div>
+<div id="sheet-root"></div>
+<div id="alert" class="alert" role="alert" hidden></div>
+<div id="toast" class="toast" role="status"></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

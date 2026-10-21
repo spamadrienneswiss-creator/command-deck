@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; media-src 'self' blob: mediastream:; worker-src 'self' blob:; connect-src 'self' https: blob: data:">
+<title>Command Deck</title>
+<link rel="stylesheet" href="../node_modules/@fontsource/chakra-petch/latin-300.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/chakra-petch/latin-400.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/chakra-petch/latin-500.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/chakra-petch/latin-600.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/ibm-plex-mono/latin-400.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/ibm-plex-mono/latin-500.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/share-tech-mono/latin-400.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/michroma/latin-400.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/space-mono/latin-400.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/space-mono/latin-700.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/exo-2/latin-200.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/exo-2/latin-300.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/exo-2/latin-400.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/exo-2/latin-500.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/exo-2/latin-600.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/b612-mono/latin-400.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/b612-mono/latin-700.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/vt323/latin-400.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/orbitron/latin-400.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/orbitron/latin-500.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/orbitron/latin-600.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/orbitron/latin-700.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/oxanium/latin-300.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/oxanium/latin-400.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/oxanium/latin-500.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/oxanium/latin-600.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/rajdhani/latin-400.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/rajdhani/latin-500.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/rajdhani/latin-600.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/rajdhani/latin-700.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/major-mono-display/latin-400.css">
+<link rel="stylesheet" href="../node_modules/gridstack/dist/gridstack.min.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="motion-full">
+
+<div id="console" class="console">
+  <div class="scanline" aria-hidden="true"></div>
+  <div class="alert-edge" aria-hidden="true"></div>
+  <div class="alert-strip" id="alertStrip" role="alert" hidden></div>
+
+  <header class="deck-header">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M11 1 L21 11 L11 21 L1 11 Z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M11 6 L16 11 L11 16 L6 11 Z" fill="currentColor" fill-opacity="0.4"/></svg>
+      <span id="consoleName" class="brand-name">COMMAND DECK</span>
+      <span class="trim-badge" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span id="operatorLabel" class="brand-op">// OPERATOR</span>
+    </div>
+    <div class="controls">
+      <div class="ctl">
+        <span class="ctl-label">WINDOW</span>
+        <div class="seg" id="segWindow" role="group" aria-label="Window mode">
+          <button type="button" data-v="top">ON TOP</button>
+          <button type="button" data-v="desk">DESKTOP</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <span class="ctl-label">MOTION</span>
+        <div class="seg" id="segMotion" role="group" aria-label="Motion level">
+          <button type="button" data-v="full">FULL</button>
+          <button type="button" data-v="subtle">SUBTLE</button>
+          <button type="button" data-v="still">STILL</button>
+        </div>
+      </div>
+      <button type="button" id="updChip" class="upd-chip" hidden title="A new version is downloaded. Restart to install it.">UPDATE READY · RESTART</button>
+      <div class="icon-btns">
+        <button type="button" id="btnLock" class="icon-btn" aria-label="Unlock layout to rearrange panels" title="Rearrange panels">
+          <svg class="ic-locked" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="2.5" y="6" width="9" height="6.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M4.5 6 V4 a2.5 2.5 0 0 1 5 0 V6" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+          <svg class="ic-unlocked" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="2.5" y="6" width="9" height="6.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M4.5 6 V4 a2.5 2.5 0 0 1 5 -0.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+        </button>
+        <button type="button" id="btnSettings" class="icon-btn" aria-label="Settings" title="Settings">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M7 1 V3 M7 11 V13 M1 7 H3 M11 7 H13 M2.8 2.8 L4.2 4.2 M9.8 9.8 L11.2 11.2 M2.8 11.2 L4.2 9.8 M9.8 4.2 L11.2 2.8" stroke="currentColor" stroke-width="1.3"/></svg>
+        </button>
+        <button type="button" id="btnMin" class="icon-btn" aria-label="Minimize to tray" title="Minimize to tray">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 10 H11" stroke="currentColor" stroke-width="1.5"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="grid-wrap">
+    <div class="grid-stack" id="grid">
+
+      <div class="grid-stack-item" gs-id="clock" gs-x="0" gs-y="0" gs-w="5" gs-h="4" gs-min-w="3" gs-min-h="3">
+        <section class="grid-stack-item-content panel" aria-label="Chronometer">
+          <i class="br br-tr amber"></i><i class="br br-bl lav"></i>
+          <div class="p-head"><span class="p-label">01 · CHRONOMETER</span><span class="live"><i class="dot"></i>LIVE</span></div>
+          <div class="clock-row">
+            <div id="clkTime" class="clk-time">--:--</div>
+            <div class="clk-side"><div id="clkSec" class="clk-sec">:--</div><div id="clkAmpm" class="clk-ampm"></div></div>
+          </div>
+          <div class="clock-foot">
+            <div class="clk-dates"><div id="clkDay" class="clk-day"></div><div id="clkDate" class="clk-date"></div></div>
+            <div class="cycle">
+              <div class="cycle-top"><span>DAY CYCLE</span><span id="cycPct"></span></div>
+              <div id="cycBar" class="cycle-bar"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="grid-stack-item" gs-id="weather" gs-x="5" gs-y="0" gs-w="3" gs-h="4" gs-min-w="2" gs-min-h="3">
+        <section class="grid-stack-item-content panel" aria-label="Weather">
+          <i class="br br-tr peach"></i>
+          <div class="p-head"><span class="p-label">02 · ATMOSPHERICS</span><span id="wxLoc" class="p-meta peach-t"></span></div>
+          <button type="button" class="wx-main" id="wxOpen" title="Open the full forecast on weather.com">
+            <span class="wx-temp"><span id="wxTemp">--</span><span class="wx-unit" id="wxUnit">°F</span></span>
+            <span class="wx-cond"><span id="wxIcon" class="wx-icon"></span><span id="wxCond" class="wx-cond-t">LINKING</span></span>
+          </button>
+          <div class="wx-stats" id="wxStats"></div>
+          <div class="wx-hours" id="wxHours"></div>
+        </section>
+      </div>
+
+      <div class="grid-stack-item" gs-id="computer" gs-x="8" gs-y="0" gs-w="4" gs-h="4" gs-min-w="3" gs-min-h="3">
+        <section class="grid-stack-item-content panel" aria-label="Ship computer">
+          <i class="br br-tr coral"></i>
+          <div class="p-head"><span class="p-label">03 · SHIP COMPUTER</span><span class="live" id="cmpStatus"><i class="dot"></i><span id="cmpStatusText">STANDBY</span></span></div>
+          <div class="cmp-row">
+            <div class="hail-wrap">
+              <div class="hail-ring" aria-hidden="true"></div>
+              <button type="button" id="btnHail" class="hail" aria-label="Hail the ship computer">
+                <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect x="12" y="4" width="10" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 16 a10 10 0 0 0 20 0 M17 26 V30 M12 30 H22" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+              </button>
+            </div>
+            <div class="cmp-side">
+              <div id="wave" class="wave" aria-hidden="true"></div>
+              <div class="cmp-title" id="cmpTitle">HAIL THE COMPUTER</div>
+              <div class="cmp-sub" id="cmpSub">Tap to speak · tasks, events, briefings</div>
+            </div>
+          </div>
+          <div class="cmp-timers" id="cmpTimers" hidden></div>
+          <div class="cmp-log" id="cmpLog" aria-live="polite"></div>
+        </section>
+      </div>
+
+      <div class="grid-stack-item" gs-id="calendar" gs-x="0" gs-y="4" gs-w="4" gs-h="8" gs-min-w="3" gs-min-h="5">
+        <section class="grid-stack-item-content panel" aria-label="Calendar">
+          <i class="br br-bl lav"></i>
+          <div class="p-head"><span class="p-label">04 · CALENDAR</span><button type="button" class="mini-btn" id="calToday">TODAY</button></div>
+          <div class="cal-nav">
+            <div class="cal-title"><span id="calMonth" class="cal-month"></span><span id="calYear" class="cal-year"></span></div>
+            <div class="cal-btns">
+              <button type="button" class="sq-btn" id="calPrev" aria-label="Previous month"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M6.5 1.5 L3 5 L6.5 8.5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>
+              <button type="button" class="sq-btn" id="calNext" aria-label="Next month"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M3.5 1.5 L7 5 L3.5 8.5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>
+            </div>
+          </div>
+          <div class="cal-dow"><span>SU</span><span>MO</span><span>TU</span><span>WE</span><span>TH</span><span>FR</span><span>SA</span></div>
+          <div class="cal-grid" id="calGrid"></div>
+          <div class="cal-legend" id="calLegend"></div>
+        </section>
+      </div>
+
+      <div class="grid-stack-item" gs-id="events" gs-x="4" gs-y="4" gs-w="3" gs-h="4" gs-min-w="2" gs-min-h="3">
+        <section class="grid-stack-item-content panel" aria-label="Upcoming events">
+          <i class="br br-tr lav"></i>
+          <div class="p-head"><span class="p-label">05 · UPCOMING</span><span id="evRange" class="p-meta"></span></div>
+          <div class="ev-list scroll" id="evList"></div>
+          <button type="button" class="ghost-btn" id="btnNewEvent">+ NEW EVENT</button>
+        </section>
+      </div>
+
+      <div class="grid-stack-item" gs-id="notes" gs-x="4" gs-y="8" gs-w="3" gs-h="4" gs-min-w="2" gs-min-h="3">
+        <section class="grid-stack-item-content panel notes-panel" aria-label="Notepad">
+          <i class="br br-tr amber"></i><i class="br br-bl lav"></i>
+          <div class="p-head">
+            <span class="p-label">07 · NOTEPAD <span id="ntCount" class="amber-t"></span></span>
+            <span class="nt-tools">
+              <button type="button" class="sq-btn" id="btnNoteSearch" aria-label="Search notes" title="Search notes"><svg width="12" height="12" viewBox="0 0 18 18" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 12 L16 16" stroke="currentColor" stroke-width="1.8"/></svg></button>
+              <button type="button" class="accent-btn" id="btnNewNote">+ NOTE</button>
+            </span>
+          </div>
+          <input id="ntSearch" class="in nt-search" type="search" placeholder="Search notes" aria-label="Search notes" hidden>
+          <div class="nt-list scroll" id="ntList"></div>
+        </section>
+      </div>
+
+      <div class="grid-stack-item" gs-id="tasks" gs-x="7" gs-y="4" gs-w="5" gs-h="8" gs-min-w="3" gs-min-h="4">
+        <section class="grid-stack-item-content panel" aria-label="Task queue">
+          <i class="br br-tr amber"></i><i class="br br-bl lime"></i>
+          <div class="p-head">
+            <span class="p-label tk-head"><span>06 ·</span><span class="tk-views" role="tablist" aria-label="Task view"><button type="button" role="tab" data-tkview="queue" class="on">QUEUE</button><button type="button" role="tab" data-tkview="projects">PROJECTS</button><button type="button" role="tab" data-tkview="schedule">SCHEDULE</button></span><span id="tkCount" class="amber-t"></span></span>
+            <button type="button" class="accent-btn" id="btnAddTask">+ ADD TASK</button>
+          </div>
+          <div class="chips" id="tkChips"></div>
+          <div class="tk-list scroll" id="tkList"></div>
+          <form class="quick" id="quickForm" autocomplete="off">
+            <label class="quick-caret" for="quickInput">›</label>
+            <input id="quickInput" type="text" placeholder="Quick add: “Call Sam Friday at 3, high priority”" spellcheck="false">
+          </form>
+        </section>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="deck-footer">
+    <span id="footLeft"></span>
+    <span class="ticks" aria-hidden="true"></span>
+    <span id="footRight"></span>
+  </footer>
+
+  <div class="win-grip" id="winGrip" title="Resize" aria-hidden="true"></div>
+</div>
+
+<div id="boot" class="boot" aria-hidden="true">
+  <div class="boot-inner">
+    <div class="boot-mark">
+      <svg width="40" height="40" viewBox="0 0 22 22" aria-hidden="true"><path d="M11 1 L21 11 L11 21 L1 11 Z" fill="none" stroke="currentColor" stroke-width="1"/><path d="M11 6 L16 11 L11 16 L6 11 Z" fill="currentColor" fill-opacity="0.4"/></svg>
+    </div>
+    <div id="bootLines" class="boot-lines"></div>
+    <div class="boot-bar"><i id="bootFill"></i></div>
+  </div>
+</div>
+
+<div id="modalRoot"></div>
+<div id="toast" class="toast" role="status"></div>
+
+<script src="../node_modules/gridstack/dist/gridstack-all.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>

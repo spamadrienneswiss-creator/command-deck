@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0C11">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<!-- Add to Home Screen: opens full screen on this person's schedule (the link's path carries the key). -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Schedule" id="appTitle">
+<title>Schedule</title>
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<!-- iPhone launch images: shown for a split second before the page runs, so there is no white flash. -->
+<link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/icons/launch/relay-1320x2868.png">
+<link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/icons/launch/relay-1290x2796.png">
+<link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/icons/launch/relay-1284x2778.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/icons/launch/relay-1242x2688.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/icons/launch/relay-828x1792.png">
+<link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/icons/launch/relay-1206x2622.png">
+<link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/icons/launch/relay-1179x2556.png">
+<link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/icons/launch/relay-1170x2532.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/icons/launch/relay-1125x2436.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/icons/launch/relay-750x1334.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/manifest.css">
+<link rel="stylesheet" href="/boot.css">
+</head>
+<body data-theme="dusk" data-frame="dark" data-trim="none" class="pm-body sg-body">
+<!-- Load-up screen (DECK RELAY). Inline so it shows before any script runs; boot.js takes it from here. -->
+<div id="boot" class="boot relay" aria-hidden="true">
+  <div class="bt-scanline"></div>
+  <div class="bt-emblem"><svg width="104" height="104" viewBox="0 0 92 92">
+    <polygon class="bt-draw" points="21.6,4 70.4,4 88,21.6 88,70.4 70.4,88 21.6,88 4,70.4 4,21.6" fill="none" stroke="currentColor" stroke-width="2"/>
+    <polygon class="bt-glyph" points="26.3,12 65.7,12 80,26.3 80,65.7 65.7,80 26.3,80 12,65.7 12,26.3" fill="rgba(var(--accent-rgb, 242, 166, 90), 0.06)" stroke="rgba(var(--accent-rgb, 242, 166, 90), 0.25)" stroke-width="1"/>
+    <g class="bt-glyph">
+      <path d="M46 40 V54 M39 66 L46 54 L53 66" fill="none" stroke="currentColor" stroke-width="3"/>
+      <circle class="bt-da" cx="46" cy="37" r="3" fill="currentColor"/><circle class="bt-dg" cx="46" cy="37" r="3" fill="var(--lime, #B8E27A)"/>
+      <path class="bt-a0" d="M37 29 A11 11 0 0 0 37 45 M55 29 A11 11 0 0 1 55 45" fill="none" stroke="currentColor" stroke-width="2.6"/>
+      <path class="bt-a1" d="M30 23 A19 19 0 0 0 30 51 M62 23 A19 19 0 0 1 62 51" fill="none" stroke="currentColor" stroke-width="2.4"/>
+      <path class="bt-gg" d="M37 29 A11 11 0 0 0 37 45 M55 29 A11 11 0 0 1 55 45 M30 23 A19 19 0 0 0 30 51 M62 23 A19 19 0 0 1 62 51" fill="none" stroke="var(--lime, #B8E27A)" stroke-width="5" stroke-linecap="round"/>
+      <path class="bt-g" d="M37 29 A11 11 0 0 0 37 45 M55 29 A11 11 0 0 1 55 45" fill="none" stroke="var(--lime, #B8E27A)" stroke-width="2.6"/>
+      <path class="bt-g" d="M30 23 A19 19 0 0 0 30 51 M62 23 A19 19 0 0 1 62 51" fill="none" stroke="var(--lime, #B8E27A)" stroke-width="2.4"/>
+    </g></svg></div>
+  <div class="bt-word">DECK RELAY</div>
+  <div class="bt-log"><div class="bt-line"><i>▸</i><span class="t"></span><span class="r"></span></div><div class="bt-line"><i>▸</i><span class="t"></span><span class="r"></span></div><div class="bt-line"><i>▸</i><span class="t"></span><span class="r"></span></div></div>
+  <div class="bt-prog"><div class="bt-ph"><span>RECEIVING</span><b data-pct>000%</b></div><div class="bt-bar"><i></i></div></div>
+  <div class="bt-hi" data-hi></div>
+</div>
+<div id="pm" class="pm"></div>
+<div id="toast" class="toast" role="status"></div>
+<script type="module" src="/schedule.js"></script>
+</body>
+</html>

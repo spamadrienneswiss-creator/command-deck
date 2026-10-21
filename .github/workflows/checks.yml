@@ -1,0 +1,32 @@
+# Tests and the Firestore security rules check. Runs on every push to main, and before every release.
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci
+      - name: Unit tests
+        run: npm test
+      - name: Firestore security rules
+        run: npx --yes firebase-tools@15 emulators:exec --only firestore --project demo-command-deck "node test/rules-test.mjs"

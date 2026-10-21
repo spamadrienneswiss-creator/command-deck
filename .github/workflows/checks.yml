@@ -1,9 +1,8 @@
-# Tests and the Firestore security rules check. Runs on every push to main, and before every release.
+# Tests and the Firestore security rules check. The Release workflow runs this on every push to main,
+# before anything ships.
 name: Checks
 
 on:
-  push:
-    branches: [main]
   pull_request:
   workflow_call:
   workflow_dispatch:

@@ -230,10 +230,10 @@ npm run deploy -- --project ID   # publish Field Unit + security rules by hand
 
 ```
 npm run bump -- 1.11.1        # sets the version in package.json and both apps
-git commit -am "v1.11.1" && git tag v1.11.1 && git push && git push --tags
+git commit -am "v1.11.1" && git push
 ```
 
-The tag starts `.github/workflows/release.yml`: tests and the rules check, then the Windows installer is published as a GitHub Release (installed copies pick it up through electron-updater), then Field Unit, the shared-link pages and the rules are deployed to Firebase. Deploying needs the repository secret `FIREBASE_SERVICE_ACCOUNT` (a service-account key with the Firebase Admin role); see FIELD-UNIT-SETUP.md.
+A push to main with a version that isn't released yet starts the full `.github/workflows/release.yml` (other pushes just run the checks): tests and the rules check, then the Windows installer is published as a GitHub Release (installed copies pick it up through electron-updater), then Field Unit, the shared-link pages and the rules are deployed to Firebase. Deploying needs the repository secret `FIREBASE_SERVICE_ACCOUNT` (a service-account key with the Firebase Admin role); see FIELD-UNIT-SETUP.md.
 
 - `main.js`: window, tray, storage, IPC, private `deck://` file protocol
 - `src/commands.js`: natural-language parsing (chrono-node)

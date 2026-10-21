@@ -1,4 +1,6 @@
-# Builds and ships a new version whenever a version tag (like v1.11.0) is pushed.
+# Builds and ships a new version whenever main gets a version number that hasn't been released yet
+# (npm run bump -- 1.11.1, commit, push). Pushes that don't change the version just run the checks.
+#   0. version: is package.json's version already a release?
 #   1. checks: unit tests + the Firestore security rules (a release stops here if anything fails)
 #   2. windows: builds the installer and publishes it as a GitHub Release. Command Deck
 #      checks these releases and updates itself.
@@ -7,6 +9,7 @@ name: Release
 
 on:
   push:
+    branches: [main]
     tags: ['v*']
   workflow_dispatch:
 
@@ -18,11 +21,31 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+      new: ${{ steps.v.outputs.new }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="v$(node -p "require('./package.json').version")"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "new=false" >> "$GITHUB_OUTPUT"; echo "$tag is already released; checks only."
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"; echo "Releasing $tag."
+          fi
+
   checks:
     uses: ./.github/workflows/checks.yml
 
   windows:
-    needs: checks
+    needs: [version, checks]
+    if: needs.version.outputs.new == 'true'
     runs-on: windows-latest
     timeout-minutes: 40
     steps:
@@ -45,7 +68,8 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
   field-unit:
-    needs: [checks, windows]
+    needs: [version, checks, windows]
+    if: needs.version.outputs.new == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

@@ -1,6 +1,6 @@
 // Sets the version everywhere it appears:  npm run bump -- 1.11.1
 // (package.json, the console's version label, Field Unit's version label).
-// Then commit and push a matching tag (v1.11.1) and the release workflow does the rest.
+// Then commit and push to main; the release workflow sees the new version and does the rest.
 const fs = require('fs');
 const path = require('path');
 const root = path.join(__dirname, '..');
@@ -17,4 +17,4 @@ for (const f of ['renderer/app.js', 'field-unit/app.js']) {
   if (next === src && !src.includes(`const VERSION = 'v${v}';`)) { console.error(`No VERSION line in ${f}`); process.exit(1); }
   fs.writeFileSync(p, next);
 }
-console.log(`Version set to ${v}. Commit, then tag v${v} and push the tag.`);
+console.log(`Version set to ${v}. Commit and push to main to release it.`);

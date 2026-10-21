@@ -19,10 +19,11 @@ const FRAME_MS = 33;
 const ALERT_CAP_MS = 2 * 60 * 1000;
 const LAYER_PRIORITY = 200; // iCUE's own lighting sits at 127
 
+// Deep, saturated tones: on LEDs any white mixed in reads as pastel.
 const COLORS = {
-  red: [255, 30, 20],
-  amber: [242, 150, 60],
-  green: [120, 230, 90],
+  red: [190, 0, 0],
+  amber: [230, 85, 0],
+  green: [0, 170, 25],
   blue: [40, 120, 255],
   coral: [255, 100, 75]
 };

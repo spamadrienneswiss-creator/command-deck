@@ -34,7 +34,8 @@ jobs:
         run: |
           tag="v$(node -p "require('./package.json').version")"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          draft=$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2>/dev/null || echo missing)
+          if [ "$draft" = "false" ]; then
             echo "new=false" >> "$GITHUB_OUTPUT"; echo "$tag is already released; checks only."
           else
             echo "new=true" >> "$GITHUB_OUTPUT"; echo "Releasing $tag."
@@ -62,7 +63,15 @@ jobs:
           v="v$(node -p "require('./package.json').version")"
           if [ "$v" != "$GITHUB_REF_NAME" ]; then echo "::error::package.json says $v but the tag is $GITHUB_REF_NAME"; exit 1; fi
       - name: Build installer and publish the release
-        run: npx electron-builder --win nsis --publish always
+        shell: bash
+        run: |
+          set -o pipefail
+          if ! npx electron-builder --win nsis --publish always 2>&1 | tee build.log; then
+            # Surface the end of the log as an annotation, so the failure can be read on the run page.
+            msg=$(tail -n 40 build.log | sed 's/\x1b\[[0-9;]*m//g' | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+            echo "::error title=Installer build failed::$msg"
+            exit 1
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'

@@ -95,8 +95,9 @@ jobs:
           gh release edit "$TAG" --draft=false --latest
 
   field-unit:
+    # Runs after a release, and on any push while the live Field Unit is behind package.json.
     needs: [version, checks, windows]
-    if: needs.version.outputs.new == 'true'
+    if: ${{ !cancelled() && needs.checks.result == 'success' && (needs.windows.result == 'success' || needs.windows.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -105,22 +106,32 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: node scripts/build-field.js
       - name: Deploy to Firebase
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           FIREBASE_PROJECT: ${{ vars.FIREBASE_PROJECT }}
+          WANT: ${{ needs.version.outputs.tag }}
         run: |
+          fail() {
+            msg=$(tail -n 40 "${1:-deploy.log}" 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+            echo "::error title=Field Unit deploy failed::$msg"; exit 1
+          }
           if [ -n "$FIREBASE_SERVICE_ACCOUNT" ]; then
             printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-key.json"
             export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-key.json"
-            [ -n "$FIREBASE_PROJECT" ] || FIREBASE_PROJECT=$(node -p "require(process.env.GOOGLE_APPLICATION_CREDENTIALS).project_id")
+            [ -n "$FIREBASE_PROJECT" ] || FIREBASE_PROJECT=$(node -p "require(process.env.GOOGLE_APPLICATION_CREDENTIALS).project_id" 2>/dev/null) \
+              || { echo "The FIREBASE_SERVICE_ACCOUNT secret isn't a valid key file (paste the whole .json)." > deploy.log; fail; }
           elif [ -z "$FIREBASE_TOKEN" ]; then
-            echo "::warning title=Field Unit not published::Add the FIREBASE_SERVICE_ACCOUNT secret so releases also update Field Unit. The Windows update shipped."
+            echo "::warning title=Field Unit not published::Add the FIREBASE_SERVICE_ACCOUNT secret so releases also update Field Unit."
             exit 0
           fi
-          if [ -z "$FIREBASE_PROJECT" ]; then echo "::error::Set the FIREBASE_PROJECT variable (your Firebase project ID)."; exit 1; fi
-          npx --yes firebase-tools@15 deploy --only hosting,firestore:rules --project "$FIREBASE_PROJECT" --non-interactive
+          [ -n "$FIREBASE_PROJECT" ] || { echo "Set the FIREBASE_PROJECT variable (your Firebase project ID)." > deploy.log; fail; }
+          live=$(curl -fsS "https://$FIREBASE_PROJECT.web.app/version.json" 2>/dev/null | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log('v'+JSON.parse(s).version)}catch(e){console.log('none')}})")
+          echo "Live Field Unit: $live · this build: $WANT"
+          if [ "$live" = "$WANT" ] && [ "${{ needs.version.outputs.new }}" != "true" ]; then echo "Field Unit is already up to date."; exit 0; fi
+          npm ci > deploy.log 2>&1 || fail
+          node scripts/build-field.js >> deploy.log 2>&1 || fail
+          npx --yes firebase-tools@15 deploy --only hosting,firestore:rules --project "$FIREBASE_PROJECT" --non-interactive > deploy.log 2>&1 || fail
+          tail -n 15 deploy.log
           rm -f "$RUNNER_TEMP/firebase-key.json"

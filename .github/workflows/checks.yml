@@ -14,6 +14,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      # The calendar tests read times the way Command Deck shows them, in the home time zone.
+      TZ: America/Los_Angeles
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5

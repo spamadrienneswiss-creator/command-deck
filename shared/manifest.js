@@ -38,7 +38,7 @@ export function mergeComments(a = [], b = []) {
 /** Subtasks made before they had ids get a stable one from their position. */
 export const subId = (s, i) => (s && s.id) || `s${i}`;
 
-export function mirrorOf(t) {
+export function mirrorOf(t, owner = '') {
   return clean({
     id: t.id,
     title: t.title || '',
@@ -48,6 +48,8 @@ export function mirrorOf(t) {
     doneAt: t.doneAt || null,
     doneBy: t.doneBy || null,
     addedBy: t.addedBy || null,
+    // Who it's assigned to ("Me" is the owner, shown by name).
+    assignee: t.assignee ? (t.assignee === 'Me' ? (owner || 'Me') : String(t.assignee).slice(0, 40)) : null,
     comments: t.comments || [],
     subtasks: (t.subtasks || []).filter((s) => s && String(s.text || '').trim()).map((s, i) => ({ id: subId(s, i), text: String(s.text).slice(0, 200), done: !!s.done })),
     pending: false
@@ -256,13 +258,13 @@ export class ManifestRelay {
       }
       const s = this.subs.get(token);
       if (!s || !s.ready) continue;
-      const want = new Map(tasks.filter((t) => t.projectId === m.projectId).map((t) => [t.id, mirrorOf(t)]));
+      const want = new Map(tasks.filter((t) => t.projectId === m.projectId).map((t) => [t.id, mirrorOf(t, owner)]));
       const batch = this.fb.writeBatch(this.db);
       let n = 0;
       for (const [id, data] of want) {
         const cur = s.tasks.get(id);
         if (cur && cur.pending && !this.seen.has(`${token}:${id}:${cur.gAt || 0}`)) continue; // not handled yet
-        const curCmp = cur ? mirrorOf({ ...cur, id }) : null;
+        const curCmp = cur ? mirrorOf({ ...cur, id }, owner) : null;
         if (!cur || cur.pending || cur.deleted || !same(curCmp, data)) { batch.set(this.ref(token, 'tasks', id), data); n++; }
       }
       for (const [id, cur] of s.tasks) {
@@ -293,7 +295,8 @@ export class ManifestRelay {
     }), expiresAt: ends === 'week' ? this.fb.Timestamp.fromMillis(now + 7 * 864e5) : null });
     // Tasks are copied out right away so the link works the moment it's opened.
     const batch = this.fb.writeBatch(this.db);
-    this.h.getTasks().filter((t) => t.projectId === projectId).forEach((t) => batch.set(this.ref(token, 'tasks', t.id), mirrorOf(t)));
+    const owner = this.h.operatorName ? this.h.operatorName() : '';
+    this.h.getTasks().filter((t) => t.projectId === projectId).forEach((t) => batch.set(this.ref(token, 'tasks', t.id), mirrorOf(t, owner)));
     await batch.commit();
     return token;
   }

@@ -174,7 +174,8 @@ function draw() {
     const subs = Array.isArray(t.subtasks) ? t.subtasks : [];
     const subsOpen = subs.length && P.subs.has(t.id);
     const subCount = subs.length ? `<span class="pm-subcount">${subs.filter((s) => s.done).length}/${subs.length} SUBTASKS ${subsOpen ? '▴' : '▾'}</span>` : '';
-    const meta = (t.done ? `DONE${t.doneBy ? ` BY ${esc(t.doneBy.toUpperCase())}` : ''}` : `${dueText(t)}${t.addedBy ? ` · ADDED BY ${esc(t.addedBy.toUpperCase())}` : ''}`) + subCount;
+    const who = t.assignee ? `<span class="pm-who" title="Assigned to ${esc(t.assignee)}"><svg width="9" height="10" viewBox="0 0 9 10" aria-hidden="true"><circle cx="4.5" cy="3" r="2.2" fill="none" stroke="currentColor" stroke-width="1.1"/><path d="M0.8 9.5 a3.7 3.7 0 0 1 7.4 0" fill="none" stroke="currentColor" stroke-width="1.1"/></svg>${esc(t.assignee.toUpperCase())}</span>` : '';
+    const meta = (t.done ? `DONE${t.doneBy ? ` BY ${esc(t.doneBy.toUpperCase())}` : ''}` : `${dueText(t)}${t.addedBy ? ` · ADDED BY ${esc(t.addedBy.toUpperCase())}` : ''}`) + subCount + who;
     const subList = subsOpen ? `<div class="pm-subs">${subs.map((s) => `<button type="button" class="pm-sub${s.done ? ' done' : ''}" data-sub="${esc(t.id)}|${esc(s.id)}" aria-pressed="${s.done}"><i>${s.done ? IC.check : ''}</i><span>${esc(s.text)}</span></button>`).join('')}</div>` : '';
     const comments = (t.comments || []).slice(-3).map((c) => `<div class="pm-comment"><span>${esc((c.by || '').toUpperCase())} · ${when(c.at || 0)}</span>${esc(c.text)}</div>`).join('');
     const btn = can('edit') ? `<button type="button" class="pm-icon${isOpen ? ' on' : ''}" data-open="${esc(t.id)}" aria-label="Edit ${esc(t.title)}">${IC.more}</button>`

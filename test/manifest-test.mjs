@@ -115,7 +115,8 @@ await check('sharing copies only that project, without private fields', async ()
   assert.strictEqual(m.look.theme, 'freighter');
   const t1 = docs.get(`manifests/${token}/tasks/t1`);
   assert(t1 && t1.title === 'Sweep floor');
-  assert(!('notes' in t1) && !('reminder' in t1) && !('assignee' in t1), 'private fields stay home');
+  assert(!('notes' in t1) && !('reminder' in t1), 'private fields stay home');
+  assert.strictEqual(t1.assignee, 'Sam', 'who it is assigned to goes along');
   assert(!docs.has(`manifests/${token}/tasks/t9`), 'other projects never leave');
 });
 
@@ -222,9 +223,14 @@ await check('STOP removes the link and its copy of the project', async () => {
   assert(![...docs.keys()].some((k) => k.startsWith(`manifests/${helperToken}`)));
 });
 
+await check('a task assigned to "Me" shows the owner by name', () => {
+  assert.strictEqual(mirrorOf({ id: 'x', title: 'T', assignee: 'Me' }, 'Nova').assignee, 'Nova');
+  assert.strictEqual(mirrorOf({ id: 'x', title: 'T' }, 'Nova').assignee, null);
+});
+
 await check('mirrorOf keeps only what guests should see', () => {
   const m = mirrorOf({ id: 'x', title: 'T', notes: 'secret', reminder: 5, assignee: 'A', comments: [], done: false });
-  assert.deepStrictEqual(Object.keys(m).sort(), ['addedBy', 'comments', 'done', 'doneAt', 'doneBy', 'due', 'dueHasTime', 'id', 'pending', 'subtasks', 'title']);
+  assert.deepStrictEqual(Object.keys(m).sort(), ['addedBy', 'assignee', 'comments', 'done', 'doneAt', 'doneBy', 'due', 'dueHasTime', 'id', 'pending', 'subtasks', 'title']);
 });
 
 relay.stop();

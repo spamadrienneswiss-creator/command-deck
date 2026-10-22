@@ -199,6 +199,23 @@ await check('finishing the project ends "when done" links only', async () => {
   app.projects[0].status = 'active';
 });
 
+await check('subtasks go out with their task, and guests can tick them (only the tick comes home)', async () => {
+  const p1 = app.projects.find((x) => x.id === 'p1');
+  p1.status = 'active';
+  const t = app.tasks.find((x) => x.id === 't2') || app.tasks.find((x) => x.projectId === 'p1');
+  t.subtasks = [{ id: 'a', text: 'Buy bins', done: false }, { text: 'Print labels', done: false }, { id: 'c', text: '', done: false }];
+  const tok = await relay.share({ projectId: 'p1', guest: 'Riley', level: 'check', ends: 'week' });
+  await tick(80);
+  const mirror = docs.get(`manifests/${tok}/tasks/${t.id}`);
+  assert.deepStrictEqual(mirror.subtasks, [{ id: 'a', text: 'Buy bins', done: false }, { id: 's1', text: 'Print labels', done: false }], 'blank subtasks stay home; old ones get a stable id');
+  await guestWrite(tok, t.id, { gBy: 'Riley', subtasks: [{ id: 'a', text: 'HACKED', done: true }, { id: 's1', text: 'Print labels', done: false }] });
+  await tick(120);
+  assert.deepStrictEqual(t.subtasks.map((x) => [x.text, x.done]), [['Buy bins', true], ['Print labels', false], ['', false]], 'only the tick is applied');
+  assert(app.activity.some((e) => /Riley checked off Buy bins/.test(e.text)));
+  assert.strictEqual(docs.get(`manifests/${tok}/tasks/${t.id}`).subtasks[0].text, 'Buy bins', 'the link shows our text again');
+  await relay.revoke(tok);
+});
+
 await check('STOP removes the link and its copy of the project', async () => {
   await relay.revoke(helperToken);
   await tick(100);
@@ -207,7 +224,7 @@ await check('STOP removes the link and its copy of the project', async () => {
 
 await check('mirrorOf keeps only what guests should see', () => {
   const m = mirrorOf({ id: 'x', title: 'T', notes: 'secret', reminder: 5, assignee: 'A', comments: [], done: false });
-  assert.deepStrictEqual(Object.keys(m).sort(), ['addedBy', 'comments', 'done', 'doneAt', 'doneBy', 'due', 'dueHasTime', 'id', 'pending', 'title']);
+  assert.deepStrictEqual(Object.keys(m).sort(), ['addedBy', 'comments', 'done', 'doneAt', 'doneBy', 'due', 'dueHasTime', 'id', 'pending', 'subtasks', 'title']);
 });
 
 relay.stop();

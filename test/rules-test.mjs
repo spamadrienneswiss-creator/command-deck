@@ -40,7 +40,7 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await db.doc(`manifests/${CLOSED}`).set(m({ closed: true }));
   await db.doc(`manifests/${EXPIRED}`).set(m({ expiresAt: TS(NOW - HOUR) }));
   await db.doc(`manifests/${HELPER}`).set(m({ level: 'helper' }));
-  for (const t of [TOK, CLOSED, EXPIRED, HELPER]) await db.doc(`manifests/${t}/tasks/k1`).set({ id: 'k1', title: 'Paint', done: false });
+  for (const t of [TOK, CLOSED, EXPIRED, HELPER]) await db.doc(`manifests/${t}/tasks/k1`).set({ id: 'k1', title: 'Paint', done: false, subtasks: [{ id: 'a', text: 'Tape edges', done: false }, { id: 'b', text: 'First coat', done: false }] });
   const r = (extra) => ({ deckId: 'deck1', guest: 'Jordan', closed: false, expiresAt: TS(NOW + 7 * 24 * HOUR), ...extra });
   await db.doc(`rosters/${ROSTER}`).set(r());
   await db.doc(`rosters/${ROSTER_OFF}`).set(r({ closed: true }));
@@ -104,6 +104,12 @@ await check('project links cannot be listed by guests', async () => {
 await check('a check-off guest can tick a task, not rename it', async () => {
   await assertSucceeds(as('g1').doc(`manifests/${TOK}/tasks/k1`).update({ done: true, doneAt: NOW, doneBy: 'Jordan', pending: true, gBy: 'Jordan', gAt: NOW }));
   await assertFails(as('g1').doc(`manifests/${TOK}/tasks/k1`).update({ title: 'Hacked', pending: true, gBy: 'Jordan', gAt: NOW }));
+});
+await check('any guest can tick a subtask, but not add or remove subtasks', async () => {
+  const st = (a, b, extra) => [{ id: 'a', text: 'Tape edges', done: a }, { id: 'b', text: 'First coat', done: b }, ...(extra || [])];
+  await assertSucceeds(as('g1').doc(`manifests/${TOK}/tasks/k1`).update({ subtasks: st(true, false), pending: true, gBy: 'Jordan', gAt: NOW }));
+  await assertFails(as('g1').doc(`manifests/${TOK}/tasks/k1`).update({ subtasks: st(true, false, [{ id: 'z', text: 'Extra', done: false }]), pending: true, gBy: 'Jordan', gAt: NOW }));
+  await assertFails(as('g1').doc(`manifests/${TOK}/tasks/k1`).update({ subtasks: [{ id: 'a', text: 'Tape edges', done: true }], pending: true, gBy: 'Jordan', gAt: NOW }));
 });
 await check('a closed or expired project link refuses guests', async () => {
   await assertFails(as('g1').doc(`manifests/${CLOSED}/tasks/k1`).get());

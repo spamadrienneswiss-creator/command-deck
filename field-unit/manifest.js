@@ -23,6 +23,7 @@ const P = {
   name: '',
   tab: 'list',
   open: null, // task id with its note/edit drawer open
+  subs: new Set(), // task ids with their subtasks showing
   sent: 0,
   state: 'loading', // loading | invalid | ended | welcome | main | error
   error: ''
@@ -170,7 +171,11 @@ function draw() {
   const logs = logEntries();
   const row = (t) => {
     const isOpen = P.open === t.id;
-    const meta = t.done ? `DONE${t.doneBy ? ` BY ${esc(t.doneBy.toUpperCase())}` : ''}` : `${dueText(t)}${t.addedBy ? ` · ADDED BY ${esc(t.addedBy.toUpperCase())}` : ''}`;
+    const subs = Array.isArray(t.subtasks) ? t.subtasks : [];
+    const subsOpen = subs.length && P.subs.has(t.id);
+    const subCount = subs.length ? `<span class="pm-subcount">${subs.filter((s) => s.done).length}/${subs.length} SUBTASKS ${subsOpen ? '▴' : '▾'}</span>` : '';
+    const meta = (t.done ? `DONE${t.doneBy ? ` BY ${esc(t.doneBy.toUpperCase())}` : ''}` : `${dueText(t)}${t.addedBy ? ` · ADDED BY ${esc(t.addedBy.toUpperCase())}` : ''}`) + subCount;
+    const subList = subsOpen ? `<div class="pm-subs">${subs.map((s) => `<button type="button" class="pm-sub${s.done ? ' done' : ''}" data-sub="${esc(t.id)}|${esc(s.id)}" aria-pressed="${s.done}"><i>${s.done ? IC.check : ''}</i><span>${esc(s.text)}</span></button>`).join('')}</div>` : '';
     const comments = (t.comments || []).slice(-3).map((c) => `<div class="pm-comment"><span>${esc((c.by || '').toUpperCase())} · ${when(c.at || 0)}</span>${esc(c.text)}</div>`).join('');
     const btn = can('edit') ? `<button type="button" class="pm-icon${isOpen ? ' on' : ''}" data-open="${esc(t.id)}" aria-label="Edit ${esc(t.title)}">${IC.more}</button>`
       : can('notes') ? `<button type="button" class="pm-icon${isOpen ? ' on' : ''}" data-open="${esc(t.id)}" aria-label="Add a note to ${esc(t.title)}">${IC.note}${(t.comments || []).length ? `<b>${t.comments.length}</b>` : ''}</button>` : '';
@@ -193,9 +198,9 @@ function draw() {
     return `<div class="pm-row${t.done ? ' done' : ''}">
       <div class="pm-row-main">
         <button type="button" class="tbox" data-toggle="${esc(t.id)}" aria-label="${t.done ? 'Mark not done' : 'Mark done'}: ${esc(t.title)}"><i>${t.done ? IC.check : ''}</i></button>
-        <div class="pm-row-text"><div class="pm-row-title">${esc(t.title)}</div><div class="pm-row-meta">${meta}</div></div>
+        <div class="pm-row-text"${subs.length ? ` role="button" tabindex="0" data-subs="${esc(t.id)}" aria-expanded="${!!subsOpen}"` : ''}><div class="pm-row-title">${esc(t.title)}</div><div class="pm-row-meta">${meta}</div></div>
         ${btn}
-      </div>${comments}${drawer}</div>`;
+      </div>${subList}${comments}${drawer}</div>`;
   };
 
   root.innerHTML = `
@@ -245,6 +250,16 @@ function toggle(id) {
   write(() => fb.updateDoc(taskRef(id), { done, doneAt: done ? new Date().toISOString() : null, doneBy: done ? P.name : null, ...stamp() }));
 }
 
+// Tick a subtask. Shown right away; the owner's app applies the tick to the real task.
+function tickSub(taskId, subId) {
+  const t = P.tasks.get(taskId);
+  if (!t || !Array.isArray(t.subtasks)) return;
+  const subtasks = t.subtasks.map((s) => (s.id === subId ? { ...s, done: !s.done } : s));
+  P.tasks.set(taskId, { ...t, subtasks });
+  render();
+  write(() => fb.updateDoc(taskRef(taskId), { subtasks, ...stamp() }));
+}
+
 function addComment(id, text) {
   const t = P.tasks.get(id);
   if (!t || !text.trim()) return null;
@@ -265,6 +280,10 @@ document.addEventListener('click', (e) => {
   const t = e.target;
   const tg = t.closest('[data-toggle]');
   if (tg) { toggle(tg.dataset.toggle); return; }
+  const sb = t.closest('[data-sub]');
+  if (sb) { const [tid, sid] = sb.dataset.sub.split('|'); tickSub(tid, sid); return; }
+  const sv = t.closest('[data-subs]');
+  if (sv) { const id = sv.dataset.subs; if (P.subs.has(id)) P.subs.delete(id); else P.subs.add(id); render(); return; }
   const op = t.closest('[data-open]');
   if (op) { P.open = P.open === op.dataset.open ? null : op.dataset.open; render(); const ta = document.querySelector('.pm-drawer textarea, .pm-drawer input'); if (ta && P.open) ta.focus(); return; }
   const tab = t.closest('[data-tab]');

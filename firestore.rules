@@ -47,9 +47,9 @@ service cloud.firestore {
     function live(m) { return m.get('closed', false) != true && (m.get('expiresAt', null) == null || request.time < m.expiresAt); }
     function owns(m) { return isMember(m.deckId); }
     function guestKeys(level) {
-      return level == 'helper' ? ['done', 'doneAt', 'doneBy', 'comments', 'title', 'due', 'dueHasTime', 'deleted', 'pending', 'gBy', 'gAt']
-           : level == 'notes' ? ['done', 'doneAt', 'doneBy', 'comments', 'pending', 'gBy', 'gAt']
-           : ['done', 'doneAt', 'doneBy', 'pending', 'gBy', 'gAt'];
+      return level == 'helper' ? ['done', 'doneAt', 'doneBy', 'comments', 'subtasks', 'title', 'due', 'dueHasTime', 'deleted', 'pending', 'gBy', 'gAt']
+           : level == 'notes' ? ['done', 'doneAt', 'doneBy', 'comments', 'subtasks', 'pending', 'gBy', 'gAt']
+           : ['done', 'doneAt', 'doneBy', 'subtasks', 'pending', 'gBy', 'gAt'];
     }
     function guestWrite(m) {
       return signedIn() && live(m) && request.resource.data.pending == true
@@ -69,7 +69,10 @@ service cloud.firestore {
         // Guests change only what their access level allows.
         allow update: if guestWrite(manifest(token))
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(guestKeys(manifest(token).level))
-          && (!('title' in request.resource.data) || request.resource.data.title.size() <= 200);
+          && (!('title' in request.resource.data) || request.resource.data.title.size() <= 200)
+          // Subtasks can be ticked, not added or removed (the owner's app keeps their text).
+          && (!('subtasks' in request.resource.data) || (request.resource.data.subtasks is list
+              && request.resource.data.subtasks.size() == resource.data.get('subtasks', []).size()));
         allow create: if guestWrite(manifest(token)) && manifest(token).level == 'helper'
           && request.resource.data.id == taskId && request.resource.data.title is string
           && request.resource.data.title.size() <= 200

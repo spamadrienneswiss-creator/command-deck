@@ -35,6 +35,9 @@ export function mergeComments(a = [], b = []) {
 }
 
 /** What a guest may see of one task (never the owner's private notes, reminders or assignee). */
+/** Subtasks made before they had ids get a stable one from their position. */
+export const subId = (s, i) => (s && s.id) || `s${i}`;
+
 export function mirrorOf(t) {
   return clean({
     id: t.id,
@@ -46,6 +49,7 @@ export function mirrorOf(t) {
     doneBy: t.doneBy || null,
     addedBy: t.addedBy || null,
     comments: t.comments || [],
+    subtasks: (t.subtasks || []).filter((s) => s && String(s.text || '').trim()).map((s, i) => ({ id: subId(s, i), text: String(s.text).slice(0, 200), done: !!s.done })),
     pending: false
   });
 }
@@ -185,6 +189,19 @@ export class ManifestRelay {
         } else if (g[f] !== undefined && !same(g[f], main[f])) patch[f] = g[f];
       }
       if (patch.title) patch.title = String(patch.title).slice(0, 200);
+      // Subtasks: guests at every level can tick them. Only the ticks come back; the text is always ours.
+      if (Array.isArray(g.subtasks) && Array.isArray(main.subtasks) && main.subtasks.length) {
+        const ticks = new Map(g.subtasks.filter((x) => x && x.id).map((x) => [x.id, !!x.done]));
+        let changed = false;
+        const next = main.subtasks.map((st, i) => {
+          const id = subId(st, i);
+          if (!ticks.has(id) || ticks.get(id) === !!st.done) return st;
+          changed = true;
+          activity.push(`${by} ${ticks.get(id) ? 'checked off' : 'unchecked'} ${st.text} (${main.title})`);
+          return { ...st, done: ticks.get(id) };
+        });
+        if (changed) patch.subtasks = next;
+      }
       if (Object.keys(patch).length) changes.push({ type: 'update', projectId: m.projectId, taskId: id, task: patch, by });
       if (!!g.done !== !!main.done) {
         changes.push({ type: g.done ? 'complete' : 'reopen', projectId: m.projectId, taskId: id, by });

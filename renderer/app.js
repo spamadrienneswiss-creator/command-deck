@@ -12,7 +12,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.13.2';
+const VERSION = 'v1.14.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -148,8 +148,23 @@ function saveMeta() {
 
 // ---------------------------------------------------------------- settings
 // Each theme has its own typeface; the Typeface setting can override it.
-const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612' };
-const LIGHT_THEMES = new Set(['moonbase', 'cryo']);
+const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur' };
+const LIGHT_THEMES = new Set(['moonbase', 'cryo', 'skydock']);
+// Some themes rename panels to fit their world. Only the label text changes.
+const PANEL_NAMES = {
+  skydock: { computer: '03 · STATION COMPUTER' },
+  vector: { clock: 'PRIMARY · CHRONO', weather: 'EXTERNAL', computer: 'CO-PILOT', calendar: 'FLIGHT PLAN', events: 'WAYPOINTS', notes: 'LOGBOOK' }
+};
+function applyPanelNames(theme) {
+  const names = PANEL_NAMES[theme] || {};
+  document.querySelectorAll('.grid-stack-item[gs-id] .p-label:not(.tk-head)').forEach((el) => {
+    const id = el.closest('.grid-stack-item').getAttribute('gs-id');
+    const node = [...el.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim());
+    if (!node) return;
+    if (el.dataset.name === undefined) el.dataset.name = node.textContent;
+    node.textContent = names[id] ? names[id] + ' ' : el.dataset.name;
+  });
+}
 const look = { theme: 'dusk', font: 'auto', ink: 'theme' };
 function applyLook(theme = look.theme, font = look.font, ink = look.ink) {
   look.theme = theme || 'dusk';
@@ -160,6 +175,7 @@ function applyLook(theme = look.theme, font = look.font, ink = look.ink) {
   b.dataset.theme = look.theme;
   b.dataset.font = look.font === 'auto' ? (THEME_FONT[look.theme] || 'chakra') : look.font;
   if (LIGHT_THEMES.has(look.theme)) b.dataset.light = '1'; else delete b.dataset.light;
+  applyPanelNames(look.theme);
 }
 
 function applySettings() {
@@ -1161,6 +1177,24 @@ function renderFooter() {
   parts2.push(`LAYOUT ${s.layoutLocked ? 'LOCKED' : '<span class="warn">UNLOCKED</span>'}`, VERSION);
   $('#footRight').innerHTML = parts2.join(' · ');
   if (S.calErrors.length) $('#footLeft').title = S.calErrors.map((e) => `${e.name}: ${e.message}`).join('\n');
+  renderSwitches(fu);
+}
+
+// Vector's switch panel: backlit switches along the bottom edge. ON TOP and LIGHTS can be flipped; QUIET and UPLINK show state.
+function renderSwitches(fu) {
+  const el = $('#switches');
+  if (!el) return;
+  if (look.theme !== 'vector') { el.innerHTML = ''; return; }
+  const s = S.settings;
+  const sw = [
+    ['top', 'ON TOP', s.windowMode === 'top', 'nav', 'Keep the deck on top of other windows'],
+    ['lights', 'LIGHTS', !!(s.lighting && s.lighting.enabled), 'burn', 'Rig lighting on or off'],
+    ['quiet', 'QUIET', isQuiet(), 'caution', ''],
+    ['uplink', 'UPLINK', !!(fu.linked && fu.status === 'online'), 'go', '']
+  ];
+  el.innerHTML = sw.map(([k, l, on, c, tip]) => (tip
+    ? `<button type="button" class="sw ${c}${on ? ' on' : ''}" data-sw="${k}" aria-pressed="${on}" title="${tip}"><i></i>${l}</button>`
+    : `<span class="sw ${c}${on ? ' on' : ''}"><i></i>${l}</span>`)).join('');
 }
 
 function renderAll() {
@@ -2292,6 +2326,14 @@ function wire() {
     if (!b) return;
     sounds.click();
     saveSettings({ ...S.settings, windowMode: b.dataset.v }, { refetch: false });
+  });
+  $('#switches').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-sw]');
+    if (!b) return;
+    sounds.click();
+    const s = S.settings;
+    if (b.dataset.sw === 'top') saveSettings({ ...s, windowMode: s.windowMode === 'top' ? 'desk' : 'top' }, { refetch: false });
+    if (b.dataset.sw === 'lights') saveSettings({ ...s, lighting: { ...s.lighting, enabled: !(s.lighting && s.lighting.enabled) } }, { refetch: false });
   });
   $('#segMotion').addEventListener('click', (e) => {
     const b = e.target.closest('button');

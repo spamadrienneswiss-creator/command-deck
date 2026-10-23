@@ -12,7 +12,7 @@ import { bootScreen } from './boot.js';
 const boot = bootScreen();
 
 const { $, esc } = U;
-const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612' };
+const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur' };
 
 const P = {
   token: (location.hash || '').replace(/^#/, '').replace(/[^A-Za-z0-9]/g, ''),
@@ -67,7 +67,7 @@ function applyLook() {
   b.dataset.font = !lk.font || lk.font === 'auto' ? (THEME_FONT[theme] || 'chakra') : lk.font;
   b.dataset.ink = lk.ink || 'theme';
   b.dataset.trim = lk.trim || 'none';
-  if (theme === 'moonbase' || theme === 'cryo') b.dataset.light = '1'; else delete b.dataset.light;
+  if (theme === 'moonbase' || theme === 'cryo' || theme === 'skydock') b.dataset.light = '1'; else delete b.dataset.light;
 }
 
 function sortTasks(list) {

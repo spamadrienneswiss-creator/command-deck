@@ -9,7 +9,7 @@ import { RosterRelay, scheduleUrl, DEFAULT_TYPES, weekStart, addDays, weekLabel,
 import { bootScreen } from './boot.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.13.2';
+const VERSION = 'v1.14.0';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
@@ -121,31 +121,34 @@ function persist(kind) {
 }
 
 // ---------------------------------------------------------------- small UI helpers
-const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612' };
-const THEME_BG = { moonbase: '#DADDE1', blueprint: '#0E2A47', cryo: '#E6F0F7', freighter: '#0A0C07' };
+const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur' };
+const THEME_BG = { moonbase: '#DADDE1', blueprint: '#0E2A47', cryo: '#E6F0F7', freighter: '#0A0C07', skydock: '#EEF1F4', vector: '#03050A' };
 const THEMES = [
   ['dusk', 'DUSK', ['#F2A65A', '#A8B0D8']], ['space', 'DEEP SPACE', ['#4FD1E8', '#9FB7FF']], ['red', 'RED ALERT', ['#FF4D4D', '#FFD27A']],
   ['terminal', 'TERMINAL', ['#39FF88', '#1F3328']], ['retro', 'RETRO', ['#5EE7FF', '#FF7BD5']],
   ['moonbase', "MOONBASE '79", ['#F05A1A', '#E4E6E9']], ['blueprint', 'BLUEPRINT', ['#8EC5FF', '#0E2A47']],
-  ['cryo', 'CRYO', ['#2D8CFF', '#D6E7F3']], ['freighter', 'FREIGHTER', ['#9CF2A8', '#E8C547']]
+  ['cryo', 'CRYO', ['#2D8CFF', '#D6E7F3']], ['freighter', 'FREIGHTER', ['#9CF2A8', '#E8C547']],
+  ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']]
 ];
 const FONTS = [
   ['auto', 'THEME DEFAULT', ''], ['chakra', 'CHAKRA', "'Chakra Petch'"], ['michroma', 'MICHROMA', "'Michroma Scaled'"],
   ['spacemono', 'SPACE MONO', "'Space Mono'"], ['exo2', 'EXO 2', "'Exo 2'"], ['b612', 'B612 MONO', "'B612 Mono'"],
   ['vt323', 'VT323', "'VT323 Scaled'"], ['orbitron', 'ORBITRON', "'Orbitron Scaled'"], ['oxanium', 'OXANIUM', "'Oxanium'"],
-  ['rajdhani', 'RAJDHANI', "'Rajdhani Scaled'"], ['sharetech', 'SHARE TECH MONO', "'Share Tech Mono'"], ['majormono', 'MAJOR MONO', "'Major Mono Scaled'"]
+  ['rajdhani', 'RAJDHANI', "'Rajdhani Scaled'"], ['sharetech', 'SHARE TECH MONO', "'Share Tech Mono'"], ['majormono', 'MAJOR MONO', "'Major Mono Scaled'"],
+  ['quantico', 'QUANTICO', "'Quantico'"], ['tektur', 'TEKTUR', "'Tektur'"]
 ];
 const INKS = [['theme', 'THEME', null], ['amber', 'AMBER CRT', '#FFC27A'], ['phosphor', 'PHOSPHOR', '#A8F5B4'], ['ice', 'ICE', '#CFE6FF'], ['arctic', 'ARCTIC', '#FFFFFF'], ['rose', 'ROSE', '#F6C1CF']];
 const FRAMES = [['dark', 'DARK', '#14151B'], ['bone', 'BONE', '#EEDDC3'], ['gunmetal', 'GUNMETAL', '#3A3E44'], ['olive', 'OLIVE DRAB', '#4A5236'], ['navy', 'MIDNIGHT NAVY', '#16264A']];
 const TRIMS = [['none', 'NONE', []], ['sunset', 'SUNSET', ['#B5432A', '#E07A2E', '#E9B23B']], ['mission', 'MISSION', ['#E5532D', '#EADBC2', '#3F68A6']], ['arcade', 'ARCADE', ['#D6457E', '#F08A3C', '#F2C94C', '#3FB3A8']],
-  ['hazard', 'HAZARD', ['#E8C547', '#1A1A1A', '#E8C547', '#1A1A1A']], ['aurora', 'AURORA', ['#2BB3A3', '#6FD08C', '#8E6CD8']], ['gulf', 'GULF', ['#8FC1E3', '#F28A2E', '#8FC1E3']]];
+  ['hazard', 'HAZARD', ['#E8C547', '#1A1A1A', '#E8C547', '#1A1A1A']], ['aurora', 'AURORA', ['#2BB3A3', '#6FD08C', '#8E6CD8']], ['gulf', 'GULF', ['#8FC1E3', '#F28A2E', '#8FC1E3']],
+  ['dock', 'DOCK LIGHTS', ['#1FB8F0', '#F4B41A', '#FF4F86', '#EE8A2E']]];
 function applyTheme() {
   const theme = S.settings.theme || 'dusk';
   const font = S.settings.font || 'auto';
   document.body.dataset.theme = theme;
   document.body.dataset.font = font === 'auto' ? (THEME_FONT[theme] || 'chakra') : font;
   document.body.dataset.ink = S.settings.ink || 'theme';
-  if (theme === 'moonbase' || theme === 'cryo') document.body.dataset.light = '1'; else delete document.body.dataset.light;
+  if (theme === 'moonbase' || theme === 'cryo' || theme === 'skydock') document.body.dataset.light = '1'; else delete document.body.dataset.light;
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = THEME_BG[theme] || '#0B0C11';
   document.body.dataset.frame = S.settings.frame || 'dark';
@@ -1299,7 +1302,7 @@ function viewSettings() {
       <div class="pills">${THEMES.map(([v, l, cs]) => `<button type="button" class="chip${(S.settings.theme || 'dusk') === v ? ' on' : ''}" data-theme-pick="${v}" style="--pc:${cs[0] === '#FFFFFF' ? cs[1] : cs[0]}"><span class="theme-sw" aria-hidden="true">${cs.map((c) => `<i style="background:${c}"></i>`).join('')}</span>${l}</button>`).join('')}</div></div>
     <div class="set-group"><span class="label">TYPEFACE</span>
       <div class="pills">${FONTS.map(([v, l, fam]) => `<button type="button" class="chip font-chip${(S.settings.font || 'auto') === v ? ' on' : ''}" data-font-pick="${v}"${fam ? ` style="font-family:${fam}"` : ''}>${l}</button>`).join('')}</div>
-      <div class="hint">Theme default follows the color theme: Moonbase uses Michroma, Blueprint Space Mono, Cryo Exo 2, Freighter B612 Mono.</div></div>
+      <div class="hint">Theme default follows the color theme: Moonbase uses Michroma, Blueprint Space Mono, Cryo Exo 2, Freighter B612 Mono, Skydock Quantico, Vector Tektur.</div></div>
     <div class="set-group"><span class="label">TEXT COLOR</span>
       <div class="pills">${INKS.map(([v, l, c]) => `<button type="button" class="chip${(S.settings.ink || 'theme') === v ? ' on' : ''}" data-ink-pick="${v}">${c ? `<span class="ink-sw" aria-hidden="true" style="background:${c}"></span>` : ''}${l}</button>`).join('')}</div>
       <div class="hint">Recolors the main text. Accents and warnings stay with the theme.</div></div>

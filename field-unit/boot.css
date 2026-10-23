@@ -88,3 +88,6 @@
   .boot *, .boot::before { animation-duration: 0.01s !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; }
   .bt-a0, .bt-a1 { opacity: 0.6; }
 }
+/* Light themes: a pale glow instead of the dark one. */
+body[data-light] .boot.relay { background: radial-gradient(ellipse 90% 50% at 50% 42%, #FFFFFF 0%, var(--bg, #E6EBF0) 70%); }
+body[data-light] .boot.relay::before { background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.025) 0 1px, transparent 1px 3px); }

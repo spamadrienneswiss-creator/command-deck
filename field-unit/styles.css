@@ -736,3 +736,77 @@ body[data-frame="bone"][data-ink]:not([data-ink="theme"]):not([data-light]) .vie
 .sc-reply.chg { color: var(--coral); }
 .sc-reply.none { color: var(--dim); }
 .sc-change { padding: 8px 10px; background: color-mix(in srgb, var(--coral) 8%, transparent); box-shadow: inset 2px 0 0 var(--coral); font: 400 12px/1.45 var(--mono); color: var(--text); }
+
+/* ---------- v1.14 typefaces ---------- */
+@font-face { font-family: 'Quantico'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/quantico-400.woff2) format('woff2'); }
+@font-face { font-family: 'Quantico'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/quantico-700.woff2) format('woff2'); }
+@font-face { font-family: 'Azeret Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/azeret-mono-400.woff2) format('woff2'); }
+@font-face { font-family: 'Azeret Mono'; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/azeret-mono-500.woff2) format('woff2'); }
+@font-face { font-family: 'Azeret Mono'; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/azeret-mono-600.woff2) format('woff2'); }
+@font-face { font-family: 'Tektur'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/tektur-400.woff2) format('woff2'); }
+@font-face { font-family: 'Tektur'; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/tektur-500.woff2) format('woff2'); }
+@font-face { font-family: 'Tektur'; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/tektur-600.woff2) format('woff2'); }
+@font-face { font-family: 'Tektur'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/tektur-700.woff2) format('woff2'); }
+@font-face { font-family: 'Geist Mono'; font-style: normal; font-weight: 300; font-display: swap; src: url(fonts/geist-mono-300.woff2) format('woff2'); }
+@font-face { font-family: 'Geist Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/geist-mono-400.woff2) format('woff2'); }
+@font-face { font-family: 'Geist Mono'; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/geist-mono-500.woff2) format('woff2'); }
+@font-face { font-family: 'Geist Mono'; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/geist-mono-600.woff2) format('woff2'); }
+body[data-font="quantico"] { --display: 'Quantico', -apple-system, sans-serif; --mono: 'Azeret Mono', ui-monospace, Menlo, monospace; }
+body[data-font="tektur"] { --display: 'Tektur', -apple-system, sans-serif; --mono: 'Geist Mono', ui-monospace, Menlo, monospace; }
+
+/* ---------- Trim: Dock Lights ---------- */
+body[data-trim="dock"] { --t1: #1FB8F0; --t2: #F4B41A; --t3: #FF4F86; --t4: #EE8A2E; --trim-h: 4px; }
+body[data-trim="dock"] .card::before,
+body[data-theme="skydock"][data-trim="none"] .card::before { content: ''; position: absolute; left: 0; top: 0; right: auto; width: 46px; height: 4px; z-index: 1; pointer-events: none; background: #1FB8F0; box-shadow: 0 0 10px rgba(31, 184, 240, 0.8); }
+body[data-trim="dock"] .tabbar::before { height: 3px; background: linear-gradient(90deg, #1FB8F0 0 25%, #F4B41A 25% 50%, #FF4F86 50% 75%, #EE8A2E 75%); }
+
+/* ---------- Skydock ---------- */
+body[data-theme="skydock"] {
+  --bg: #E6EBF0;
+  --glow-bg: repeating-linear-gradient(90deg, transparent 0 129px, rgba(140, 153, 170, 0.2) 129px 130px), repeating-linear-gradient(180deg, transparent 0 95px, rgba(140, 153, 170, 0.16) 95px 96px), linear-gradient(180deg, #F2F4F7, #DCE2E8);
+  --panel: #FFFFFF; --panel-solid: #FFFFFF;
+  --line: #C3CCD6; --line-2: #DDE3E9; --line-3: #AEB8C4;
+  --text: #13233D; --text-hi: #0B1830; --text-2: #2B3C57; --muted: #4F5F78; --muted-2: #4F5F78; --dim: #8592A5;
+  --amber: #0A8FC7; --accent-rgb: 10, 143, 199; --accent-hi: #FFFFFF;
+  --peach: #B07300; --lav: #3D5C8F; --coral: #D62A63; --coral-hi: #A81D4B; --lime: #1E9A55;
+  --ink-rgb: 19, 35, 61;
+  --card-text: #13233D; --card-text-hi: #0B1830; --card-text-2: #2B3C57; --card-muted: #4F5F78; --card-dim: #8592A5; --card-line: #C3CCD6; --card-line-2: #DDE3E9; --card-line-3: #AEB8C4; --card-ink-rgb: 19, 35, 61;
+  --tab-bg: rgba(17, 26, 43, 0.98); --oct-bg: #111A2B; --sheet-bg: #F7F9FB; --sheet-back: rgba(10, 26, 63, 0.35);
+  --term-bg: #EEF2F6; --term-panel: #FFFFFF; --term-foot: rgba(228, 233, 238, 0.92);
+  --chamfer: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); --oct: circle(50%);
+}
+body[data-theme="skydock"] .card { background: linear-gradient(180deg, #FFFFFF 0%, #F1F4F7 70%, #E8EDF2 100%); box-shadow: inset 0 0 0 1px var(--line); }
+body[data-theme="skydock"] .card .br { display: none; }
+body[data-theme="skydock"] .eyebrow { display: inline-block; padding: 5px 8px; background: #111A2B; color: #7FDFFF; text-shadow: 0 0 8px rgba(31, 184, 240, 0.8); font-family: var(--display); font-weight: 700; }
+body[data-theme="skydock"] .h1 { font-weight: 700; }
+body[data-theme="skydock"] .tabbar { --text: #E6EEF8; --muted: #9FB4D6; --amber: #7FDFFF; box-shadow: inset 0 1px 0 #2B3A55; }
+body[data-theme="skydock"] .tabbar::after { content: ''; position: absolute; left: 14px; right: 14px; top: 5px; height: 4px; pointer-events: none; background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0 1.5px, transparent 1.9px) 0 0 / 20px 4px repeat-x; }
+body[data-theme="skydock"] .tab.on { text-shadow: 0 0 8px rgba(31, 184, 240, 0.8); }
+body[data-theme="skydock"] .hail-oct { color: #7FDFFF; background: radial-gradient(circle, #111A2B 0 60%, rgba(31, 184, 240, 0.2) 61%); box-shadow: inset 0 0 0 2px #1FB8F0; }
+body[data-theme="skydock"] .btn.primary, body[data-theme="skydock"] .ct-send { clip-path: none; }
+
+/* ---------- Vector ---------- */
+body[data-theme="vector"] {
+  --bg: #03050A;
+  --glow-bg: radial-gradient(1px 1px at 30px 40px, rgba(255, 255, 255, 0.8), transparent) 0 0 / 150px 160px, radial-gradient(1px 1px at 110px 100px, rgba(255, 255, 255, 0.55), transparent) 0 0 / 190px 210px,
+    radial-gradient(ellipse 160% 40% at 65% -8%, #0F2747 0%, #071226 40%, transparent 72%), #03050A;
+  --panel: rgba(8, 14, 21, 0.95); --panel-solid: #0A1219;
+  --line: #1C2733; --line-2: #16202A; --line-3: #2A3848;
+  --text: #DCE9F5; --text-hi: #FFFFFF; --text-2: #B9CCDD; --muted: #7E92A7; --muted-2: #7E92A7; --dim: #4B5B6D;
+  --amber: #FF7A2F; --accent-rgb: 255, 122, 47; --accent-hi: #FFD2B8;
+  --peach: #62D9FF; --lav: #9B8CFF; --coral: #FF3D57; --coral-hi: #FFA3B0; --lime: #4CF0A0;
+  --ink-rgb: 220, 233, 245;
+  --tab-bg: rgba(10, 13, 19, 0.97); --oct-bg: #0A1219; --sheet-bg: #0A0F16; --term-bg: #05080D; --term-panel: rgba(8, 14, 21, 0.95); --term-foot: rgba(10, 13, 19, 0.92);
+  --chamfer: inset(0 round 14px); --oct: circle(50%);
+}
+body[data-theme="vector"] .card {
+  background: radial-gradient(ellipse 120% 90% at 30% 0%, rgba(98, 217, 255, 0.07), transparent 55%), linear-gradient(rgba(98, 217, 255, 0.035) 1px, transparent 1px) 0 0 / 22px 22px, linear-gradient(90deg, rgba(98, 217, 255, 0.035) 1px, transparent 1px) 0 0 / 22px 22px, linear-gradient(180deg, #0B141D, #070C12);
+  box-shadow: inset 0 0 0 1px #05070B, inset 0 0 0 4px #1A1F28, inset 0 0 0 5px #3A4352;
+}
+body[data-theme="vector"] .card .br { top: 9px; right: 9px; width: 9px; height: 9px; border-width: 1px 1px 0 0; border-color: #62D9FF; opacity: 0.6; }
+body[data-theme="vector"] .eyebrow { display: inline-flex; align-items: center; gap: 7px; color: #62D9FF; }
+body[data-theme="vector"] .eyebrow::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; }
+body[data-theme="vector"] .h1 { font-weight: 500; text-shadow: 0 0 18px rgba(98, 217, 255, 0.25); }
+body[data-theme="vector"] .chip, body[data-theme="vector"] .btn, body[data-theme="vector"] .ct-send { border-radius: 17px; }
+body[data-theme="vector"] .tabbar { background: linear-gradient(180deg, #11151C, #0A0D13); box-shadow: inset 0 1px 0 #232A35; }
+body[data-theme="vector"] .hail-oct { color: #FFFFFF; background: radial-gradient(circle, rgba(255, 122, 47, 0.3), rgba(255, 122, 47, 0.06) 62%), #0A1219; box-shadow: inset 0 0 0 1.5px #FF7A2F, 0 0 18px rgba(255, 122, 47, 0.35); }

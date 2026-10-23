@@ -42,7 +42,7 @@ console.log('  text reader → field-unit/vendor/ocr');
 // Typefaces for the themes and the Typeface setting, served with the app.
 const fontDir = path.join(root, 'field-unit', 'fonts');
 fs.mkdirSync(fontDir, { recursive: true });
-const FONT_FILES = { michroma: [400], 'space-mono': [400, 700], 'exo-2': [200, 300, 400, 500, 600], 'b612-mono': [400, 700], vt323: [400], orbitron: [400, 500, 600, 700], oxanium: [300, 400, 500, 600], rajdhani: [400, 500, 600], 'major-mono-display': [400] };
+const FONT_FILES = { michroma: [400], 'space-mono': [400, 700], 'exo-2': [200, 300, 400, 500, 600], 'b612-mono': [400, 700], vt323: [400], orbitron: [400, 500, 600, 700], oxanium: [300, 400, 500, 600], rajdhani: [400, 500, 600], 'major-mono-display': [400], quantico: [400, 700], 'azeret-mono': [400, 500, 600], tektur: [400, 500, 600, 700], 'geist-mono': [300, 400, 500, 600] };
 for (const [fam, weights] of Object.entries(FONT_FILES)) {
   const dir = path.join(path.dirname(require.resolve(`@fontsource/${fam}/package.json`)), 'files');
   for (const w of weights) fs.copyFileSync(path.join(dir, `${fam}-latin-${w}-normal.woff2`), path.join(fontDir, `${fam}-${w}.woff2`));

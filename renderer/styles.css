@@ -1095,3 +1095,203 @@ body[data-layout="edge"] .cmp-side { width: 100%; }
 body[data-layout="edge"] .wave { justify-content: center; }
 body[data-layout="edge"] .cmp-title, body[data-layout="edge"] .cmp-sub { white-space: normal; }
 body[data-layout="edge"] .cmp-log { margin-top: auto; }
+
+/* ---------- v1.14 typefaces: Quantico + Azeret Mono (Skydock), Tektur + Geist Mono (Vector) ---------- */
+body[data-font="quantico"] { --display: 'Quantico', 'Segoe UI', sans-serif; --mono: 'Azeret Mono', Consolas, monospace; }
+body[data-font="tektur"] { --display: 'Tektur', 'Segoe UI', sans-serif; --mono: 'Geist Mono', Consolas, monospace; }
+
+/* Panel colors used by the Dock Lights trim and Skydock's lit signs. */
+.grid-stack-item { --dock: #1FB8F0; --dock-glow: rgba(31, 184, 240, 0.8); }
+.grid-stack-item:is([gs-id="computer"], [gs-id="notes"]) { --dock: #F4B41A; --dock-glow: rgba(244, 180, 26, 0.8); }
+.grid-stack-item[gs-id="events"] { --dock: #FF4F86; --dock-glow: rgba(255, 79, 134, 0.8); }
+.grid-stack-item[gs-id="tasks"] { --dock: #EE8A2E; --dock-glow: rgba(238, 138, 46, 0.8); }
+
+/* ---------- Trim: Dock Lights (a short lit bar on each panel's top edge) ---------- */
+body[data-trim="dock"] { --t1: #1FB8F0; --t2: #F4B41A; --t3: #FF4F86; --t4: #EE8A2E; --trim-h: 4px; --trim-accent: #1FB8F0; }
+body[data-trim="dock"] .panel::before,
+body[data-theme="skydock"][data-trim="none"] .panel::before {
+  content: ''; position: absolute; left: 0; top: 0; right: auto; width: 56px; height: 4px; z-index: 1; pointer-events: none;
+  background: var(--dock); box-shadow: 0 0 10px var(--dock-glow);
+}
+
+/* ---------- Skydock: day shift on an orbital dock ---------- */
+body[data-theme="skydock"] {
+  --frame: rgba(226, 231, 236, calc(0.55 + var(--frame-alpha) * 0.45));
+  --panel: #FFFFFF; --panel-solid: #FFFFFF; --bone-panel: #FFFFFF;
+  --line: #C3CCD6; --line-2: #DDE3E9; --line-3: #AEB8C4; --ctl-line: #AEB8C4;
+  --text: #13233D; --text-hi: #0B1830; --text-2: #2B3C57; --muted: #4F5F78; --muted-2: #4F5F78; --dim: #8592A5;
+  --amber: #0A8FC7; --accent-rgb: 10, 143, 199; --accent-hi: #0A6E9C;
+  --peach: #B07300; --peach-rgb: 176, 115, 0;
+  --lav: #3D5C8F; --lav-rgb: 61, 92, 143;
+  --coral: #D62A63; --coral-rgb: 214, 42, 99; --coral-hi: #A81D4B;
+  --lime: #1E9A55; --lime-rgb: 30, 154, 85;
+  --pink: #D62A63;
+  --ink-rgb: 19, 35, 61;
+  --modal-bg: rgba(248, 250, 252, 0.99); --modal-back: rgba(10, 26, 63, 0.35); --sel-bg: #FFFFFF; --alert-bg: #111A2B; --boot-bg: rgba(226, 231, 236, 0.97);
+  --chamfer: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); --chamfer-lg: inset(0 round 18px 18px 8px 8px); --oct: circle(50%);
+}
+/* Hull plating with faint panel seams (on the default frame). */
+body[data-theme="skydock"][data-frame="dark"] .console {
+  background-image: repeating-linear-gradient(90deg, transparent 0 227px, rgba(140, 153, 170, 0.32) 227px 228px),
+    repeating-linear-gradient(180deg, transparent 0 95px, rgba(140, 153, 170, 0.26) 95px 96px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(19, 35, 61, 0.05));
+  box-shadow: inset 0 0 0 1px rgba(19, 35, 61, 0.22);
+}
+/* The dark saucer rim across the top, with running lights. */
+body[data-theme="skydock"] .deck-header {
+  position: relative; margin: -14px -16px 0; padding: 0 16px 6px; height: 56px;
+  background: linear-gradient(180deg, #1A2438, #111A2B); box-shadow: inset 0 -1px 0 #2B3A55;
+  --text: #E6EEF8; --text-2: #C9D4E8; --muted: #9FB4D6; --muted-2: #9FB4D6; --dim: #6F7F99;
+  --ctl-line: #33415E; --line-3: #33415E; --amber: #7FDFFF; --accent-rgb: 31, 184, 240; --lime: #6EE7A0; --coral: #FF6B95;
+}
+body[data-theme="skydock"] .deck-header::after,
+body[data-theme="skydock"] .deck-header::before { content: ''; position: absolute; left: 18px; right: 18px; bottom: 5px; height: 4px; pointer-events: none; }
+body[data-theme="skydock"] .deck-header::after { background: radial-gradient(circle, rgba(255, 255, 255, 0.55) 0 1.6px, transparent 2px) 0 0 / 22px 4px repeat-x; }
+body[data-theme="skydock"] .deck-header::before {
+  background: linear-gradient(90deg, transparent, #FFFFFF 45%, #7FDFFF 55%, transparent) no-repeat; background-size: 180px 100%;
+  -webkit-mask: radial-gradient(circle, #000 0 1.8px, transparent 2.2px) 0 0 / 22px 4px repeat-x;
+  z-index: 1; animation: sdChase 6s linear infinite;
+}
+.motion-still[data-theme="skydock"] .deck-header::before { display: none; }
+@keyframes sdChase { from { background-position: -30% 0; } to { background-position: 130% 0; } }
+body[data-theme="skydock"] .brand { color: #C8A04A; }
+body[data-theme="skydock"] .brand-name { font-weight: 700; letter-spacing: 0.2em; color: #7FDFFF; text-shadow: 0 0 10px #1FB8F0, 0 0 22px rgba(31, 184, 240, 0.45); }
+body[data-theme="skydock"] .brand-op { font-family: var(--display); font-style: italic; font-weight: 700; color: #9FB4D6; }
+body[data-theme="skydock"] .seg button.on { color: #7FDFFF; text-shadow: 0 0 8px #1FB8F0; background: rgba(31, 184, 240, 0.12); }
+/* Panels: sunlit white plates; labels are lit sign windows; red stencil codes in the corner. */
+body[data-theme="skydock"] .panel {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F1F4F7 62%, #E6EBF0 100%);
+  box-shadow: inset 0 0 0 1px var(--line), inset 0 -3px 0 rgba(19, 35, 61, 0.05);
+}
+body[data-theme="skydock"] .panel .br { display: none; }
+body[data-theme="skydock"] .p-label {
+  display: inline-flex; align-items: center; min-height: 22px; padding: 0 9px; box-sizing: border-box;
+  background: #111A2B; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  font-family: var(--display); font-weight: 700; color: var(--dock); text-shadow: 0 0 8px var(--dock-glow);
+  --text: #E6EEF8; --text-2: #C9D4E8; --muted: #9FB4D6; --amber: #7FDFFF; --accent-rgb: 31, 184, 240;
+}
+body[data-theme="skydock"] .grid-stack-item:is([gs-id="clock"], [gs-id="weather"], [gs-id="calendar"]) .p-label { color: #7FDFFF; }
+body[data-theme="skydock"] .p-label .amber-t { color: #7FDFFF; }
+body[data-theme="skydock"] .panel::after { position: absolute; right: 14px; bottom: 4px; font: 700 8.5px/1 var(--display); letter-spacing: 0.14em; color: #D9442B; opacity: 0.5; pointer-events: none; }
+body[data-theme="skydock"] .grid-stack-item[gs-id="clock"] .panel::after { content: 'PL-01'; }
+body[data-theme="skydock"] .grid-stack-item[gs-id="weather"] .panel::after { content: 'PL-02'; }
+body[data-theme="skydock"] .grid-stack-item[gs-id="computer"] .panel::after { content: 'PL-03'; }
+body[data-theme="skydock"] .grid-stack-item[gs-id="calendar"] .panel::after { content: 'PL-04'; }
+body[data-theme="skydock"] .grid-stack-item[gs-id="events"] .panel::after { content: 'PL-05'; }
+body[data-theme="skydock"] .grid-stack-item[gs-id="tasks"] .panel::after { content: 'PL-06'; }
+body[data-theme="skydock"] .grid-stack-item[gs-id="notes"] .panel::after { content: 'PL-07'; }
+body[data-theme="skydock"] .clk-time { font-weight: 700; letter-spacing: -0.02em; color: var(--text-hi); text-shadow: none; }
+body[data-theme="skydock"] .wx-temp { font-weight: 700; }
+body[data-theme="skydock"] .hail { background: radial-gradient(circle, #111A2B 0 60%, rgba(31, 184, 240, 0.16) 61%); box-shadow: inset 0 0 0 2px #1FB8F0; color: #7FDFFF; }
+body[data-theme="skydock"] .hail:hover { background: radial-gradient(circle, #1A2840 0 60%, rgba(31, 184, 240, 0.26) 61%); }
+body[data-theme="skydock"] .hail-ring { box-shadow: inset 0 0 0 2px #1FB8F0; }
+body[data-theme="skydock"] .btn.primary { color: #FFFFFF; clip-path: none; }
+body[data-theme="skydock"] .ticks { background: repeating-linear-gradient(-45deg, #F4B41A 0 6px, #D9442B 6px 12px) 0 50% / 96px 5px no-repeat, repeating-linear-gradient(90deg, var(--line-3) 0 1px, transparent 1px 12px) 108px 0 / auto no-repeat; }
+/* Alerts: a lit sign with the hazard band across the top. */
+body[data-theme="skydock"] .alert-strip {
+  --text-hi: #FFFFFF; --text-2: #C9D4E8; --muted: #9FB4D6; --line-3: #4A5878; --amber: #7FDFFF; --accent-rgb: 31, 184, 240; --coral: #FF4F86; --coral-rgb: 255, 79, 134;
+  box-shadow: inset 0 0 0 1px #1FB8F0, 0 12px 36px rgba(10, 26, 63, 0.35);
+}
+body[data-theme="skydock"] .alert-strip:is([data-type="alarm"], [data-type="pastdue"]) { box-shadow: inset 0 0 0 1px #FF4F86, 0 0 26px rgba(255, 79, 134, 0.35), 0 12px 36px rgba(10, 26, 63, 0.35); }
+body[data-theme="skydock"] .alert-strip::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: repeating-linear-gradient(-45deg, #F4B41A 0 8px, #D9442B 8px 16px); }
+
+/* ---------- Vector: a modern spaceship cockpit ---------- */
+body[data-theme="vector"] {
+  --frame: rgba(10, 13, 19, var(--frame-alpha));
+  --panel: rgba(8, 14, 21, 0.95); --panel-solid: #0A1219; --bone-panel: rgba(8, 14, 21, 0.97);
+  --line: #1C2733; --line-2: #16202A; --line-3: #2A3848; --ctl-line: #2A3848;
+  --text: #DCE9F5; --text-hi: #FFFFFF; --text-2: #B9CCDD; --muted: #7E92A7; --muted-2: #7E92A7; --dim: #4B5B6D;
+  --amber: #FF7A2F; --accent-rgb: 255, 122, 47; --accent-hi: #FFD2B8;
+  --peach: #62D9FF; --peach-rgb: 98, 217, 255;
+  --lav: #9B8CFF; --lav-rgb: 155, 140, 255;
+  --coral: #FF3D57; --coral-rgb: 255, 61, 87; --coral-hi: #FFA3B0;
+  --lime: #4CF0A0; --lime-rgb: 76, 240, 160;
+  --pink: #9B8CFF;
+  --ink-rgb: 220, 233, 245;
+  --modal-bg: rgba(10, 14, 20, 0.98); --sel-bg: #0A1219; --alert-bg: rgba(10, 14, 20, 0.98);
+  --chamfer: inset(0 round 14px); --chamfer-lg: inset(0 round 26px 26px 16px 16px); --oct: circle(50%);
+}
+body[data-theme="vector"][data-frame="dark"] .console {
+  background-image: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(98, 217, 255, 0.06), transparent 70%), repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 6px);
+  box-shadow: inset 0 0 0 1px #2A3240;
+}
+/* The canopy: a windshield onto space, with struts, a planet's edge and a drifting heading tape. */
+body[data-theme="vector"] .deck-header {
+  position: relative; margin: -14px -16px 0; padding: 0 84px 12px; height: 76px;
+  background:
+    linear-gradient(100deg, #151A22 0 62px, #2C3442 62px 64px, transparent 64px),
+    linear-gradient(-100deg, #151A22 0 62px, #2C3442 62px 64px, transparent 64px),
+    linear-gradient(115deg, rgba(255, 255, 255, 0.035) 0 38%, transparent 38%),
+    radial-gradient(ellipse 85% 200% at 62% 205%, #0F2747 0 62%, #9FE8FF 62.6%, rgba(155, 140, 255, 0.6) 63.6%, rgba(98, 217, 255, 0.14) 65.5%, transparent 69%),
+    radial-gradient(1px 1px at 20px 12px, #FFFFFF, transparent) 0 0 / 140px 76px,
+    radial-gradient(1px 1px at 90px 44px, rgba(255, 255, 255, 0.7), transparent) 0 0 / 170px 76px,
+    radial-gradient(1.3px 1.3px at 50px 30px, rgba(255, 255, 255, 0.85), transparent) 0 0 / 230px 76px,
+    radial-gradient(1px 1px at 120px 60px, rgba(190, 230, 255, 0.6), transparent) 0 0 / 260px 76px,
+    linear-gradient(180deg, #01030A, #071226);
+  box-shadow: inset 0 4px 0 #2C3442, inset 0 -2px 0 #2C3442;
+}
+body[data-theme="vector"] .deck-header::after {
+  content: ''; position: absolute; left: 50%; bottom: 7px; width: 300px; margin-left: -150px; height: 8px; pointer-events: none;
+  background: repeating-linear-gradient(90deg, rgba(98, 217, 255, 0.9) 0 1px, transparent 1px 50px) 0 0 / auto 100% repeat-x,
+    repeating-linear-gradient(90deg, rgba(98, 217, 255, 0.6) 0 1px, transparent 1px 10px) 0 100% / auto 50% repeat-x;
+  -webkit-mask: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
+  animation: vTape 10s linear infinite;
+}
+body[data-theme="vector"] .deck-header::before { content: ''; position: absolute; left: 50%; bottom: 16px; margin-left: -5px; border: 5px solid transparent; border-top-color: #FF7A2F; pointer-events: none; }
+.motion-still[data-theme="vector"] .deck-header::after { animation: none; }
+@keyframes vTape { from { background-position: 0 0, 0 100%; } to { background-position: -100px 0, -100px 100%; } }
+body[data-theme="vector"] .brand { color: #FF7A2F; }
+body[data-theme="vector"] .brand-name { color: #FFFFFF; letter-spacing: 0.22em; text-shadow: 0 0 14px rgba(98, 217, 255, 0.35); }
+body[data-theme="vector"] .brand-op { color: #62D9FF; }
+body[data-theme="vector"] .seg { border-radius: 18px; padding: 2px; background: rgba(3, 5, 10, 0.6); box-shadow: inset 0 0 0 1px #2A3442; }
+body[data-theme="vector"] .seg button { height: 26px; line-height: 26px; border-radius: 14px; }
+body[data-theme="vector"] .seg button.on { background: #62D9FF; color: #03050A; box-shadow: none; }
+body[data-theme="vector"] .icon-btn { border-radius: 50%; background: rgba(3, 5, 10, 0.6); }
+body[data-theme="vector"] .layout-chip, body[data-theme="vector"] .upd-chip, body[data-theme="vector"] .accent-btn, body[data-theme="vector"] .ghost-btn, body[data-theme="vector"] .mini-btn, body[data-theme="vector"] .al-btn { border-radius: 16px; }
+body[data-theme="vector"] .sq-btn { border-radius: 8px; }
+body[data-theme="vector"] .layout-chip { white-space: nowrap; }
+/* Panels: glass flight displays set into a bezel. */
+body[data-theme="vector"] .panel {
+  background:
+    radial-gradient(ellipse 120% 90% at 30% 0%, rgba(98, 217, 255, 0.07), transparent 55%),
+    linear-gradient(rgba(98, 217, 255, 0.035) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, rgba(98, 217, 255, 0.035) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(180deg, #0B141D, #070C12);
+  box-shadow: inset 0 0 0 1px #05070B, inset 0 0 0 4px #1A1F28, inset 0 0 0 5px #3A4352, inset 0 6px 0 -1px rgba(255, 255, 255, 0.03);
+}
+body[data-theme="vector"] .panel .br { width: 10px; height: 10px; opacity: 0.6; }
+body[data-theme="vector"] .panel .br-tr { top: 9px; right: 9px; border-width: 1px 1px 0 0; }
+body[data-theme="vector"] .panel .br-bl { bottom: 9px; left: 9px; border-width: 0 0 1px 1px; }
+body[data-theme="vector"] .p-label { display: inline-flex; align-items: center; gap: 8px; color: var(--dock-v, #62D9FF); }
+body[data-theme="vector"] .p-label::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: currentColor; box-shadow: 0 0 6px currentColor; }
+body[data-theme="vector"] .grid-stack-item:is([gs-id="computer"], [gs-id="tasks"]) { --dock-v: #FF7A2F; }
+body[data-theme="vector"] .grid-stack-item[gs-id="events"] { --dock-v: #9B8CFF; }
+body[data-theme="vector"] .grid-stack-item[gs-id="notes"] { --dock-v: #FFC23D; }
+body[data-theme="vector"] .tk-head > span:first-child { display: none; }
+body[data-theme="vector"] .clk-time { font-weight: 500; letter-spacing: -0.03em; text-shadow: 0 0 24px rgba(98, 217, 255, 0.25); }
+body[data-theme="vector"] .clk-sec { color: #FF7A2F; text-shadow: 0 0 12px rgba(255, 122, 47, 0.5); }
+body[data-theme="vector"] .hail { background: radial-gradient(circle, rgba(255, 122, 47, 0.24) 0%, rgba(255, 122, 47, 0.05) 60%, transparent 71%); box-shadow: inset 0 0 0 1.5px #FF7A2F, inset 0 0 22px rgba(255, 122, 47, 0.25); color: #FFFFFF; }
+body[data-theme="vector"] .hail-ring { box-shadow: inset 0 0 0 1px #FF7A2F; }
+body[data-theme="vector"] .btn.primary { clip-path: inset(0 round 16px); }
+/* Switch panel along the bottom edge. */
+.switches { display: none; }
+body[data-theme="vector"] .deck-footer { height: 34px; margin: 0 -16px -12px; padding: 0 16px; background: linear-gradient(180deg, #11151C, #0A0D13); box-shadow: inset 0 1px 0 #232A35; gap: 16px; }
+body[data-theme="vector"] .switches { display: flex; gap: 6px; flex-shrink: 0; }
+.sw { height: 22px; padding: 0 9px; border: 0; border-radius: 5px; display: inline-flex; align-items: center; gap: 7px; background: linear-gradient(180deg, #1B212B, #12161D); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 0 1px #05070B; color: #7E92A7; font: 500 9px/1 var(--mono); letter-spacing: 0.14em; white-space: nowrap; }
+button.sw { cursor: pointer; -webkit-app-region: no-drag; }
+button.sw:hover { color: #DCE9F5; }
+.sw i { width: 12px; height: 3px; border-radius: 2px; background: #2A313C; }
+.sw.on { color: #DCE9F5; }
+.sw.on.nav i { background: #62D9FF; box-shadow: 0 0 8px #62D9FF; }
+.sw.on.burn i { background: #FF7A2F; box-shadow: 0 0 8px #FF7A2F; }
+.sw.on.caution i { background: #FFC23D; box-shadow: 0 0 8px #FFC23D; }
+.sw.on.go i { background: #4CF0A0; box-shadow: 0 0 8px #4CF0A0; }
+/* Alerts: a rounded glass strip; past due and alarms light the Master Caution button. */
+body[data-theme="vector"] .alert-strip { clip-path: inset(0 round 14px); box-shadow: inset 0 0 0 1px rgba(98, 217, 255, 0.5), 0 10px 40px rgba(0, 0, 0, 0.55); }
+body[data-theme="vector"] .alert-strip:is([data-type="alarm"], [data-type="pastdue"]) { background: linear-gradient(90deg, rgba(255, 61, 87, 0.16), rgba(10, 14, 20, 0.98) 45%); box-shadow: inset 0 0 0 1px rgba(255, 61, 87, 0.6), 0 10px 40px rgba(0, 0, 0, 0.55); }
+body[data-theme="vector"] .alert-strip:is([data-type="alarm"], [data-type="pastdue"]) .al-dot {
+  width: 78px; height: 44px; border-radius: 8px; display: grid; place-items: center;
+  background: radial-gradient(circle, #FF5A70 0%, #FF3D57 55%, #B3122B 100%); box-shadow: inset 0 0 0 2px #4A1A24, 0 0 18px rgba(255, 61, 87, 0.6);
+}
+body[data-theme="vector"] .alert-strip:is([data-type="alarm"], [data-type="pastdue"]) .al-dot::before { content: 'MASTER\A CAUTION'; white-space: pre; text-align: center; font: 700 9.5px/1.15 var(--display); letter-spacing: 0.12em; color: #FFFFFF; }
+body[data-theme="vector"] .al-dot { border-radius: 50%; }

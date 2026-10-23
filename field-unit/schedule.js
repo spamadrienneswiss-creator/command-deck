@@ -11,7 +11,7 @@ import { bootScreen } from './boot.js';
 import * as U from './lib/util.js';
 
 const { $, esc } = U;
-const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612' };
+const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur' };
 const STANDALONE = window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
 
 function tokenFromUrl() {
@@ -72,7 +72,7 @@ function applyLook() {
   b.dataset.font = !lk.font || lk.font === 'auto' ? (THEME_FONT[theme] || 'chakra') : lk.font;
   b.dataset.ink = lk.ink || 'theme';
   b.dataset.trim = lk.trim || 'none';
-  if (theme === 'moonbase' || theme === 'cryo') b.dataset.light = '1'; else delete b.dataset.light;
+  if (theme === 'moonbase' || theme === 'cryo' || theme === 'skydock') b.dataset.light = '1'; else delete b.dataset.light;
 }
 
 function when(ms) {

@@ -117,3 +117,5 @@ body.pm-body .toast { bottom: calc(var(--safe-bottom) + 90px); }
 .sg-body .sc-change { margin-top: 10px; }
 .sg-empty { margin-top: 26px; text-align: center; font: 400 12.5px/1.5 var(--mono); color: var(--muted); }
 .sg-body .pm-name { display: inline-flex; align-items: center; }
+/* Skydock: the shared-link header and add bar sit on the dark saucer rim. */
+body[data-theme="skydock"] :is(.pm-head, .pm-add) { --text: #E6EEF8; --text-2: #C9D4E8; --muted: #9FB4D6; --line-2: #2B3A55; --line-3: #33415E; --amber: #7FDFFF; --accent-rgb: 31, 184, 240; color: var(--text); }

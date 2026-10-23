@@ -14,18 +14,21 @@ const THEMES = [
   ['dusk', 'DUSK', ['#F2A65A', '#A8B0D8']], ['space', 'DEEP SPACE', ['#4FD1E8', '#9FB7FF']], ['red', 'RED ALERT', ['#FF4D4D', '#FFD27A']],
   ['terminal', 'TERMINAL', ['#39FF88', '#1F3328']], ['retro', 'RETRO', ['#5EE7FF', '#FF7BD5']],
   ['moonbase', "MOONBASE '79", ['#F05A1A', '#E4E6E9']], ['blueprint', 'BLUEPRINT', ['#8EC5FF', '#0E2A47']],
-  ['cryo', 'CRYO', ['#2D8CFF', '#D6E7F3']], ['freighter', 'FREIGHTER', ['#9CF2A8', '#E8C547']]
+  ['cryo', 'CRYO', ['#2D8CFF', '#D6E7F3']], ['freighter', 'FREIGHTER', ['#9CF2A8', '#E8C547']],
+  ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']]
 ];
 const FONTS = [
   ['auto', 'THEME DEFAULT', ''], ['chakra', 'CHAKRA', "'Chakra Petch'"], ['michroma', 'MICHROMA', "'Michroma'"],
   ['spacemono', 'SPACE MONO', "'Space Mono'"], ['exo2', 'EXO 2', "'Exo 2'"], ['b612', 'B612 MONO', "'B612 Mono'"],
   ['vt323', 'VT323', "'VT323'"], ['orbitron', 'ORBITRON', "'Orbitron'"], ['oxanium', 'OXANIUM', "'Oxanium'"],
-  ['rajdhani', 'RAJDHANI', "'Rajdhani'"], ['sharetech', 'SHARE TECH MONO', "'Share Tech Mono'"], ['majormono', 'MAJOR MONO', "'Major Mono Display'"]
+  ['rajdhani', 'RAJDHANI', "'Rajdhani'"], ['sharetech', 'SHARE TECH MONO', "'Share Tech Mono'"], ['majormono', 'MAJOR MONO', "'Major Mono Display'"],
+  ['quantico', 'QUANTICO', "'Quantico'"], ['tektur', 'TEKTUR', "'Tektur'"]
 ];
 const INKS = [['theme', 'THEME', null], ['amber', 'AMBER CRT', '#FFC27A'], ['phosphor', 'PHOSPHOR', '#A8F5B4'], ['ice', 'ICE', '#CFE6FF'], ['arctic', 'ARCTIC', '#FFFFFF'], ['rose', 'ROSE', '#F6C1CF']];
 const FRAMES = [['dark', 'DARK', '#14151B'], ['bone', 'BONE', '#EEDDC3'], ['gunmetal', 'GUNMETAL', '#3A3E44'], ['olive', 'OLIVE DRAB', '#4A5236'], ['navy', 'MIDNIGHT NAVY', '#16264A']];
 const TRIMS = [['none', 'NONE', []], ['sunset', 'SUNSET', ['#B5432A', '#E07A2E', '#E9B23B']], ['mission', 'MISSION', ['#E5532D', '#EADBC2', '#3F68A6']], ['arcade', 'ARCADE', ['#D6457E', '#F08A3C', '#F2C94C', '#3FB3A8']],
-  ['hazard', 'HAZARD', ['#E8C547', '#1A1A1A', '#E8C547', '#1A1A1A']], ['aurora', 'AURORA', ['#2BB3A3', '#6FD08C', '#8E6CD8']], ['gulf', 'GULF', ['#8FC1E3', '#F28A2E', '#8FC1E3']]];
+  ['hazard', 'HAZARD', ['#E8C547', '#1A1A1A', '#E8C547', '#1A1A1A']], ['aurora', 'AURORA', ['#2BB3A3', '#6FD08C', '#8E6CD8']], ['gulf', 'GULF', ['#8FC1E3', '#F28A2E', '#8FC1E3']],
+  ['dock', 'DOCK LIGHTS', ['#1FB8F0', '#F4B41A', '#FF4F86', '#EE8A2E']]];
 const X_SVG = '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 2 L8 8 M8 2 L2 8" stroke="currentColor" stroke-width="1.4"/></svg>';
 
 export function initModals(api) {
@@ -847,7 +850,7 @@ export function openSettings(welcome = false) {
           <div class="pills" data-key="theme">${THEMES.map(([v, l, cs]) => `<button type="button" class="pill theme-pill${(draft.theme || 'dusk') === v ? ' on' : ''}" data-v="${v}" style="--pc:${cs[0] === '#FFFFFF' ? cs[1] : cs[0]}"><span class="theme-sw">${cs.map((c) => `<i style="background:${c}"></i>`).join('')}</span>${l}</button>`).join('')}</div></div>
         <div class="f"><span class="f-label">TYPEFACE</span>
           <div class="pills" data-key="font">${FONTS.map(([v, l, fam]) => `<button type="button" class="pill font-pill${(draft.font || 'auto') === v ? ' on' : ''}" data-v="${v}"${fam ? ` style="font-family:${fam}"` : ''}>${l}</button>`).join('')}</div>
-          <div class="f-hint" style="margin-top:8px">Theme default follows the color theme: Moonbase uses Michroma, Blueprint Space Mono, Cryo Exo 2, Freighter B612 Mono.</div></div>
+          <div class="f-hint" style="margin-top:8px">Theme default follows the color theme: Moonbase uses Michroma, Blueprint Space Mono, Cryo Exo 2, Freighter B612 Mono, Skydock Quantico, Vector Tektur.</div></div>
         <div class="f"><span class="f-label">TEXT COLOR</span>
           <div class="pills" data-key="ink">${INKS.map(([v, l, c]) => `<button type="button" class="pill theme-pill${(draft.ink || 'theme') === v ? ' on' : ''}" data-v="${v}">${c ? `<i style="background:${c};box-shadow:inset 0 0 0 1px #6E6A78"></i>` : ''}${l}</button>`).join('')}</div>
           <div class="f-hint" style="margin-top:8px">Recolors the main text. Accents, warnings and checkmarks stay with the theme; light themes get a deeper shade so it stays readable.</div></div>

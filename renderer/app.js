@@ -12,7 +12,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.14.0';
+const VERSION = 'v1.14.1';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -1235,14 +1235,23 @@ function stopSpeaking() {
 
 // Routes speech to the on-device neural voice when it's ready, otherwise to
 // the built-in Windows voice (also the fallback while the neural one downloads).
-async function speak(text, as = 'speaking', override = null) {
+// The neural voice takes a few seconds to load after launch (longer the very first time, while it downloads).
+// Wait for it rather than switching to the Windows voice, so the deck always sounds the same.
+async function neuralReady(ms) {
+  if (ttsStatus().state === 'ready') return true;
+  try {
+    await Promise.race([loadTts(), U.wait(ms).then(() => { throw new Error('timeout'); })]);
+  } catch (e) { /* not ready in time, or failed */ }
+  return ttsStatus().state === 'ready';
+}
+
+async function speak(text, as = 'speaking', override = null, { wait = 10000 } = {}) {
   const s = S.settings;
   const enabled = override ? override.enabled : s.voiceEnabled;
   if (!enabled || !text) return;
   const engine = (override && override.engine) || s.voiceEngine;
   if (engine === 'neural') {
-    const st = ttsStatus().state;
-    if (st === 'ready') {
+    if (await neuralReady(wait)) {
       stopSpeaking();
       if (S.voice === 'idle') setVoiceState(as);
       try {
@@ -1260,8 +1269,6 @@ async function speak(text, as = 'speaking', override = null) {
         if (S.voice === 'speaking' || S.voice === 'greeting') setVoiceState('idle');
         // fall through to the Windows voice
       }
-    } else if (st !== 'loading') {
-      loadTts().catch(() => {});
     }
   }
   await speakWindows(text, as, override);
@@ -2165,7 +2172,7 @@ async function maybeBriefing() {
   while (!S.weather && Date.now() - t0 < 5000) await U.wait(250);
   const text = buildBriefing();
   pushLog('c', 'Daily briefing delivered.');
-  await speak(text);
+  await speak(text, 'speaking', null, { wait: 120000 });
 }
 
 // ---------------------------------------------------------------- grid layout

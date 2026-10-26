@@ -55,7 +55,12 @@ export class DeckSync {
     state.unsub = this.fb.onSnapshot(this.col(kind), { includeMetadataChanges: false }, (snap) => {
       // Local edits not yet sent get stamped first, so a remote change that
       // arrives in the meantime can't silently overwrite them.
-      if (state.ready) this.push(kind);
+      // They are stamped newer than anything in this snapshot, so the two devices can never tie.
+      if (state.ready) {
+        let floor = 0;
+        snap.forEach((d) => { floor = Math.max(floor, d.data().updatedAt || 0); });
+        this.push(kind, undefined, floor);
+      }
       const local = new Map(get().map((x) => [x.id, x]));
       let changed = false;
       snap.forEach((d) => {
@@ -75,7 +80,14 @@ export class DeckSync {
           state.base.set(id, stable(item));
           changed = true;
         } else if (lu === ru) {
-          state.base.set(id, stable(mine));
+          // Same stamp from two devices: both pick the same winner (by device id), so they agree.
+          if (stable(mine) !== stable(item) && (remote.by || '') > (mine.by || '')) {
+            local.set(id, item);
+            state.base.set(id, stable(item));
+            changed = true;
+          } else {
+            state.base.set(id, stable(mine));
+          }
         }
       });
       if (changed) apply(Array.from(local.values()));
@@ -88,7 +100,7 @@ export class DeckSync {
   }
 
   /** Writes local changes for one list. Returns a promise that resolves when the server has them. */
-  push(kind, list) {
+  push(kind, list, floor = 0) {
     const state = this.kinds.get(kind);
     if (!state || !state.ready) return Promise.resolve(false);
     const items = list || state.get();
@@ -100,7 +112,7 @@ export class DeckSync {
       seen.add(item.id);
       const s = stable(item);
       if (state.base.get(item.id) === s) continue;
-      item.updatedAt = Math.max(now, (item.updatedAt || 0) + 1);
+      item.updatedAt = Math.max(now, (item.updatedAt || 0) + 1, floor + 1);
       item.by = this.uid;
       state.base.set(item.id, s);
       writes.push([item.id, clean(item)]);

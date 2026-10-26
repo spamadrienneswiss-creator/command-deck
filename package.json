@@ -1,7 +1,7 @@
 {
   "name": "command-deck",
   "productName": "Command Deck",
-  "version": "1.14.1",
+  "version": "1.14.2",
   "description": "A sci-fi HUD desktop console for Windows: clock, calendar, weather, tasks and a voice-driven ship's computer.",
   "main": "main.js",
   "author": "Command Deck",

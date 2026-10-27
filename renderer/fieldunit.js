@@ -5,7 +5,7 @@
 import * as fb from '../shared/core.js';
 import { DeckSync, makePairCode, formatPairCode, normalizePairCode, makeId, fetchHostingConfig, startFirebase, signIn } from '../shared/sync.js';
 import { ManifestRelay, manifestUrl } from '../shared/manifest.js';
-import { RosterRelay, scheduleUrl, DEFAULT_TYPES } from '../shared/roster.js';
+import { RosterRelay, scheduleUrl, DEFAULT_TYPES, chipName, OWNER_COLOR } from '../shared/roster.js';
 
 const deck = window.deck;
 const PAIR_MINUTES = 10;
@@ -207,14 +207,16 @@ function startSync(deckId) {
   F.relay.onChange(emit);
   F.relay.start();
 
-  // Schedule links: copies the schedule out to each link, and GOT IT / CHANGE REQUEST replies back in.
+  // Schedule links: one shared schedule. Copies it out to each link, and brings in what people
+  // with READ + ADD links added, changed or removed.
   F.roster = new RosterRelay(fb, F.fire.db, deckId, F.uid, {
     getEntries: () => h.getList('schedule'),
     getTypes: () => h.getSettings().scheduleTypes || DEFAULT_TYPES,
-    applyReplies: (changes) => h.applyReplies(changes),
+    applyGuestChanges: (changes) => h.applyGuestChanges(changes),
     onActivity: (events) => h.onScheduleActivity(events),
     getLook: () => h.getLook(),
-    operatorName: () => h.getSettings().operatorName || ''
+    operatorName: () => h.getSettings().operatorName || '',
+    ownerChip: () => ownerChip(h.getSettings())
   });
   F.roster.onChange(emit);
   F.roster.start();
@@ -402,6 +404,12 @@ export async function shareSchedule(opts) {
 }
 export async function scheduleQr(token) { return deck.qr(scheduleShareUrl(token)); }
 export async function revokeSchedule(token) { needRoster(); await F.roster.revoke(token); emit(); }
+export async function setScheduleLevel(token, level) { needRoster(); await F.roster.setLevel(token, level); emit(); }
+export async function setScheduleColor(token, color) { needRoster(); await F.roster.setColor(token, color); emit(); }
+/** Your own chip on shared schedules: { name, color }. */
+export function ownerChip(s) {
+  return { name: chipName((s && (s.chipName || s.operatorName)) || 'Me'), color: (s && s.chipColor) || OWNER_COLOR };
+}
 
 // ---------------------------------------------------------------- project manifest (share links)
 function needRelay() {
@@ -425,7 +433,7 @@ export function relayShared(s) {
   // Joined consoles copy these, calendar feeds included (phones never see the feed links).
   F.sync.setMeta('setup', { calendars: (s.calendars || []).map((c) => ({ ...c })), updatedAt: Date.now() }).catch(() => {});
   F.sync.setMeta('shared', {
-    operatorName: s.operatorName, consoleName: s.consoleName,
+    operatorName: s.operatorName, consoleName: s.consoleName, chipName: s.chipName || '', chipColor: s.chipColor || '',
     categories: s.categories, people: s.people, location: s.location, scheduleTypes: s.scheduleTypes || DEFAULT_TYPES,
     tempUnit: s.tempUnit, clock24: s.clock24, defaultReminder: s.defaultReminder, snoozeMinutes: s.snoozeMinutes,
     localCalendarName: s.localCalendarName, localCalendarColor: s.localCalendarColor,

@@ -7,6 +7,8 @@ const DEFAULTS = {
   settings: {
     setupComplete: false,
     operatorName: 'Commander',
+    chipName: '', // your name chip on shared schedules (blank: from operatorName)
+    chipColor: '#F4B6A0',
     consoleName: 'Command Deck',
     location: { name: 'Los Angeles, California', lat: 34.0522, lon: -118.2437 },
     calendars: [], // { id, name, url, color, enabled }

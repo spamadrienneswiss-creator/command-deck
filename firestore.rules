@@ -90,13 +90,21 @@ service cloud.firestore {
       }
     }
 
-    // Schedule links: one person sees the owner's schedule and can reply to each entry
-    // with GOT IT or a CHANGE REQUEST (a note is optional). Same secret-token idea as above.
+    // Schedule links: one shared schedule everyone with a link sees. A READ + ADD link can also add
+    // entries, and edit or delete (by marking deleted) the ones it added. Same secret-token idea as above.
     function roster(token) { return get(/databases/$(db)/documents/rosters/$(token)).data; }
-    function validReply(r) {
-      return r is map && r.keys().hasOnly(['state', 'comment', 'at'])
-        && r.state in ['ok', 'change']
-        && (!('comment' in r) || (r.comment is string && r.comment.size() <= 500));
+    function canAdd(r) { return 'level' in r && r.level == 'add'; }
+    function optStr(d, k, n) { return !(k in d) || (d[k] is string && d[k].size() <= n); }
+    function validGuestEntry(d, token, entryId) {
+      return d.keys().hasOnly(['id', 'type', 'title', 'date', 'start', 'end', 'note', 'byToken', 'byName', 'byColor', 'pending', 'gBy', 'gAt', 'deleted'])
+        && d.id == entryId && d.byToken == token && d.pending == true
+        && d.gAt is number && d.gBy is string && d.gBy.size() <= 40
+        && d.title is string && d.title.size() > 0 && d.title.size() <= 120
+        && d.date is string && d.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && d.type is string && d.type.size() <= 40
+        && optStr(d, 'start', 5) && optStr(d, 'end', 5) && optStr(d, 'note', 300)
+        && optStr(d, 'byName', 40) && optStr(d, 'byColor', 9)
+        && (!('deleted' in d) || d.deleted is bool);
     }
 
     match /rosters/{token} {
@@ -109,13 +117,12 @@ service cloud.firestore {
       match /entries/{entryId} {
         allow read: if signedIn() && (live(roster(token)) || owns(roster(token)));
         allow write: if owns(roster(token));
-        // The guest only ever replies.
-        allow update: if signedIn() && live(roster(token))
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reply', 'pending', 'gBy', 'gAt'])
-          && request.resource.data.pending == true
-          && request.resource.data.gAt is number
-          && request.resource.data.gBy is string && request.resource.data.gBy.size() <= 40
-          && validReply(request.resource.data.reply);
+        // READ + ADD: new entries of their own, and changes to the ones they added. Never a hard delete.
+        allow create: if signedIn() && live(roster(token)) && canAdd(roster(token))
+          && validGuestEntry(request.resource.data, token, entryId);
+        allow update: if signedIn() && live(roster(token)) && canAdd(roster(token))
+          && resource.data.byToken == token
+          && validGuestEntry(request.resource.data, token, entryId);
       }
     }
 

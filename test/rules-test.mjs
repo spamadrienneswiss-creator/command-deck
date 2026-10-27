@@ -26,6 +26,7 @@ const EXPIRED = 'GuestLinkTokenExpiredCCCCC';
 const HELPER = 'GuestLinkTokenHelperDDDDDD';
 const ROSTER = 'ScheduleLinkTokenEEEEEEEEE';
 const ROSTER_OFF = 'ScheduleLinkTokenClosedFFF';
+const ROSTER_RO = 'ScheduleLinkTokenReadOnlyG';
 await env.withSecurityRulesDisabled(async (ctx) => {
   const db = ctx.firestore();
   await db.doc('decks/deck1').set({ owner: 'desk', pairCode: 'ABC234', pairExpires: TS(NOW + HOUR) });
@@ -41,10 +42,13 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await db.doc(`manifests/${EXPIRED}`).set(m({ expiresAt: TS(NOW - HOUR) }));
   await db.doc(`manifests/${HELPER}`).set(m({ level: 'helper' }));
   for (const t of [TOK, CLOSED, EXPIRED, HELPER]) await db.doc(`manifests/${t}/tasks/k1`).set({ id: 'k1', title: 'Paint', done: false, subtasks: [{ id: 'a', text: 'Tape edges', done: false }, { id: 'b', text: 'First coat', done: false }] });
-  const r = (extra) => ({ deckId: 'deck1', guest: 'Jordan', closed: false, expiresAt: TS(NOW + 7 * 24 * HOUR), ...extra });
+  const r = (extra) => ({ deckId: 'deck1', guest: 'Jordan', level: 'add', color: '#B8E27A', closed: false, expiresAt: TS(NOW + 7 * 24 * HOUR), ...extra });
   await db.doc(`rosters/${ROSTER}`).set(r());
   await db.doc(`rosters/${ROSTER_OFF}`).set(r({ closed: true }));
-  for (const t of [ROSTER, ROSTER_OFF]) await db.doc(`rosters/${t}/entries/e1`).set({ id: 'e1', type: 'ldc', title: 'Work shift', date: '2026-10-21', start: '09:00', end: '14:00', note: '', reply: null, pending: false });
+  await db.doc(`rosters/${ROSTER_RO}`).set(r({ guest: 'Maya', level: 'read' }));
+  const owned = { type: 'ldc', title: 'Work shift', date: '2026-10-21', start: '09:00', end: '14:00', note: '', byName: 'SAM', byColor: '#F4B6A0', byToken: '', pending: false };
+  for (const t of [ROSTER, ROSTER_OFF, ROSTER_RO]) await db.doc(`rosters/${t}/entries/e1`).set({ id: 'e1', ...owned });
+  await db.doc(`rosters/${ROSTER}/entries/gMine`).set({ id: 'gMine', type: 'other', title: 'Dog sitting', date: '2026-10-23', start: '18:00', end: '', note: '', byName: 'JORDAN', byColor: '#B8E27A', byToken: ROSTER, pending: false });
 });
 
 const as = (uid) => env.authenticatedContext(uid).firestore();
@@ -125,38 +129,52 @@ await check('a guest cannot reach the private deck behind a link', async () => {
 });
 
 // ---- schedule links ---------------------------------------------------------------------------------
-const reply = (r) => ({ reply: r, pending: true, gBy: 'Jordan', gAt: NOW });
-await check('a guest reads the schedule on a live link', async () => {
+const add = (id, extra) => ({ id, type: 'other', title: 'Dog sitting', date: '2026-10-23', start: '18:00', end: '21:00', note: '', byToken: ROSTER, byName: 'JORDAN', byColor: '#B8E27A', pending: true, gBy: 'Jordan', gAt: NOW, ...extra });
+await check('anyone with a live link reads the shared schedule', async () => {
   await assertSucceeds(as('g2').doc(`rosters/${ROSTER}/entries/e1`).get());
+  await assertSucceeds(as('g3').doc(`rosters/${ROSTER_RO}/entries/e1`).get());
 });
-await check('GOT IT is accepted', async () => {
-  await assertSucceeds(as('g2').doc(`rosters/${ROSTER}/entries/e1`).update(reply({ state: 'ok', comment: '', at: NOW })));
+await check('a READ + ADD link can add its own entry', async () => {
+  await assertSucceeds(as('g2').doc(`rosters/${ROSTER}/entries/gNew1`).set(add('gNew1')));
+  await assertSucceeds(as('g2').doc(`rosters/${ROSTER}/entries/gNew2`).set(add('gNew2', { start: '', end: '', note: 'Key under the mat' })));
 });
-await check('a change request with a note is accepted', async () => {
-  await assertSucceeds(as('g2').doc(`rosters/${ROSTER}/entries/e1`).update(reply({ state: 'change', comment: 'Could we do Friday?', at: NOW })));
+await check('a READ ONLY link cannot add', async () => {
+  await assertFails(as('g3').doc(`rosters/${ROSTER_RO}/entries/gNew3`).set(add('gNew3', { byToken: ROSTER_RO, byName: 'MAYA' })));
 });
-await check('a change request without a note is accepted', async () => {
-  await assertSucceeds(as('g2').doc(`rosters/${ROSTER}/entries/e1`).update(reply({ state: 'change', comment: '', at: NOW })));
-  await assertSucceeds(as('g2').doc(`rosters/${ROSTER}/entries/e1`).update(reply({ state: 'change', at: NOW })));
+await check('new entries are checked: their own key, a real date, sane sizes, no extra fields', async () => {
+  await assertFails(as('g2').doc(`rosters/${ROSTER}/entries/gBad1`).set(add('gBad1', { byToken: ROSTER_RO })));
+  await assertFails(as('g2').doc(`rosters/${ROSTER}/entries/gBad2`).set(add('gBad2', { date: 'next friday' })));
+  await assertFails(as('g2').doc(`rosters/${ROSTER}/entries/gBad3`).set(add('gBad3', { title: 'x'.repeat(121) })));
+  await assertFails(as('g2').doc(`rosters/${ROSTER}/entries/gBad4`).set(add('gBad4', { title: '' })));
+  await assertFails(as('g2').doc(`rosters/${ROSTER}/entries/gBad5`).set(add('gBad5', { owner: 'me' })));
+  await assertFails(as('g2').doc(`rosters/${ROSTER}/entries/gBad6`).set(add('gOther')));
+  await assertFails(as('g2').doc(`rosters/${ROSTER}/entries/gBad7`).set(add('gBad7', { pending: false })));
 });
-await check('replies are checked: no made-up states, no huge notes', async () => {
-  await assertFails(as('g2').doc(`rosters/${ROSTER}/entries/e1`).update(reply({ state: 'cancel', at: NOW })));
-  await assertFails(as('g2').doc(`rosters/${ROSTER}/entries/e1`).update(reply({ state: 'change', comment: 'x'.repeat(501), at: NOW })));
+await check('they can edit or mark deleted only their own entries', async () => {
+  const mine = as('g2').doc(`rosters/${ROSTER}/entries/gMine`);
+  await assertSucceeds(mine.update({ title: 'Dog sitting (late)', pending: true, gBy: 'Jordan', gAt: NOW }));
+  await assertSucceeds(mine.update({ deleted: true, pending: true, gBy: 'Jordan', gAt: NOW + 1 }));
+  await assertFails(as('g2').doc(`rosters/${ROSTER}/entries/e1`).update({ title: 'Hacked', pending: true, gBy: 'Jordan', gAt: NOW, byToken: ROSTER }));
+  await assertFails(as('g2').doc(`rosters/${ROSTER}/entries/e1`).update({ title: 'Hacked', pending: true, gBy: 'Jordan', gAt: NOW }));
 });
-await check('a guest cannot change the entry itself', async () => {
-  await assertFails(as('g2').doc(`rosters/${ROSTER}/entries/e1`).update({ ...reply({ state: 'ok', at: NOW }), date: '2026-12-25' }));
-  await assertFails(as('g2').doc(`rosters/${ROSTER}/entries/e1`).update({ ...reply({ state: 'ok', at: NOW }), start: '06:00' }));
-  await assertFails(as('g2').doc(`rosters/${ROSTER}/entries/e9`).set({ id: 'e9', title: 'Fake' }));
+await check('nobody hard-deletes from a link but the owner', async () => {
+  await assertFails(as('g2').doc(`rosters/${ROSTER}/entries/gMine`).delete());
+  await assertFails(as('g2').doc(`rosters/${ROSTER}/entries/e1`).delete());
 });
-await check('a stopped schedule link refuses guests', async () => {
+await check('a stopped schedule link refuses everyone', async () => {
   await assertFails(as('g2').doc(`rosters/${ROSTER_OFF}/entries/e1`).get());
-  await assertFails(as('g2').doc(`rosters/${ROSTER_OFF}/entries/e1`).update(reply({ state: 'ok', at: NOW })));
+  await assertFails(as('g2').doc(`rosters/${ROSTER_OFF}/entries/gX`).set(add('gX', { byToken: ROSTER_OFF })));
+});
+await check('a guest cannot raise their own link to READ + ADD', async () => {
+  await assertFails(as('g3').doc(`rosters/${ROSTER_RO}`).update({ level: 'add' }));
 });
 await check('schedule links cannot be listed by guests', async () => {
   await assertFails(as('g2').collection('rosters').get());
 });
-await check('the owner manages schedule links', async () => {
-  await assertSucceeds(as('desk').doc(`rosters/${ROSTER}/entries/e1`).set({ id: 'e1', title: 'Work shift', date: '2026-10-22', reply: null, pending: false }));
+await check('the owner manages schedule links: level, color, entries, stop', async () => {
+  await assertSucceeds(as('desk').doc(`rosters/${ROSTER_RO}`).update({ level: 'add', color: '#8EC5FF' }));
+  await assertSucceeds(as('desk').doc(`rosters/${ROSTER}/entries/e1`).set({ id: 'e1', title: 'Work shift', date: '2026-10-22', pending: false }));
+  await assertSucceeds(as('desk').doc(`rosters/${ROSTER}/entries/gMine`).delete());
   await assertSucceeds(as('desk').doc(`rosters/${ROSTER}`).update({ closed: true }));
 });
 

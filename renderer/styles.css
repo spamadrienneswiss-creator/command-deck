@@ -1295,3 +1295,26 @@ body[data-theme="vector"] .alert-strip:is([data-type="alarm"], [data-type="pastd
 }
 body[data-theme="vector"] .alert-strip:is([data-type="alarm"], [data-type="pastdue"]) .al-dot::before { content: 'MASTER\A CAUTION'; white-space: pre; text-align: center; font: 700 9.5px/1.15 var(--display); letter-spacing: 0.12em; color: #FFFFFF; }
 body[data-theme="vector"] .al-dot { border-radius: 50%; }
+
+/* ---------- v1.15 shared schedule: name chips, sharing levels and colors ---------- */
+.sc-who { gap: 4px; }
+.sc-who svg { flex-shrink: 0; }
+.sc-shows { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.chip-box { margin-top: 6px; padding: 14px; box-shadow: inset 0 0 0 1px var(--line-3); background: rgba(var(--accent-rgb), 0.04); }
+.chip-box-h { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.chip-box-h .f-label { color: var(--amber); }
+.chip-box-h .f-hint { margin: 0; display: inline-flex; align-items: center; gap: 8px; }
+.chip-box-row { margin-top: 12px; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 18px; align-items: start; }
+.sw-pill.taken { opacity: 0.35; }
+.sh-color-h { display: flex; justify-content: space-between; align-items: center; }
+.sh-levels { display: flex; flex-direction: column; gap: 6px; }
+.sh-level { display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left; padding: 11px 12px; border: 0; cursor: pointer; color: var(--text); background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+.sh-level i { width: 14px; height: 14px; margin-top: 1px; flex-shrink: 0; box-shadow: inset 0 0 0 1.5px var(--dim); }
+.sh-level b { display: block; font: 500 10.5px/1 var(--mono); letter-spacing: 0.18em; }
+.sh-level small { display: block; margin-top: 5px; font: 400 11px/1.4 var(--mono); color: var(--muted); }
+.sh-level.on { background: rgba(var(--accent-rgb), 0.08); box-shadow: inset 0 0 0 1px var(--amber); }
+.sh-level.on i { box-shadow: inset 0 0 0 1.5px var(--amber); background: radial-gradient(circle, var(--amber) 0 3.5px, transparent 4px); }
+.sh-level.on b { color: var(--amber); }
+.sh-av { border: 0; padding: 0; cursor: pointer; color: #14151B; }
+.sh-lv { white-space: nowrap; }
+.sh-color-row { display: flex; align-items: center; gap: 12px; padding: 8px 0 10px 34px; box-shadow: inset 0 -1px 0 var(--line-2); }

@@ -122,7 +122,8 @@ If you ever want to publish by hand instead, Part 2's `npm run deploy -- --proje
 | Share link says **Link not found** or **This link has ended** | The link was stopped, the project was finished (for "when done" links) or its 7 days passed. Share again to make a new one. If no share link opens at all, rerun the Part 2 deploy. |
 | Guest's check-offs don't show up | Command Deck or Field Unit must be open somewhere to relay them. They arrive as soon as either one comes online. |
 | Schedule link says **Link not found** or **This link has ended** | It was stopped, or its 7 or 30 days passed. Share again for a new one. If no schedule link opens at all, rerun the Part 2 deploy (v1.10 adds the schedule page). |
-| Their GOT IT / CHANGE REQUEST doesn't show up | Command Deck or Field Unit must be open somewhere to bring replies in. They arrive as soon as either one comes online. |
+| Someone's new schedule entry doesn't show for everyone | Command Deck or Field Unit must be open somewhere to bring it in. It arrives (and goes out to every link) as soon as either one comes online. |
+| They don't see **+ ADD TO SCHEDULE** | Their link is READ ONLY. Open SHARE, tap their access and switch it to READ + ADD. No new link needed. |
 | Phone shows old data | Pull it to the front and wait a few seconds; if Command shows **UPLINK ERROR**, see Settings › Field Unit on the computer. |
 
 **Free-tier limits** (reads, writes, storage and bandwidth) are far above what one console and a few phones use.

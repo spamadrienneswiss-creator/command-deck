@@ -1,13 +1,15 @@
-// Schedule sharing: send your work shifts and appointments to someone by a secret link.
+// Schedule sharing: one shared schedule, opened by secret links.
 //
 // Firestore layout (outside the private deck):
-//   rosters/{token}              the share: deck, guest name, end rule, owner name, look, type chips
-//   rosters/{token}/entries/{id} a copy of each schedule entry the guest can see, plus that
-//                                guest's own reply: { state: 'ok' | 'change', comment (optional), at }
+//   rosters/{token}              one person's link: deck, their name, color, level ('read' | 'add'),
+//                                end rule, and the owner's name, look, chip and type chips
+//   rosters/{token}/entries/{id} a copy of every schedule entry everyone sees, each labeled with
+//                                who added it (byName, byColor; byToken only on that person's own)
 //
-// The guest only ever writes a reply (marked pending: true). Whichever of the owner's apps is
-// online (Command Deck or Field Unit) runs this relay: it copies the schedule out to every live
-// link, and copies replies back into the real entries (entry.replies[token]), then clears the mark.
+// Everyone with a link sees the same schedule. A person whose link is READ + ADD can add their own
+// entries, and edit or delete the ones they added: they write into their own link (pending: true).
+// Whichever of the owner's apps is online (Command Deck or Field Unit) runs this relay: it brings
+// those changes into the real schedule, then copies the schedule back out to every live link.
 
 import { makeToken, expiryMs } from './manifest.js';
 
@@ -117,9 +119,28 @@ export function shortName(name) {
   return String(name || '').trim().toUpperCase().slice(0, 10) || 'TYPE';
 }
 
-/** What one guest sees of an entry: no other guests' replies. */
-export function mirrorOf(e, token) {
-  const r = e.replies && e.replies[token];
+/** Colors for people's name chips (the owner picks one per link, and one for themself). */
+export const PERSON_COLORS = ['#B8E27A', '#7FD1C7', '#A8B0D8', '#D9A9C6', '#F4B6A0', '#E8D58B', '#FF8A78', '#8EC5FF'];
+export const OWNER_COLOR = '#F4B6A0';
+export const LEVELS = ['read', 'add'];
+/** A short label for a name chip: "Jordan" → "JORDAN" (max 10). */
+export function chipName(name) {
+  return String(name || '').trim().toUpperCase().slice(0, 10) || 'GUEST';
+}
+function levelOf(m) { return m && m.level === 'add' ? 'add' : 'read'; }
+const HEX = /^#[0-9A-Fa-f]{6}$/;
+const goodColor = (c, fallback) => (HEX.test(String(c || '')) ? String(c) : fallback);
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME = /^\d{2}:\d{2}$/;
+
+/**
+ * What a link sees of an entry. Entries carry who added them: `by` is null for the owner's own,
+ * or { token, name, color } for someone's link. The token is only shown back to that same person
+ * (byToken), so links never learn each other's keys.
+ */
+export function mirrorOf(e, token = '', owner = null, people = {}) {
+  const tok = e.addedBy && e.addedBy.token;
+  const p = tok ? people[tok] : null;
   return clean({
     id: e.id,
     type: e.type || 'other',
@@ -128,9 +149,29 @@ export function mirrorOf(e, token) {
     start: e.start || '',
     end: e.end || '',
     note: e.note || '',
-    reply: r ? { state: r.state, comment: r.comment || '', at: r.at || 0 } : null,
+    byName: tok ? chipName((p && p.name) || e.addedBy.name) : chipName((owner && owner.name) || ''),
+    byColor: tok ? goodColor((p && p.color) || e.addedBy.color, '#B5B0BC') : goodColor(owner && owner.color, OWNER_COLOR),
+    byToken: tok && tok === token ? tok : '',
     pending: false
   });
+}
+
+/** A guest's entry as written into their link, checked and trimmed. Null if it isn't usable. */
+export function guestEntry(g, types = DEFAULT_TYPES) {
+  if (!g || typeof g !== 'object') return null;
+  const title = String(g.title || '').trim().slice(0, 120);
+  const date = String(g.date || '');
+  if (!title || !DATE.test(date)) return null;
+  const start = TIME.test(String(g.start || '')) ? g.start : '';
+  const end = TIME.test(String(g.end || '')) ? g.end : '';
+  const type = (types || []).some((t) => t.id === g.type) ? g.type : 'other';
+  return { type, title, date, start, end, note: String(g.note || '').trim().slice(0, 300) };
+}
+
+/** A link's copy of an entry in the same shape mirrorOf writes, for comparing. */
+function mirrorShape(c, id) {
+  return clean({ id, type: c.type || 'other', title: c.title || '', date: c.date || null, start: c.start || '', end: c.end || '', note: c.note || '',
+    byName: c.byName || '', byColor: c.byColor || '', byToken: c.byToken || '', pending: !!c.pending });
 }
 
 function isLive(m, now = Date.now()) {
@@ -150,9 +191,9 @@ export class RosterRelay {
    * hooks:
    *   getEntries()              the current schedule list
    *   getTypes()                [{ id, name, short, color }]
-   *   applyReplies(changes)     [{ entryId, token, reply: { state, comment, at, by } }] → entry.replies[token]
-   *   onActivity(events)        [{ token, guest, text, state }] for a log line / toast
-   *   getLook(), operatorName()
+   *   applyGuestChanges(list)   [{ kind: 'add' | 'edit' | 'delete', entry, token }] → the real schedule
+   *   onActivity(events)        [{ token, guest, text, kind }] for a log line / toast
+   *   getLook(), operatorName(), ownerChip() → { name, color }
    */
   constructor(fb, db, deckId, uid, hooks) {
     this.fb = fb;
@@ -212,36 +253,62 @@ export class RosterRelay {
     this.subs.delete(token);
   }
 
-  /** Guest replies → the real entries. */
+  /** People's live links: token → { name, color, level }. */
+  people() {
+    const out = {};
+    for (const [token, m] of this.rosters) if (isLive(m)) out[token] = { name: m.guest, color: m.color || '', level: levelOf(m) };
+    return out;
+  }
+
+  owner() {
+    const c = this.h.ownerChip ? this.h.ownerChip() : null;
+    return { name: (c && c.name) || (this.h.operatorName ? this.h.operatorName() : '') || 'Owner', color: goodColor(c && c.color, OWNER_COLOR) };
+  }
+
+  /** What people added, edited or deleted on their links → the real schedule. */
   inbound(token) {
     const m = this.rosters.get(token);
     const s = this.subs.get(token);
     if (!m || !s || !isLive(m)) return;
     const entries = new Map(this.h.getEntries().map((e) => [e.id, e]));
+    const types = this.h.getTypes() || DEFAULT_TYPES;
     const changes = [];
     const activity = [];
+    const by = { token, name: String(m.guest || 'Guest').slice(0, 40), color: goodColor(m.color, '#B5B0BC') };
     for (const [id, g] of s.entries) {
-      if (!g || !g.pending || !g.reply) continue;
+      if (!g || !g.pending) continue;
       const key = `${token}:${id}:${g.gAt || 0}`;
       if (this.seen.has(key)) continue;
       this.seen.add(key);
+      // Only their own entries, and only on a READ + ADD link. Everything else is left alone,
+      // and the next copy-out puts the true version back on their link.
+      if (g.byToken !== token || levelOf(m) !== 'add') continue;
       const main = entries.get(id);
-      if (!main) continue;
-      const state = g.reply.state === 'change' ? 'change' : g.reply.state === 'ok' ? 'ok' : null;
-      const comment = String(g.reply.comment || '').trim().slice(0, 500);
-      if (!state) continue;
-      const by = String(g.gBy || m.guest || 'Guest').slice(0, 40);
-      const reply = { state, comment: state === 'change' ? comment : '', at: g.gAt || Date.now(), by };
-      const cur = main.replies && main.replies[token];
-      if (cur && cur.state === reply.state && (cur.comment || '') === reply.comment) continue;
-      changes.push({ entryId: id, token, reply });
-      const when = main.date ? dayLabel(parseYmd(main.date)).replace(/^(TODAY|TOMORROW) · /, '').toLowerCase().replace(/(^| )\w/g, (c) => c.toUpperCase()) : '';
-      activity.push({ state, text: state === 'ok'
-        ? `${by}: got it for ${main.title}${when ? ` (${when})` : ''}`
-        : `${by} asked to change ${main.title}${when ? ` (${when})` : ''}${comment ? `: ${comment}` : ' (no note)'}` });
+      if (main && !(main.addedBy && main.addedBy.token === token)) continue;
+      const when = (date) => (date ? dayLabel(parseYmd(date)).replace(/^(TODAY|TOMORROW) · /, '').toLowerCase().replace(/(^| )\w/g, (c) => c.toUpperCase()) : '');
+      if (g.deleted) {
+        if (main) {
+          changes.push({ kind: 'delete', entry: main, token });
+          activity.push({ kind: 'delete', text: `${by.name} removed ${main.title}${main.date ? ` (${when(main.date)})` : ''}` });
+        }
+        continue;
+      }
+      const e = guestEntry(g, types);
+      if (!e) continue;
+      if (!main) {
+        changes.push({ kind: 'add', entry: { id, ...e, addedBy: by, createdAt: g.gAt || Date.now() }, token });
+        activity.push({ kind: 'add', text: `${by.name} added ${e.title}${` (${when(e.date)})`}` });
+      } else if (!same(guestEntry(main, types), e)) {
+        changes.push({ kind: 'edit', entry: { ...main, ...e, addedBy: by }, token });
+        activity.push({ kind: 'edit', text: `${by.name} changed ${e.title}${` (${when(e.date)})`}` });
+      }
     }
-    if (changes.length) this.h.applyReplies(changes);
-    if (activity.length) this.h.onActivity(activity.map((a) => ({ token, guest: m.guest, text: a.text, state: a.state })));
+    if (changes.length) {
+      this.h.applyGuestChanges(changes);
+      const lastAt = Math.max(...[...s.entries.values()].map((g) => (g && g.byToken === token && g.gAt) || 0));
+      if (lastAt > (m.lastAt || 0)) { m.lastAt = lastAt; this.fb.setDoc(this.ref(token), { lastAt }, { merge: true }).catch(() => {}); }
+    }
+    if (activity.length && this.h.onActivity) this.h.onActivity(activity.map((a) => ({ token, guest: m.guest, text: a.text, kind: a.kind })));
     this.schedule(50);
   }
 
@@ -254,7 +321,8 @@ export class RosterRelay {
     return clean({
       types: (this.h.getTypes() || DEFAULT_TYPES).map((t) => ({ id: t.id, short: t.short || shortName(t.name), color: t.color })),
       look: this.h.getLook ? this.h.getLook() : null,
-      owner: this.h.operatorName ? this.h.operatorName() : ''
+      owner: this.h.operatorName ? this.h.operatorName() : '',
+      ownerChip: this.owner()
     });
   }
 
@@ -262,21 +330,24 @@ export class RosterRelay {
   async sync() {
     const entries = this.h.getEntries().filter((e) => inWindow(e));
     const header = this.header();
+    const owner = this.owner();
+    const people = this.people();
     for (const [token, m] of this.rosters) {
       if (!isLive(m)) continue;
-      if (!same(header, { types: m.types, look: m.look || null, owner: m.owner || '' })) {
+      if (!same(header, { types: m.types, look: m.look || null, owner: m.owner || '', ownerChip: m.ownerChip || null })) {
         await this.fb.setDoc(this.ref(token), header, { merge: true }).catch(() => {});
       }
       const s = this.subs.get(token);
       if (!s || !s.ready) continue;
-      const want = new Map(entries.map((e) => [e.id, mirrorOf(e, token)]));
+      const want = new Map(entries.map((e) => [e.id, mirrorOf(e, token, owner, people)]));
       const batch = this.fb.writeBatch(this.db);
       let n = 0;
       for (const [id, data] of want) {
         const cur = s.entries.get(id);
         if (cur && cur.pending && !this.seen.has(`${token}:${id}:${cur.gAt || 0}`)) continue; // not handled yet
-        const curCmp = cur ? mirrorOf({ ...cur, id, replies: cur.reply ? { [token]: cur.reply } : {} }, token) : null;
-        if (!cur || cur.pending || !same(curCmp, data)) { batch.set(this.ref(token, 'entries', id), data); n++; }
+        if (!cur || cur.pending || !same(mirrorShape(cur, id), data)) {
+          batch.set(this.ref(token, 'entries', id), data); n++;
+        }
       }
       for (const [id, cur] of s.entries) {
         if (want.has(id)) continue;
@@ -289,22 +360,47 @@ export class RosterRelay {
   }
 
   /** Creates a link. Returns its token. */
-  async share({ guest, ends = 'month' }) {
+  async share({ guest, ends = 'month', level = 'read', color = '' }) {
     const token = makeToken();
     const now = Date.now();
     const days = ENDS[ends] !== undefined ? ENDS[ends] : ENDS.month;
+    const used = new Set(Object.values(this.people()).map((p) => p.color).concat(this.owner().color));
+    const pick = goodColor(color, PERSON_COLORS.find((c) => !used.has(c)) || PERSON_COLORS[0]);
     // expiresAt is added after clean(): a real Timestamp must reach Firestore (the rules compare it).
     await this.fb.setDoc(this.ref(token), { ...clean({
       deckId: this.deckId, guest: String(guest || 'Guest').trim().slice(0, 40) || 'Guest',
       ends: ENDS[ends] !== undefined ? ends : 'month',
+      level: LEVELS.includes(level) ? level : 'read', color: pick,
       closed: false, createdAt: now, createdBy: this.uid,
       ...this.header()
     }), expiresAt: days ? this.fb.Timestamp.fromMillis(now + days * 864e5) : null });
+    this.rosters.set(token, { token, deckId: this.deckId, guest, level, color: pick, closed: false });
     // Entries are copied out right away so the link works the moment it's opened.
+    const owner = this.owner();
+    const people = this.people();
     const batch = this.fb.writeBatch(this.db);
-    this.h.getEntries().filter((e) => inWindow(e)).forEach((e) => batch.set(this.ref(token, 'entries', e.id), mirrorOf(e, token)));
+    this.h.getEntries().filter((e) => inWindow(e)).forEach((e) => batch.set(this.ref(token, 'entries', e.id), mirrorOf(e, token, owner, people)));
     await batch.commit();
     return token;
+  }
+
+  /** READ ONLY ⇄ READ + ADD, without sending a new link. */
+  async setLevel(token, level) {
+    if (!LEVELS.includes(level)) return;
+    await this.fb.setDoc(this.ref(token), { level }, { merge: true });
+    const m = this.rosters.get(token);
+    if (m) m.level = level;
+    this.emit();
+  }
+
+  /** A person's chip color; their entries everywhere follow it. */
+  async setColor(token, color) {
+    if (!HEX.test(String(color || ''))) return;
+    await this.fb.setDoc(this.ref(token), { color }, { merge: true });
+    const m = this.rosters.get(token);
+    if (m) m.color = color;
+    this.emit();
+    this.schedule(50);
   }
 
   async close(token, reason = 'stopped') {
@@ -324,20 +420,20 @@ export class RosterRelay {
     } catch (e) { /* the closed flag already blocks the guest */ }
   }
 
-  /** Live links, newest first, with each guest's last reply. */
+  /** Live links, newest first. */
   list() {
     const out = [];
     for (const [token, m] of this.rosters) {
       if (!isLive(m)) continue;
       const s = this.subs.get(token);
-      let last = 0;
-      if (s) s.entries.forEach((e) => { if (e && e.reply && e.reply.at > last) last = e.reply.at; });
-      out.push({ token, guest: m.guest, ends: m.ends, createdAt: m.createdAt, lastActive: last || null });
+      let last = m.lastAt || 0;
+      if (s) s.entries.forEach((e) => { if (e && e.byToken === token && (e.gAt || 0) > last) last = e.gAt; });
+      out.push({ token, guest: m.guest, ends: m.ends, level: levelOf(m), color: goodColor(m.color, '#B5B0BC'), createdAt: m.createdAt, lastActive: last || null });
     }
     return out.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   }
 
-  /** Guest name for a token (for showing replies). */
+  /** Guest name for a token. */
   guestOf(token) {
     const m = this.rosters.get(token);
     return m ? m.guest : null;

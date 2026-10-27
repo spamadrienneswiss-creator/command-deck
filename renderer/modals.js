@@ -1,6 +1,7 @@
 // Task editor, event editor, settings and first-run setup.
 import * as U from './util.js';
 import { NEURAL_VOICES } from './tts.js';
+import { PERSON_COLORS, chipName, OWNER_COLOR } from '../shared/roster.js';
 
 const { $, $$, esc } = U;
 let app = null;
@@ -29,6 +30,12 @@ const FRAMES = [['dark', 'DARK', '#14151B'], ['bone', 'BONE', '#EEDDC3'], ['gunm
 const TRIMS = [['none', 'NONE', []], ['sunset', 'SUNSET', ['#B5432A', '#E07A2E', '#E9B23B']], ['mission', 'MISSION', ['#E5532D', '#EADBC2', '#3F68A6']], ['arcade', 'ARCADE', ['#D6457E', '#F08A3C', '#F2C94C', '#3FB3A8']],
   ['hazard', 'HAZARD', ['#E8C547', '#1A1A1A', '#E8C547', '#1A1A1A']], ['aurora', 'AURORA', ['#2BB3A3', '#6FD08C', '#8E6CD8']], ['gulf', 'GULF', ['#8FC1E3', '#F28A2E', '#8FC1E3']],
   ['dock', 'DOCK LIGHTS', ['#1FB8F0', '#F4B41A', '#FF4F86', '#EE8A2E']]];
+const PERSON_IC = '<svg width="8" height="9" viewBox="0 0 9 10" aria-hidden="true"><circle cx="4.5" cy="3" r="2.2" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M0.8 9.5 a3.7 3.7 0 0 1 7.4 0" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>';
+const whoChip = (name, color) => `<span class="sc-chip sc-who" style="--tc:${esc(color)}">${PERSON_IC}${esc(chipName(name))}</span>`;
+/** Color swatches; colors other people already have are dimmed (still pickable). */
+function swatchPills(current, taken = {}) {
+  return PERSON_COLORS.map((c) => `<button type="button" class="pill sw-pill${c === current ? ' on' : ''}${taken[c] && c !== current ? ' taken' : ''}" data-v="${c}" style="--pc:${c}" aria-label="Color ${c}${taken[c] ? ` (used by ${esc(taken[c])})` : ''}" title="${taken[c] ? `Used by ${esc(taken[c])}` : ''}"><i style="background:${c}"></i></button>`).join('');
+}
 const X_SVG = '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 2 L8 8 M8 2 L2 8" stroke="currentColor" stroke-width="1.4"/></svg>';
 
 export function initModals(api) {
@@ -545,13 +552,14 @@ export function openScheduleEditor(entry, { focus = null } = {}) {
   const isNew = !entry;
   const types = () => app.scheduleTypes();
   const today = new Date();
-  const e = U.clone(entry || { id: U.uid(), type: (types()[0] || {}).id || 'appt', title: '', date: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`, note: '', replies: {} });
+  const e = U.clone(entry || { id: U.uid(), type: (types()[0] || {}).id || 'appt', title: '', date: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`, note: '', addedBy: null });
   const prev = entry ? U.clone(entry) : null;
   let adding = false;
   let newColor = null;
   const typePills = () => types().map((t) => `<button type="button" class="pill sc-type${e.type === t.id ? ' on' : ''}" data-type="${esc(t.id)}" style="--pc:${esc(t.color)}">${esc((t.name || '').toUpperCase())}</button>`).join('')
     + `<button type="button" class="pill sc-newtype" id="scNewType">+ NEW TYPE</button>`;
-  const replies = Object.values(e.replies || {});
+  const who = app.entryBy(e);
+  const guestMade = !!(e.addedBy && e.addedBy.token);
   const m = mount(`
     <i class="br br-tr amber"></i><i class="br br-bl lav"></i>
     <div class="m-head"><span>${isNew ? 'SCHEDULE · NEW ENTRY' : 'SCHEDULE · EDIT ENTRY'}</span><button type="button" class="x-btn" data-x aria-label="Close">${X_SVG}</button></div>
@@ -568,8 +576,8 @@ export function openScheduleEditor(entry, { focus = null } = {}) {
         <div class="f"><label class="f-label" for="scStart">START · OPTIONAL</label><input id="scStart" class="in" type="time" value="${esc(e.start || '')}"></div>
         <div class="f"><label class="f-label" for="scEnd">END · OPTIONAL</label><input id="scEnd" class="in" type="time" value="${esc(e.end || '')}"></div>
       </div>
-      <div class="f"><label class="f-label" for="scNote">NOTE · THEY SEE THIS</label><input id="scNote" class="in" maxlength="300" value="${esc(e.note || '')}" placeholder="Optional, like &quot;need a ride home after&quot;"></div>
-      ${!isNew && replies.length ? '<div class="f-hint">Changing the title, type, date or time clears the replies on this entry, so everyone confirms the new version.</div>' : ''}
+      <div class="f"><label class="f-label" for="scNote">NOTE · EVERYONE SEES THIS</label><input id="scNote" class="in" maxlength="300" value="${esc(e.note || '')}" placeholder="Optional, like &quot;need a ride home after&quot;"></div>
+      <div class="f-hint sc-shows">${guestMade ? `Added by ${whoChip(who.name, who.color)} on their link. They can still change it there.` : `Shows as ${whoChip(who.name, who.color)} · change your chip in Settings › Operator`}</div>
     </form>
     <div class="m-foot">
       ${isNew ? '' : '<button type="button" class="btn danger" id="scDel">DELETE</button>'}
@@ -622,11 +630,22 @@ export function openScheduleEditor(entry, { focus = null } = {}) {
   setTimeout(() => { const f = focus === 'date' ? $('#scDate', m) : $('#scTitle', m); f.focus(); if (focus === 'date' && f.showPicker) { try { f.showPicker(); } catch (err) { /* needs a click */ } } }, 30);
 }
 
+const SCHED_LEVELS = [
+  ['read', 'READ ONLY', 'They see the whole schedule, but can\'t change anything.'],
+  ['add', 'READ + ADD NEW ITEMS', 'They can also add their own entries, and edit or delete the ones they added.']
+];
 export function openScheduleShare() {
   const FU = app.fieldUnit;
-  const draft = { guest: '', ends: 'month' };
+  const taken = () => {
+    const out = { [app.S.settings.chipColor || OWNER_COLOR]: 'you' };
+    FU.scheduleShares().forEach((c) => { out[c.color] = c.guest; });
+    return out;
+  };
+  const freeColor = () => PERSON_COLORS.find((c) => !taken()[c]) || PERSON_COLORS[0];
+  const draft = { guest: '', ends: 'month', level: 'read', color: freeColor() };
   let made = null;
   let busy = false;
+  let colorFor = null; // token whose color row is open
   const draw = () => {
     const ready = FU.state().sharing;
     const crew = FU.scheduleShares();
@@ -641,29 +660,48 @@ export function openScheduleShare() {
           <div>
             ${made ? `<div class="sh-made"><div class="sh-made-h">✓ SCHEDULE LINK READY · ${esc(made.guest.toUpperCase())}</div>
                 <div class="sh-link">${esc(made.url)}</div>
-                <div class="f-hint">Send this to ${esc(made.guest)}, or let them scan the code. They see one week at a time and tap GOT IT or CHANGE REQUEST on each entry. On an iPhone they can add it to the Home Screen.</div>
+                <div class="f-hint">Send this to ${esc(made.guest)}, or let them scan the code. Everyone with a link sees the same schedule, one week at a time${made.level === 'add' ? ', and they can add their own entries' : ''}. On an iPhone they can add it to the Home Screen.</div>
                 <div class="sh-made-btns"><button type="button" class="btn primary" id="shCopy">COPY LINK</button><button type="button" class="btn line" id="shAnother">+ SHARE WITH SOMEONE ELSE</button></div></div>`
             : `<div class="f"><label class="f-label" for="shName">WHO'S IT FOR?</label><input id="shName" class="in title" maxlength="40" placeholder="Their name" value="${esc(draft.guest)}"></div>
-              <div class="f-hint">They'll see your schedule one week at a time, and can reply GOT IT or CHANGE REQUEST (with a comment) on each entry. Replies show up here and on Field Unit.</div>
+              <div class="f"><span class="f-label sh-color-h">THEIR COLOR <span id="shPrev">${whoChip(draft.guest || 'Their name', draft.color)}</span></span><div class="pills pj-swatches" id="shColor">${swatchPills(draft.color, taken())}</div></div>
+              <div class="f"><span class="f-label">WHAT CAN THEY DO?</span><div class="sh-levels">${SCHED_LEVELS.map(([v, l, d]) => `<button type="button" class="sh-level${draft.level === v ? ' on' : ''}" data-level="${v}" aria-pressed="${draft.level === v}"><i></i><span><b>${l}</b><small>${esc(d)}</small></span></button>`).join('')}</div></div>
               <div class="f"><span class="f-label">LINK STOPS WORKING</span><div class="pills">${SCHED_ENDS.map(([v, l]) => `<button type="button" class="pill${draft.ends === v ? ' on' : ''}" data-ends="${v}">${l}</button>`).join('')}</div></div>
               <button type="button" class="btn primary block" id="shCreate" ${ready && !busy ? '' : 'disabled'}>${busy ? 'CREATING…' : 'CREATE LINK'}</button>`}
           </div>
           <div class="sh-qr">${made && made.qr ? `<img src="${made.qr}" alt="QR code for ${esc(made.guest)}'s link"><span class="f-hint">Scan with a phone camera to open.</span>` : '<div class="sh-qr-empty">The QR code appears here once you create a link.</div>'}</div>
         </div>
         <div class="tk-sep"><span>PEOPLE WITH ACCESS · ${crew.length}</span></div>
-        ${crew.length ? crew.map((c, i) => `<div class="sh-person sc-person" data-token="${esc(c.token)}">
-            <span class="crew-av" style="background:${CREW_COLORS[i % CREW_COLORS.length]}">${esc((c.guest || '?').slice(0, 1).toUpperCase())}</span>
-            <span class="sh-p-text"><b>${esc(c.guest)}</b><small>${c.lastActive ? `LAST REPLY ${esc(whenShort(c.lastActive))}` : 'NO REPLIES YET'} · ${c.ends === 'week' ? 'ENDS IN 7 DAYS' : c.ends === 'never' ? 'NO END DATE' : 'ENDS IN 30 DAYS'}</small></span>
+        ${crew.length ? crew.map((c) => `<div class="sh-person sc-person" data-token="${esc(c.token)}">
+            <button type="button" class="crew-av sh-av" data-color-for="${esc(c.token)}" style="background:${esc(c.color)}" aria-label="Change ${esc(c.guest)}'s color" title="Change color">${esc((c.guest || '?').slice(0, 1).toUpperCase())}</button>
+            <span class="sh-p-text"><b>${esc(c.guest)}</b><small>${c.lastActive ? `LAST ADDED ${esc(whenShort(c.lastActive))}` : 'NOTHING ADDED YET'} · ${c.ends === 'week' ? 'ENDS IN 7 DAYS' : c.ends === 'never' ? 'NO END DATE' : 'ENDS IN 30 DAYS'}</small></span>
+            <button type="button" class="mini-btn sh-lv${c.level === 'add' ? ' amber' : ''}" data-flip="${esc(c.token)}" data-to="${c.level === 'add' ? 'read' : 'add'}" title="Switch what they can do">${c.level === 'add' ? 'READ + ADD' : 'READ ONLY'} ▾</button>
             <button type="button" class="mini-btn" data-copy="${esc(c.token)}">COPY LINK</button>
             <button type="button" class="mini-btn danger-t" data-stop="${esc(c.token)}">STOP</button>
-          </div>`).join('') : '<div class="f-hint">Nobody yet. Links you create show up here, with STOP to end one at any time.</div>'}
+          </div>${colorFor === c.token ? `<div class="sh-color-row"><span class="f-hint">${esc(c.guest)}'s color</span><div class="pills pj-swatches" data-recolor="${esc(c.token)}">${swatchPills(c.color, taken())}</div></div>` : ''}`).join('') : '<div class="f-hint">Nobody yet. Links you create show up here. Switch what someone can do, or their color, any time without sending a new link. STOP ends a link at once.</div>'}
       </div>
       <div class="m-foot"><div class="right"><button type="button" class="btn line" data-x>DONE</button></div></div>`, { wide: true });
     m.addEventListener('click', async (ev) => {
       const t = ev.target;
       const en = t.closest('[data-ends]');
       if (en) { draft.ends = en.dataset.ends; draw(); return; }
-      if (t.closest('#shAnother')) { made = null; draft.guest = ''; draw(); setTimeout(() => { const i = $('#shName'); if (i) i.focus(); }, 30); return; }
+      const lv = t.closest('[data-level]');
+      if (lv) { draft.level = lv.dataset.level; app.sounds.click(); draw(); return; }
+      const sw = t.closest('#shColor .pill');
+      if (sw) { draft.color = sw.dataset.v; app.sounds.click(); draw(); return; }
+      const rc = t.closest('[data-recolor] .pill');
+      if (rc) {
+        const token = rc.closest('[data-recolor]').dataset.recolor;
+        try { await FU.setScheduleColor(token, rc.dataset.v); app.sounds.click(); } catch (err) { app.toast(err.message, 4000); }
+        colorFor = null; draw(); return;
+      }
+      const cf = t.closest('[data-color-for]');
+      if (cf) { colorFor = colorFor === cf.dataset.colorFor ? null : cf.dataset.colorFor; draw(); return; }
+      const fl = t.closest('[data-flip]');
+      if (fl) {
+        try { await FU.setScheduleLevel(fl.dataset.flip, fl.dataset.to); app.sounds.click(); app.toast(fl.dataset.to === 'add' ? 'They can now add their own entries' : 'Now read only'); } catch (err) { app.toast(err.message, 4000); }
+        draw(); return;
+      }
+      if (t.closest('#shAnother')) { made = null; draft.guest = ''; draft.color = freeColor(); draft.level = 'read'; draw(); setTimeout(() => { const i = $('#shName'); if (i) i.focus(); }, 30); return; }
       if (t.closest('#shCopy')) { await window.deck.copy(made.url); app.toast('Link copied'); return; }
       const cp = t.closest('[data-copy]');
       if (cp) { await window.deck.copy(FU.scheduleShareUrl(cp.dataset.copy)); app.toast('Link copied'); return; }
@@ -679,8 +717,8 @@ export function openScheduleShare() {
         if (!guest) { $('#shName', m).focus(); app.toast('Add their name first'); return; }
         busy = true; draw();
         try {
-          const res = await FU.shareSchedule({ guest, ends: draft.ends });
-          made = { ...res, guest };
+          const res = await FU.shareSchedule({ guest, ends: draft.ends, level: draft.level, color: draft.color });
+          made = { ...res, guest, level: draft.level };
           await window.deck.copy(res.url);
           app.toast(`Schedule link for ${guest} created and copied`);
         } catch (err) { app.toast(err.message || 'Could not create the link', 4500); }
@@ -688,9 +726,11 @@ export function openScheduleShare() {
         draw();
       }
     });
+    const nameIn = $('#shName', m);
+    if (nameIn) nameIn.addEventListener('input', () => { const p = $('#shPrev', m); if (p) p.innerHTML = whoChip(nameIn.value || 'Their name', draft.color); });
     if (!made) setTimeout(() => { const i = $('#shName'); if (i && !i.value) i.focus(); }, 30);
   };
-  const sigOf = () => JSON.stringify(FU.scheduleShares().map((c) => [c.token, c.lastActive]));
+  const sigOf = () => JSON.stringify(FU.scheduleShares().map((c) => [c.token, c.lastActive, c.level, c.color]));
   let sig = sigOf();
   const off = FU.onChange(() => {
     if (!document.querySelector('.modal .sh-grid')) { off(); return; }
@@ -811,7 +851,14 @@ export function openSettings(welcome = false) {
         ${welcome ? '<div><div class="welcome">WELCOME ABOARD</div><div class="welcome-sub">A few quick settings and the console is ready. Everything here can be changed later from the gear icon.</div></div>' : ''}
         <div class="f"><label class="f-label" for="sName">YOUR NAME · HOW THE COMPUTER ADDRESSES YOU</label><input id="sName" class="in" value="${esc(welcome && draft.operatorName === 'Commander' ? '' : draft.operatorName)}" placeholder="e.g. Sam, or Captain"></div>
         <div class="f"><label class="f-label" for="sConsole">CONSOLE NAME</label><input id="sConsole" class="in" value="${esc(draft.consoleName)}" placeholder="Command Deck">
-          <div class="f-hint">Shown in the header, the system tray and the boot sequence.</div></div>`;
+          <div class="f-hint">Shown in the header, the system tray and the boot sequence.</div></div>
+        ${welcome ? '' : `<div class="chip-box">
+          <div class="chip-box-h"><span class="f-label">YOUR CHIP ON SHARED SCHEDULES</span><span class="f-hint">LOOKS LIKE <span id="sChipPrev">${whoChip(draft.chipName || draft.operatorName, draft.chipColor || OWNER_COLOR)}</span></span></div>
+          <div class="chip-box-row">
+            <div class="f"><label class="f-label" for="sChipName">NAME ON YOUR CHIP</label><input id="sChipName" class="in" maxlength="10" value="${esc(draft.chipName || '')}" placeholder="${esc(chipName(draft.operatorName))}"><div class="f-hint">Short is best. Up to 10 letters.</div></div>
+            <div class="f"><span class="f-label">YOUR COLOR</span><div class="pills pj-swatches" id="sChipColor">${swatchPills(draft.chipColor || OWNER_COLOR, Object.fromEntries(app.fieldUnit.scheduleShares().map((c) => [c.color, c.guest])))}</div>
+              <div class="f-hint">Shows on every entry you add: here, on your phone, and on everyone's shared link.</div></div>
+          </div></div>`}`;
     },
     location() {
       return `
@@ -1027,7 +1074,12 @@ export function openSettings(welcome = false) {
 
   const wires = {
     operator() {
-      $('#sName', body).addEventListener('input', (e) => { draft.operatorName = e.target.value; });
+      const chipPrev = () => { const p = $('#sChipPrev', body); if (p) p.innerHTML = whoChip(draft.chipName || draft.operatorName, draft.chipColor || OWNER_COLOR); };
+      $('#sName', body).addEventListener('input', (e) => { draft.operatorName = e.target.value; chipPrev(); });
+      if ($('#sChipName', body)) {
+        $('#sChipName', body).addEventListener('input', (e) => { draft.chipName = e.target.value.trim().slice(0, 10); chipPrev(); });
+        wirePills($('#sChipColor', body), (v) => { draft.chipColor = v; chipPrev(); });
+      }
       $('#sConsole', body).addEventListener('input', (e) => { draft.consoleName = e.target.value; });
       setTimeout(() => $('#sName', body).focus(), 30);
     },

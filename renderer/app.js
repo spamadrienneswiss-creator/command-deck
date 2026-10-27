@@ -8,11 +8,11 @@ import * as U from './util.js';
 import { initModals, openTaskEditor, openEventEditor, openNoteEditor, openProject, openProjectEditor, openScheduleEditor, openScheduleShare, openSettings, closeModal, isModalOpen } from './modals.js';
 import * as FU from './fieldunit.js';
 import * as Motion from './motion.js';
-import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ymd, parseYmd, typeOf, shortName, timeRange, parseTime } from '../shared/roster.js';
+import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ymd, parseYmd, typeOf, shortName, timeRange, parseTime, chipName } from '../shared/roster.js';
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.14.2';
+const VERSION = 'v1.15.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -639,11 +639,16 @@ function typeChip(typeId) {
   return `<span class="sc-chip" style="--tc:${esc(t.color)}">${esc(t.short || shortName(t.name))}</span>`;
 }
 
-const REPLY_LABEL = { ok: '✓ GOT IT', change: '⚠ CHANGE REQUEST' };
-function scheduleReplies(e) {
-  const live = new Set(FU.scheduleShares().map((c) => c.token));
-  const all = Object.entries(e.replies || {});
-  return live.size ? all.filter(([token]) => live.has(token)) : all;
+const PERSON_IC = '<svg width="8" height="9" viewBox="0 0 9 10" aria-hidden="true"><circle cx="4.5" cy="3" r="2.2" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M0.8 9.5 a3.7 3.7 0 0 1 7.4 0" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>';
+/** Who added an entry: your own chip, or the person's from their link (their current color if still shared). */
+function entryBy(e) {
+  if (!e.addedBy || !e.addedBy.token) return FU.ownerChip(S.settings);
+  const live = FU.scheduleShares().find((c) => c.token === e.addedBy.token);
+  return { name: chipName((live && live.guest) || e.addedBy.name), color: (live && live.color) || e.addedBy.color || '#B5B0BC' };
+}
+function nameChip(e) {
+  const p = entryBy(e);
+  return `<span class="sc-chip sc-who" style="--tc:${esc(p.color)}">${PERSON_IC}${esc(p.name)}</span>`;
 }
 
 function renderSchedule() {
@@ -653,7 +658,7 @@ function renderSchedule() {
   const count = days.reduce((n, d) => n + d.items.length, 0);
   $('#tkCount').textContent = `${count} THIS WEEK`.replace('THIS WEEK', ymd(S.schedWeek) === ymd(weekStart(now)) ? 'THIS WEEK' : 'THAT WEEK');
   const shares = FU.scheduleShares();
-  const crew = shares.length ? `<button type="button" class="crew-chip sc-crew" data-sc="share" title="Shared with ${esc(shares.map((c) => c.guest).join(', '))}"><span class="crew-avs">${shares.slice(0, 3).map((c, i) => `<span class="crew-av" style="width:16px;height:16px;font-size:8.5px;background:${CREW_COLORS[i % CREW_COLORS.length]}">${esc((c.guest || '?').slice(0, 1).toUpperCase())}</span>`).join('')}</span>SHARED · ${shares.length}</button>` : '';
+  const crew = shares.length ? `<button type="button" class="crew-chip sc-crew" data-sc="share" title="Shared with ${esc(shares.map((c) => c.guest).join(', '))}"><span class="crew-avs">${shares.slice(0, 3).map((c) => `<span class="crew-av" style="width:16px;height:16px;font-size:8.5px;background:${esc(c.color)}">${esc((c.guest || '?').slice(0, 1).toUpperCase())}</span>`).join('')}</span>CREW · ${shares.length}</button>` : '';
   let html = `<div class="sc-bar">
     <button type="button" class="sc-nav" data-sc="prev" aria-label="Previous week">‹</button>
     <span class="sc-week">${esc(weekLabel(S.schedWeek, now))}</span>
@@ -666,34 +671,21 @@ function renderSchedule() {
   for (const d of days) {
     html += `<div class="tk-sep${d.label.startsWith('TODAY') ? ' today' : ''}"><span>${esc(d.label)}</span><span>${d.items.length}</span></div>`;
     for (const e of d.items) {
-      const replies = scheduleReplies(e);
-      const badges = replies.map(([token, r], i) => `<span class="sc-reply ${r.state === 'change' ? 'chg' : 'ok'}"><span class="crew-av" style="width:15px;height:15px;font-size:8px;background:${CREW_COLORS[i % CREW_COLORS.length]}">${esc((r.by || FU.scheduleGuest(token) || '?').slice(0, 1).toUpperCase())}</span>${REPLY_LABEL[r.state] || ''}</span>`).join('');
-      const pending = shares.length && !replies.length ? '<span class="sc-reply none">NO REPLY YET</span>' : '';
-      const changes = replies.filter(([, r]) => r.state === 'change');
       html += `<div class="sc-row" data-sched="${esc(e.id)}" role="button" tabindex="0">
-        <div class="sc-main"><span class="sc-title">${esc(e.title)}</span>${typeChip(e.type)}</div>
-        <div class="sc-side">${badges || pending}</div>
+        <div class="sc-main"><span class="sc-title">${esc(e.title)}</span>${nameChip(e)}${typeChip(e.type)}</div>
         ${timeRange(e.start, e.end, S.settings.clock24) ? `<div class="sc-time">${esc(timeRange(e.start, e.end, S.settings.clock24))}</div>` : ''}
-        ${e.note ? `<div class="sc-note">Note: ${esc(e.note)}</div>` : ''}
-        ${changes.map(([, r]) => `<div class="sc-change"><span class="sc-change-by">${esc((r.by || 'GUEST').toUpperCase())} · ${esc(whenShortMs(r.at))}${r.comment ? '' : ' · NO NOTE'}</span>${esc(r.comment || '')}<span class="sc-change-btns"><button type="button" class="mini-btn amber" data-sc-date="${esc(e.id)}">CHANGE DATE</button></span></div>`).join('')}
+        ${e.note ? `<div class="sc-note">${esc(entryBy(e).name)}: ${esc(e.note)}</div>` : ''}
       </div>`;
     }
   }
   $('#tkList').innerHTML = html;
 }
 
-function whenShortMs(ms) {
-  if (!ms) return '';
-  const d = new Date(ms);
-  return U.sameDay(d, new Date()) ? U.fmtTimeShort(d, S.settings.clock24) : `${U.MON[d.getMonth()]} ${d.getDate()}`;
-}
-
 function upsertScheduleEntry(entry, prev) {
   const e = { ...entry, title: String(entry.title || '').trim().slice(0, 120), note: String(entry.note || '').trim().slice(0, 300), start: parseTime(entry.start), end: parseTime(entry.end) };
-  // A moved, retimed or renamed entry asks again: earlier replies were for the old version.
-  if (prev && (prev.date !== e.date || prev.title !== e.title || prev.type !== e.type || (prev.start || '') !== e.start || (prev.end || '') !== e.end)) e.replies = {};
+  delete e.replies; // replies were retired when the schedule became shared
   const i = S.schedule.findIndex((x) => x.id === e.id);
-  if (i >= 0) S.schedule[i] = e; else S.schedule.push({ ...e, createdAt: e.createdAt || Date.now(), replies: e.replies || {} });
+  if (i >= 0) S.schedule[i] = { ...e, addedBy: S.schedule[i].addedBy || null }; else S.schedule.push({ ...e, addedBy: null, createdAt: e.createdAt || Date.now() });
   const d = parseYmd(e.date);
   if (d) S.schedWeek = weekStart(d);
   saveSchedule();
@@ -723,22 +715,23 @@ function removeScheduleType(id) {
   saveSettings({ ...S.settings, scheduleTypes: scheduleTypes().filter((t) => t.id !== id) }, { refetch: false });
 }
 
-// Replies to schedule links (GOT IT / CHANGE REQUEST), relayed in by the uplink.
-function applyReplies(changes) {
+// What people added, changed or removed on their READ + ADD links, relayed in by the uplink.
+function applyGuestChanges(changes) {
   for (const c of changes) {
-    const e = S.schedule.find((x) => x.id === c.entryId);
-    if (e) e.replies = { ...(e.replies || {}), [c.token]: c.reply };
+    const i = S.schedule.findIndex((x) => x.id === c.entry.id);
+    if (c.kind === 'delete') { if (i >= 0) S.schedule.splice(i, 1); continue; }
+    if (i >= 0) S.schedule[i] = { ...S.schedule[i], ...c.entry };
+    else S.schedule.push(c.entry);
   }
   saveSchedule();
 }
 
 function scheduleActivity(events) {
   if (!events.length) return;
-  const change = events.some((e) => e.state === 'change');
-  lights('crew', true, { kind: change ? 'change' : 'ok' });
-  if (change) sounds.reminder(); else sounds.add();
-  events.slice(-3).forEach((e) => pushLog(e.state === 'change' ? 'err' : 'ok', e.text));
-  toast(events[events.length - 1].text, change ? 6000 : 3500);
+  lights('crew', true, { kind: 'ok' });
+  sounds.add();
+  events.slice(-3).forEach((e) => pushLog(e.kind === 'delete' ? 'c' : 'ok', e.text));
+  toast(events[events.length - 1].text, 4000);
 }
 
 function wireSchedule() {
@@ -755,8 +748,6 @@ function wireSchedule() {
       renderTasks();
       return;
     }
-    const dt = e.target.closest('[data-sc-date]');
-    if (dt) { const it = S.schedule.find((x) => x.id === dt.dataset.scDate); if (it) { sounds.click(); openScheduleEditor(it, { focus: 'date' }); } return; }
     const row = e.target.closest('[data-sched]');
     if (row) { const it = S.schedule.find((x) => x.id === row.dataset.sched); if (it) { sounds.click(); openScheduleEditor(it); } }
   });
@@ -2597,7 +2588,7 @@ async function start() {
     completeTask,
     uncompleteTask,
     postProjectLog,
-    scheduleTypes, upsertScheduleEntry, deleteScheduleEntry, addScheduleType, removeScheduleType,
+    scheduleTypes, entryBy, upsertScheduleEntry, deleteScheduleEntry, addScheduleType, removeScheduleType,
     setProjectRefresh: (fn) => { openProjectRefresh = fn; },
     saveSettings,
     resetLayout,
@@ -2652,7 +2643,7 @@ async function start() {
     getSettings: () => S.settings,
     saveFieldUnit: (fieldUnit) => saveSettings({ ...S.settings, fieldUnit }, { refetch: false }),
     getList: (kind) => (kind === 'tasks' ? S.tasks : kind === 'events' ? S.localEvents : kind === 'notes' ? S.notes : kind === 'projects' ? S.projects : kind === 'schedule' ? S.schedule : S.timers),
-    applyReplies,
+    applyGuestChanges,
     onScheduleActivity: scheduleActivity,
     applyRemote,
     guestChanges,

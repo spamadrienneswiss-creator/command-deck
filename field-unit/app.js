@@ -5,11 +5,11 @@ import * as fb from './lib/core.js';
 import { DeckSync, normalizePairCode, formatPairCode, makeId, startFirebase, signIn } from './lib/sync.js';
 import * as U from './lib/util.js';
 import { ManifestRelay, manifestUrl } from './lib/manifest.js';
-import { RosterRelay, scheduleUrl, DEFAULT_TYPES, weekStart, addDays, weekLabel, weekDays, ymd, parseYmd, typeOf, shortName, dayLabel, timeRange, parseTime } from './lib/roster.js';
+import { RosterRelay, scheduleUrl, DEFAULT_TYPES, weekStart, addDays, weekLabel, weekDays, ymd, parseYmd, typeOf, shortName, dayLabel, timeRange, parseTime, chipName, PERSON_COLORS, OWNER_COLOR } from './lib/roster.js';
 import { bootScreen } from './boot.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.14.2';
+const VERSION = 'v1.15.0';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
@@ -311,22 +311,27 @@ function startSync() {
     if (S.shareRedraw && $('.sheet [data-share-sheet]')) S.shareRedraw();
   });
   S.relay.start();
-  // Schedule links: same idea for the shared schedule (GOT IT / CHANGE REQUEST replies).
+  // Schedule links: one shared schedule. People with READ + ADD links can add their own entries.
   if (S.roster) S.roster.stop();
   S.roster = new RosterRelay(fb, S.fire.db, S.deckId, S.uid, {
     getEntries: () => S.schedule,
     getTypes: () => scheduleTypes(),
-    applyReplies: (changes) => {
-      for (const c of changes) { const e = S.schedule.find((x) => x.id === c.entryId); if (e) e.replies = { ...(e.replies || {}), [c.token]: c.reply }; }
+    applyGuestChanges: (changes) => {
+      for (const c of changes) {
+        const i = S.schedule.findIndex((x) => x.id === c.entry.id);
+        if (c.kind === 'delete') { if (i >= 0) S.schedule.splice(i, 1); continue; }
+        if (i >= 0) S.schedule[i] = { ...S.schedule[i], ...c.entry }; else S.schedule.push(c.entry);
+      }
       persist('schedule');
     },
-    onActivity: (events) => { if (!events.length) return; chirp.ack(); toast(events[events.length - 1].text, events.some((e) => e.state === 'change') ? 6000 : 3500); },
+    onActivity: (events) => { if (!events.length) return; chirp.ack(); toast(events[events.length - 1].text, 4000); },
+    ownerChip: () => ownerChip(),
     getLook: () => ({ theme: S.settings.theme || 'dusk', font: S.settings.font || 'auto', ink: S.settings.ink || 'theme', trim: S.settings.trim || 'none', clock24: clock24() }),
     operatorName: () => operator()
   });
   let rosterSig = '';
   S.roster.onChange(() => {
-    const sig = JSON.stringify(S.roster ? S.roster.list().map((c) => [c.token, c.lastActive]) : []);
+    const sig = JSON.stringify(S.roster ? S.roster.list().map((c) => [c.token, c.lastActive, c.level, c.color]) : []);
     if (sig === rosterSig) return;
     rosterSig = sig;
     if (S.view === 'tasks' && S.tkView === 'schedule') render();
@@ -766,17 +771,24 @@ function tasksHead(n) {
 }
 
 // ---------------------------------------------------------------- schedule (shifts & appointments)
-const REPLY_LABEL = { ok: '✓ GOT IT', change: '⚠ CHANGE REQUEST' };
+const PERSON_IC = '<svg width="8" height="9" viewBox="0 0 9 10" aria-hidden="true"><circle cx="4.5" cy="3" r="2.2" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M0.8 9.5 a3.7 3.7 0 0 1 7.4 0" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>';
+/** Your own chip on shared schedules (set on Command Deck, in Settings › Operator). */
+function ownerChip() { return { name: chipName(shared().chipName || operator()), color: shared().chipColor || OWNER_COLOR }; }
+function entryBy(e) {
+  if (!e.addedBy || !e.addedBy.token) return ownerChip();
+  const live = S.roster ? S.roster.list().find((c) => c.token === e.addedBy.token) : null;
+  return { name: chipName((live && live.guest) || e.addedBy.name), color: (live && live.color) || e.addedBy.color || '#B5B0BC' };
+}
 function schedChip(typeId) {
   const t = typeOf(scheduleTypes(), typeId);
   return `<span class="sc-chip" style="--tc:${esc(t.color)}">${esc(t.short || shortName(t.name))}</span>`;
 }
+const whoChip = (p) => `<span class="sc-chip sc-who" style="--tc:${esc(p.color)}">${PERSON_IC}${esc(chipName(p.name))}</span>`;
 function viewSchedule() {
   const now = new Date();
   const days = weekDays(S.schedule, S.schedWeek, now);
   const links = S.roster ? S.roster.list() : [];
-  const live = new Set(links.map((c) => c.token));
-  const crew = links.length ? `<span class="crew-avs">${links.slice(0, 3).map((x, i) => crewAv(x.guest, i, 18)).join('')}</span>` : '';
+  const crew = links.length ? `<span class="crew-avs">${links.slice(0, 3).map((x) => crewAv(x.guest, x.color, 18)).join('')}</span>` : '';
   const isThis = ymd(S.schedWeek) === ymd(weekStart(now));
   let html = `${tasksHead(active().length)}
     <div class="sc-tools"><button type="button" class="share-pill" data-sched-share>${crew}${SHARE_IC}SHARE</button>${isThis ? '' : '<button type="button" class="mini-line" data-sc="today">THIS WEEK</button>'}</div>
@@ -785,13 +797,11 @@ function viewSchedule() {
   for (const d of days) {
     html += `<div class="group-h${d.label.startsWith('TODAY') ? ' today' : ''}"><span>${esc(d.label)}</span><span>${d.items.length}</span></div>`;
     for (const e of d.items) {
-      const replies = Object.entries(e.replies || {}).filter(([tok]) => !live.size || live.has(tok));
+      const who = entryBy(e);
       html += `<button type="button" class="sc-row" data-sched="${esc(e.id)}">
-        <span class="sc-top"><span class="sc-title">${esc(e.title)}</span>${schedChip(e.type)}</span>
+        <span class="sc-top"><span class="sc-title">${esc(e.title)}</span><span class="sc-chips">${whoChip(who)}${schedChip(e.type)}</span></span>
         ${timeRange(e.start, e.end, clock24()) ? `<span class="sc-time">${esc(timeRange(e.start, e.end, clock24()))}</span>` : ''}
-        ${e.note ? `<span class="sc-note">Note: ${esc(e.note)}</span>` : ''}
-        ${replies.map(([, r]) => `<span class="sc-reply ${r.state === 'change' ? 'chg' : 'ok'}">${esc((r.by || 'GUEST').toUpperCase())} · ${REPLY_LABEL[r.state] || ''}${r.state === 'change' && !r.comment ? ' · NO NOTE' : ''}</span>${r.state === 'change' && r.comment ? `<span class="sc-change">${esc(r.comment)}</span>` : ''}`).join('')}
-        ${links.length && !replies.length ? '<span class="sc-reply none">NO REPLY YET</span>' : ''}
+        ${e.note ? `<span class="sc-note">${esc(chipName(who.name))}: ${esc(e.note)}</span>` : ''}
       </button>`;
     }
   }
@@ -801,8 +811,7 @@ function viewSchedule() {
 function openScheduleEditor(entry) {
   const isNew = !entry;
   const types = scheduleTypes();
-  const e = JSON.parse(JSON.stringify(entry || { id: makeId(), type: types[0].id, title: '', date: ymd(new Date()), note: '', replies: {} }));
-  const prev = entry ? JSON.parse(JSON.stringify(entry)) : null;
+  const e = JSON.parse(JSON.stringify(entry || { id: makeId(), type: types[0].id, title: '', date: ymd(new Date()), note: '', addedBy: null }));
   const sh = openSheet(`
     <div class="sheet-head"><span class="label">${isNew ? 'SCHEDULE · NEW ENTRY' : 'SCHEDULE · EDIT'}</span><button type="button" class="icon-btn" data-close aria-label="Close">${IC.close}</button></div>
     <div class="f"><span class="label">TYPE</span><div class="pills" id="scTypes">${types.map((t) => `<button type="button" class="chip${e.type === t.id ? ' on' : ''}" data-type="${esc(t.id)}" style="--pc:${esc(t.color)};${e.type === t.id ? '' : `color:${esc(t.color)}`}">${esc((t.name || '').toUpperCase())}</button>`).join('')}</div>
@@ -813,8 +822,8 @@ function openScheduleEditor(entry) {
       <div class="f"><span class="label">START · OPTIONAL<button type="button" class="sc-clr" data-clr="scStart">CLEAR</button></span><input class="in" id="scStart" type="time" value="${esc(e.start || '')}" aria-label="Start time, optional"></div>
       <div class="f"><span class="label">END · OPTIONAL<button type="button" class="sc-clr" data-clr="scEnd">CLEAR</button></span><input class="in" id="scEnd" type="time" value="${esc(e.end || '')}" aria-label="End time, optional"></div>
     </div>
-    <div class="f"><span class="label">NOTE · THEY SEE THIS</span><input class="in" id="scNote" maxlength="300" value="${esc(e.note || '')}" placeholder="Optional" aria-label="Note"></div>
-    ${!isNew && Object.keys(e.replies || {}).length ? '<div class="hint">Changing the title, type, date or time clears replies, so everyone confirms the new version.</div>' : ''}
+    <div class="f"><span class="label">NOTE · EVERYONE SEES THIS</span><input class="in" id="scNote" maxlength="300" value="${esc(e.note || '')}" placeholder="Optional" aria-label="Note"></div>
+    <div class="hint sc-shows">${e.addedBy && e.addedBy.token ? `Added by ${whoChip(entryBy(e))} on their link. They can still change it there.` : `Shows as ${whoChip(ownerChip())} on the shared schedule.`}</div>
     <div class="sheet-foot">${isNew ? '' : '<button type="button" class="btn danger" id="scDel">DELETE</button>'}<button type="button" class="btn primary" id="scSave" style="flex:1">${isNew ? 'ADD' : 'SAVE'}</button></div>`);
   sh.addEventListener('click', (ev) => {
     const t = ev.target;
@@ -838,9 +847,9 @@ function openScheduleEditor(entry) {
       if (!title) { $('#scTitle', sh).focus(); return; }
       if (!date) { $('#scDate', sh).focus(); return; }
       const out = { ...e, title: title.slice(0, 120), date, start: parseTime($('#scStart', sh).value), end: parseTime($('#scEnd', sh).value), note: $('#scNote', sh).value.trim().slice(0, 300) };
-      if (prev && (prev.date !== out.date || prev.title !== out.title || prev.type !== out.type || (prev.start || '') !== out.start || (prev.end || '') !== out.end)) out.replies = {};
+      delete out.replies;
       const i = S.schedule.findIndex((x) => x.id === out.id);
-      if (i >= 0) S.schedule[i] = out; else S.schedule.push({ ...out, createdAt: Date.now() });
+      if (i >= 0) S.schedule[i] = { ...out, addedBy: S.schedule[i].addedBy || null }; else S.schedule.push({ ...out, addedBy: null, createdAt: Date.now() });
       const d = parseYmd(date);
       if (d) S.schedWeek = weekStart(d);
       persist('schedule');
@@ -853,10 +862,22 @@ function openScheduleEditor(entry) {
 }
 
 const SCHED_ENDS = [['week', 'IN 7 DAYS'], ['month', 'IN 30 DAYS'], ['never', 'NEVER']];
+const SCHED_LEVELS = [
+  ['read', 'READ ONLY', 'They see the whole schedule, but can\'t change anything.'],
+  ['add', 'READ + ADD NEW ITEMS', 'They can also add their own entries, and edit or delete the ones they added.']
+];
 function openScheduleShare() {
-  const draft = { guest: '', ends: 'month' };
+  const taken = () => {
+    const out = { [ownerChip().color]: 'you' };
+    (S.roster ? S.roster.list() : []).forEach((c) => { out[c.color] = c.guest; });
+    return out;
+  };
+  const freeColor = () => PERSON_COLORS.find((c) => !taken()[c]) || PERSON_COLORS[0];
+  const swatches = (cur, attr) => `<div class="sw-row" ${attr}>${PERSON_COLORS.map((c) => `<button type="button" class="sw${c === cur ? ' on' : ''}${taken()[c] && c !== cur ? ' taken' : ''}" data-sw="${c}" style="background:${c}" aria-label="Color ${c}${taken()[c] ? ` (used by ${esc(taken()[c])})` : ''}"></button>`).join('')}</div>`;
+  const draft = { guest: '', ends: 'month', level: 'read', color: freeColor() };
   let made = null;
   let busy = false;
+  let colorFor = null;
   const draw = async () => {
     const prevIn = $('#shName');
     if (prevIn) draft.guest = prevIn.value;
@@ -870,27 +891,46 @@ function openScheduleShare() {
       ${made ? `<div class="sh-made"><div class="sh-made-h">✓ SCHEDULE LINK READY · ${esc(made.guest.toUpperCase())}</div>
           <div class="sh-made-row">${qr ? `<img src="${qr}" alt="QR code for the link">` : ''}<div class="sh-link">${esc(made.url)}</div></div></div>
         <div class="sh-btns"><button type="button" class="btn line" id="shCopy">COPY LINK</button><button type="button" class="btn primary" id="shSend">SEND…</button></div>
-        <div class="hint">They see one week at a time and tap GOT IT or CHANGE REQUEST. On an iPhone they can add it to the Home Screen.</div>`
+        <div class="hint">Everyone with a link sees the same schedule${made.level === 'add' ? ', and they can add their own entries' : ''}. On an iPhone they can add it to the Home Screen.</div>`
       : `<div class="f"><span class="label">WHO'S IT FOR?</span><input class="in title" id="shName" maxlength="40" placeholder="Their name" value="${esc(draft.guest)}" aria-label="Their name"></div>
-        <div class="hint" style="margin-top:0">They can reply GOT IT or CHANGE REQUEST (with a comment) on each entry.</div>
+        <div class="f"><span class="label sh-color-h">THEIR COLOR <span id="shPrev">${whoChip({ name: draft.guest || 'Their name', color: draft.color })}</span></span>${swatches(draft.color, 'id="shColor"')}</div>
+        <div class="f"><span class="label">WHAT CAN THEY DO?</span><div class="sh-levels">${SCHED_LEVELS.map(([v, l, d]) => `<button type="button" class="sh-level${draft.level === v ? ' on' : ''}" data-level="${v}" aria-pressed="${draft.level === v}"><i></i><span><b>${l}</b><small>${esc(d)}</small></span></button>`).join('')}</div></div>
         <div class="f"><span class="label">LINK STOPS WORKING</span><div class="pills">${SCHED_ENDS.map(([v, l]) => `<button type="button" class="chip${draft.ends === v ? ' on' : ''}" data-ends="${v}">${l}</button>`).join('')}</div></div>
         <button type="button" class="btn primary block" id="shCreate" ${ready && !busy ? '' : 'disabled'} style="margin-top:8px">${busy ? 'CREATING…' : 'CREATE LINK'}</button>`}
       <div class="group-h"><span>PEOPLE WITH ACCESS</span><span>${crew.length}</span></div>
-      ${crew.length ? crew.map((c, i) => `<div class="sh-person">${crewAv(c.guest, i)}
-          <span class="sh-p-text"><b>${esc(c.guest)}</b><small>${c.lastActive ? `LAST REPLY ${esc(shortWhen(c.lastActive))}` : 'NO REPLIES YET'}</small></span>
-          <span class="sh-p-btns"><button type="button" class="mini-line" data-send="${esc(c.token)}" data-guest="${esc(c.guest)}">SEND</button><button type="button" class="mini-line danger-t" data-stop="${esc(c.token)}">STOP</button></span>
-        </div>`).join('') : '<div class="hint">Nobody yet. Links you create show up here, with STOP to end one at any time.</div>'}
+      ${crew.length ? crew.map((c) => `<div class="sh-person"><button type="button" class="sh-av" data-color-for="${esc(c.token)}" aria-label="Change ${esc(c.guest)}'s color">${crewAv(c.guest, c.color)}</button>
+          <span class="sh-p-text"><b>${esc(c.guest)}</b><small>${c.lastActive ? `LAST ADDED ${esc(shortWhen(c.lastActive))}` : 'NOTHING ADDED YET'}</small></span>
+          <span class="sh-p-btns"><button type="button" class="mini-line sh-lv${c.level === 'add' ? ' on' : ''}" data-flip="${esc(c.token)}" data-to="${c.level === 'add' ? 'read' : 'add'}">${c.level === 'add' ? 'READ + ADD' : 'READ ONLY'} ▾</button><button type="button" class="mini-line" data-send="${esc(c.token)}" data-guest="${esc(c.guest)}">SEND</button><button type="button" class="mini-line danger-t" data-stop="${esc(c.token)}">STOP</button></span>
+        </div>${colorFor === c.token ? `<div class="sh-color-row">${swatches(c.color, `data-recolor="${esc(c.token)}"`)}</div>` : ''}`).join('') : '<div class="hint">Nobody yet. Tap someone\'s initial to change their color, or READ ONLY / READ + ADD to change what they can do. No new link needed.</div>'}
       ${made ? '<button type="button" class="btn line block" id="shAnother" style="margin-top:14px">+ SHARE WITH SOMEONE ELSE</button>' : ''}`);
     const sendLink = async (url, guest) => {
-      if (navigator.share) { try { await navigator.share({ title: `${operator()}'s schedule`, text: `${operator()} shared their schedule with you.`, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+      if (navigator.share) { try { await navigator.share({ title: `${operator()}'s schedule`, text: `${operator()} shared a schedule with you.`, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
       try { await navigator.clipboard.writeText(url); toast(`Link for ${guest} copied`); } catch (e) { toast(url, 6000); }
     };
+    const nameIn = $('#shName', sh);
+    if (nameIn) nameIn.addEventListener('input', () => { const pv = $('#shPrev', sh); if (pv) pv.innerHTML = whoChip({ name: nameIn.value || 'Their name', color: draft.color }); });
     sh.addEventListener('click', async (ev) => {
       const t = ev.target;
       if (t.closest('[data-close]')) { closeSheet(); return; }
       const en = t.closest('[data-ends]');
       if (en) { draft.ends = en.dataset.ends; draw(); return; }
-      if (t.closest('#shAnother')) { made = null; draft.guest = ''; draw(); return; }
+      const lv = t.closest('[data-level]');
+      if (lv) { draft.level = lv.dataset.level; draw(); return; }
+      const sw = t.closest('#shColor [data-sw]');
+      if (sw) { draft.color = sw.dataset.sw; draw(); return; }
+      const rc = t.closest('[data-recolor] [data-sw]');
+      if (rc) {
+        try { await S.roster.setColor(rc.closest('[data-recolor]').dataset.recolor, rc.dataset.sw); chirp.ack(); } catch (err) { toast('Could not change it. Check the signal and try again.', 4000); }
+        colorFor = null; draw(); return;
+      }
+      const cf = t.closest('[data-color-for]');
+      if (cf) { colorFor = colorFor === cf.dataset.colorFor ? null : cf.dataset.colorFor; draw(); return; }
+      const fl = t.closest('[data-flip]');
+      if (fl) {
+        try { await S.roster.setLevel(fl.dataset.flip, fl.dataset.to); chirp.ack(); toast(fl.dataset.to === 'add' ? 'They can now add their own entries' : 'Now read only'); } catch (err) { toast('Could not change it. Check the signal and try again.', 4000); }
+        draw(); return;
+      }
+      if (t.closest('#shAnother')) { made = null; draft.guest = ''; draft.level = 'read'; draft.color = freeColor(); draw(); return; }
       if (t.closest('#shCopy')) { try { await navigator.clipboard.writeText(made.url); toast('Link copied'); } catch (err) { toast(made.url, 6000); } return; }
       if (t.closest('#shSend')) { sendLink(made.url, made.guest); return; }
       const sd = t.closest('[data-send]');
@@ -907,8 +947,8 @@ function openScheduleShare() {
         if (!guest) { $('#shName', sh).focus(); return; }
         busy = true; draw();
         try {
-          const token = await S.roster.share({ guest, ends: draft.ends });
-          made = { token, guest, url: scheduleUrl(location.origin, token) };
+          const token = await S.roster.share({ guest, ends: draft.ends, level: draft.level, color: draft.color });
+          made = { token, guest, level: draft.level, url: scheduleUrl(location.origin, token) };
           chirp.ack();
         } catch (err) { toast('Could not create the link. Check the signal and try again.', 4000); }
         busy = false;
@@ -1438,7 +1478,7 @@ const LEVEL_INFO = [
 ];
 const END_INFO = [['done', 'WHEN PROJECT IS DONE'], ['week', 'IN 7 DAYS'], ['never', 'NEVER']];
 const SHARE_IC = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="3.2" cy="7" r="1.8" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="10.8" cy="3" r="1.8" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="10.8" cy="11" r="1.8" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M4.8 6.1 L9.2 3.9 M4.8 7.9 L9.2 10.1" stroke="currentColor" stroke-width="1.2"/></svg>';
-const crewAv = (name, i, size = 26) => `<span class="crew-av" style="width:${size}px;height:${size}px;background:${CREW_COLORS[i % CREW_COLORS.length]}">${esc((name || '?').slice(0, 1).toUpperCase())}</span>`;
+const crewAv = (name, color, size = 26) => `<span class="crew-av" style="width:${size}px;height:${size}px;background:${typeof color === 'number' ? CREW_COLORS[color % CREW_COLORS.length] : esc(color || CREW_COLORS[0])}">${esc((name || '?').slice(0, 1).toUpperCase())}</span>`;
 function shortWhen(ms) {
   if (!ms) return '';
   const d = new Date(ms);

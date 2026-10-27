@@ -108,6 +108,13 @@ await tick();
 assert.ok(command.tasks.some((t) => t.id === 'c'));
 ok('a task added on the phone appears on Command');
 
+phone.tasks = [...phone.tasks, { id: 'g1', title: 'Vet', addedBy: { token: 'tokX', name: 'Jordan', color: '#7FD1C7' } }];
+await phone.sync.push('tasks');
+await tick();
+const g1 = command.tasks.find((t) => t.id === 'g1');
+assert.deepStrictEqual(g1 && g1.addedBy, { token: 'tokX', name: 'Jordan', color: '#7FD1C7' });
+ok("an item's own author fields ride along untouched");
+
 const code = makePairCode();
 assert.strictEqual(code.length, 6);
 assert.strictEqual(normalizePairCode(formatPairCode(code).toLowerCase()), code);

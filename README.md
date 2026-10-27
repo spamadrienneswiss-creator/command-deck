@@ -142,16 +142,17 @@ Send someone a link to one project so they can work through its checklist. It op
 
 ### Schedule (shifts & appointments, shared by link)
 
-Panel 06's third tab, **SCHEDULE**, holds your work shifts and appointments, one week at a time. Send it to someone by a link, and they can confirm each entry or ask for a change.
+Panel 06's third tab, **SCHEDULE**, holds your work shifts and appointments, one week at a time. It's one **shared schedule**: everyone you send a link to sees the same entries, and every entry carries a **name chip** in that person's color (before the type chip), so you can tell at a glance who added what.
 
-- **+ Add** makes an entry: a **type** (Appointment, LDC, Metro, Other, or **+ New Type** to make your own), a title, a date, an optional **start** and **end** time, and an optional note they'll see. Click any entry to edit or delete it.
+- **+ Add** makes an entry: a **type** (Appointment, LDC, Metro, Other, or **+ New Type** to make your own), a title, a date, an optional **start** and **end** time, and an optional note everyone sees. Click any entry to edit or delete it, including ones other people added.
+- **Your chip:** set the name and color on your own entries in **Settings › Operator › YOUR CHIP ON SHARED SCHEDULES**. The entry editor shows **Shows as [chip]**.
 - **‹ ›** step through the weeks; **THIS WEEK** jumps back.
-- **SHARE** opens the share window: type their name, pick when the link stops working (in 7 days, in 30 days, never) and press **CREATE LINK**. It's copied, with a QR code to scan. Everyone you've shared with is listed with **COPY LINK** and **STOP** (press twice).
-- **On their side** the link opens a page called **SCHEDULE**, one week at a time with your type chips and notes. Each entry has **GOT IT** and **CHANGE REQUEST**; a change request can carry a note, like *"Could you move it to Thursday?"*, or none at all (it shows as **NO NOTE** here, your cue to give them a call). The link opens with a short **DECK RELAY** load-up while it connects. On an iPhone they can tap **Share › Add to Home Screen** and it opens full screen, like an app.
-- **Their replies** show on each entry here and on Field Unit (✓ GOT IT or ⚠ CHANGE REQUEST with their note), with a toast and a line in the log. **CHANGE DATE** under a request opens the entry with the date ready to change.
-- **Changing an entry's date, time, title or type clears its replies**, so everyone confirms the new version.
+- **SHARE** opens the share window: type their name, pick their **color** (colors already in use are dimmed), their access (**READ ONLY**, or **READ + ADD NEW ITEMS**) and when the link stops working (in 7 days, in 30 days, never), then press **CREATE LINK**. It's copied, with a QR code to scan. Everyone you've shared with is listed with their color, access, **COPY LINK** and **STOP** (press twice). Tap their color to recolor them, or their access to switch it, without sending a new link.
+- **On their side** the link opens a page called **SCHEDULE**, one week at a time with everyone's name chips, type chips and notes (a note reads *"JORDAN: Can someone drive?"*). On a **READ + ADD** link they get **+ ADD TO SCHEDULE** (type, title, date, optional times, optional note, with a *Shows as* preview of their chip), plus **EDIT** and **DELETE** on the entries they added, and only those. The link opens with a short **DECK RELAY** load-up while it connects. On an iPhone they can tap **Share › Add to Home Screen** and it opens full screen, like an app.
+- **Their look:** the gear next to their name opens **YOUR VIEW · ONLY ON THIS PHONE**: a theme (Dusk, Moonbase '79, Blueprint, Skydock, Vector), a typeface (theme default, Michroma, Space Mono, VT323, Orbitron) and a frame (Dark, Bone, Midnight Navy). It only changes their phone; **USE [YOUR NAME]'S LOOK** puts yours back.
+- **When someone adds, edits or deletes**, you get a toast and a line in the log, and the change goes out to everyone else's link.
 - Types are managed in **Settings › Tasks & Crew › SCHEDULE TYPES** (rename, recolor, remove; a removed type's entries become Other).
-- Like Project Manifest, replies come home through whichever of Command Deck or Field Unit is open.
+- Like Project Manifest, guest changes come home through whichever of Command Deck or Field Unit is open. Until one of them is, a new entry shows on the phone that added it (marked **SENDING…**) and reaches everyone else once your app picks it up.
 
 ### Notepad
 
@@ -184,7 +185,7 @@ The moments:
 - **Boot sweep:** amber travels across the rig while Command Deck loads (inside the case first, then the desk) and turns green when it's ready.
 - **Red Alert:** a red pulse when a timer or alarm goes off, a task reaches its due time without being done, or a calendar event starts. It stops when you dismiss or snooze the alert on the deck, or after 2 minutes.
 - **Computer speaking:** a blue pulse while Command Deck talks.
-- **Crew signals:** a green blip when someone taps GOT IT or checks off a shared task, coral for a change request.
+- **Crew signals:** a green blip when someone adds to the shared schedule or checks off a shared task.
 
 During quiet hours only timers and alarms light the rig. If the panel says it's waiting for iCUE, check that iCUE is running and the SDK switch is on; **RESCAN** looks again. If Armoury Crate (or another lighting app) also controls a device, give that device to one app only, or they'll flicker as they take turns.
 
@@ -198,7 +199,7 @@ Once set up (see [FIELD-UNIT-SETUP.md](FIELD-UNIT-SETUP.md)), **Settings › Fie
 - The footer shows **UPLINK ONLINE · 1 FIELD UNIT** when everything is connected.
 - **Notes tab:** the same notes as the desktop Notepad, synced within seconds. To copy text from paper, open a note, tap in the text and choose iPhone's own **Scan Text**; it reads printed pages and handwriting. (Field Scan, the in-app page reader, is switched off for now.)
 - **Projects** on the phone: Tasks › **PROJECTS** shows the same project cards; tap one for its tasks, + Add task, Edit and Mark complete. **SHARE** sends a Project Manifest link (see *Project Manifest* above), the crew strip shows who has access, and **PROJECT LOG** opens the project's shared board.
-- **Schedule** on the phone: Tasks › **SCHEDULE** has the same week-by-week list, **+** to add an entry, **SHARE** to send the link (SEND opens iPhone's share menu), and their replies under each entry. New types are added on Command Deck.
+- **Schedule** on the phone: Tasks › **SCHEDULE** has the same week-by-week list, **+** to add an entry, **SHARE** to send the link (SEND opens iPhone's share menu) with the same color and access choices, and everyone's name chips on each entry. New types are added on Command Deck.
 - **Comms Terminal:** the `>_` button in the middle of the tab bar opens a keyboard terminal. Type anything you'd have said to the computer (*"call sam thursday at 3, high priority"*, *"take a note: gate code 1357"*, *"new project garage cleanout"*). Field Unit prints its replies like a mainframe readout ("Copy." · "Transmitting data to Command…" · "Command acknowledges."), with a readout card for each change and an **UNDO** button. Deletes wait for **CONFIRM**, or type **y** / **n**. The chips above the keyboard are *Status report*, *Take a note*, *New project* and *Add to calendar* (the last three fill in the start of the command so you just finish the sentence, e.g. *schedule* → *dentist friday at 2*). Type **help** for examples. **CLEAR** (top right) or typing **clear** wipes the screen; **CLOSE TERMINAL** next to it puts the terminal away. The transcript stays while you switch between apps, and is wiped when Field Unit is closed completely (swiped away), so each launch starts fresh. Tap the readout to skip ahead.
 - **Terminal sound:** Settings › Comms terminal sound: *Mainframe* (readout chirps, relay clicks and the low computer-room hum), *Soft* (gentle beeps only) or *Off*. Field Unit no longer listens or speaks; the voice stays on the desktop.
 - Field Unit's **Settings** (theme, typeface, frame, trim, sound, phrases) live behind the gear next to the weather on the Today screen. It has all eleven color themes and the same Typeface, Text color, Frame and Panel trim choices.

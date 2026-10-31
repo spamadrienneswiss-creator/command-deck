@@ -8,3 +8,5 @@ field-unit/version.json
 # Firebase CLI cache and logs
 .firebase/
 *-debug.log
+tools/out/
+tools/ui-tests/out/

@@ -41,16 +41,4 @@ Shipped recently:
 - v1.14.1: neural voice for the boot briefing. v1.14.2: sync tie fix.
 - v1.15: one shared schedule with name chips, READ ONLY or READ + ADD links, a color per person, guest add / edit / delete, the owner's chip in Settings › Operator, and a look gear on the link.
 
-Parked, mocked or discussed but **not built**. Nick will pick from these:
-- **Themes:** Bay 9 (hangar), Overclock and Afterhours (Cyberpunk-inspired, with new fonts Teko + Red Hat Mono and Tilt Neon + Kode Mono). All on the board.
-- **Standby screen** and **Now Playing** panel (on the board).
-- **Stream Deck** integration ideas.
-- **AI chat assistant** that runs deck actions as tools. Options: Gemini free tier, Ollama on the PC, or Claude API later. Make the model swappable, keep the key on the deck only, and confirm before deletes.
-- **Push notifications to shared-link people** (Web Push, like the deck already does for the paired phone).
-- **Royal Kludge keyboard lighting:** depends on the model; only a few RK models (wired) have community-made control.
-- **Productivity ideas:**
-  - Focus mode; quick-capture hotkey; morning top-3; time blocking.
-  - Shutdown routine; leave-by alerts; routines with streaks.
-  - Bills and renewals; shared lists; countdowns; weekly recap.
-- More schedule revisions Nick is still thinking over.
-- Scrapped: Discord mute.
+**No parked list.** The old backlog (Oct 31, 2026) was scrapped on purpose. Don't suggest or revive past ideas; wait for Nick to bring new revisions. Older mockups may still sit on the design board; treat them as archive, not a to-do list.

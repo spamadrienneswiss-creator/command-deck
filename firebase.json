@@ -5,7 +5,7 @@
       "**/.*"
     ],
     "redirects": [
-      { "source": "/wine", "destination": "/wine/", "type": 301 }
+      { "regex": "^/wine$", "destination": "/wine/", "type": 302 }
     ],
     "rewrites": [
       { "source": "/m", "destination": "/manifest.html" },

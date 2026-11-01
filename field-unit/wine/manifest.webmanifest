@@ -2,7 +2,7 @@
   "name": "Wine Log",
   "short_name": "Wine Log",
   "description": "A tasting journal that pairs with Command Deck.",
-  "start_url": "./",
+  "start_url": "index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

@@ -41,9 +41,9 @@ Read this first in any new thread. It's the handoff from earlier work, so a fres
   4. Watch it with `tools/watch-release.sh Release <sha>`.
 - Commit as `Claude <noreply@anthropic.com>`. Keep the README and FIELD-UNIT-SETUP.md in step with features.
 
-## Where things stand (v1.16.1, Nov 2026)
+## Where things stand (v1.16.2, Nov 2026)
 Shipped recently:
-- v1.16.1: Wine Log (`/wine/`), Nick's tasting journal: scan-the-label autofill, place lookup with Maps / website links, label photos, day / night by sunset.
+- v1.16.1–1.16.2: Wine Log (`/wine/`; 1.16.2 fixed a redirect loop: Hosting redirect globs also match the trailing-slash path, so `/wine` → `/wine/` uses an exact `regex`), Nick's tasting journal: scan-the-label autofill, place lookup with Maps / website links, label photos, day / night by sunset.
 - v1.14: Skydock and Vector themes, Dock Lights trim, switch panel, panel renames.
 - v1.14.1: neural voice for the boot briefing. v1.14.2: sync tie fix.
 - v1.15: one shared schedule with name chips, READ ONLY or READ + ADD links, a color per person, guest add / edit / delete, the owner's chip in Settings › Operator, and a look gear on the link.

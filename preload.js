@@ -18,6 +18,14 @@ contextBridge.exposeInMainWorld('deck', {
   qr: (text) => ipcRenderer.invoke('qr:make', text),
   copy: (text) => ipcRenderer.invoke('clip:write', text),
   hostname: () => ipcRenderer.invoke('sys:hostname'),
+  recap: {
+    save: (id, ext, bytes) => ipcRenderer.invoke('recap:save', id, ext, bytes),
+    read: (id) => ipcRenderer.invoke('recap:read', id),
+    remove: (id) => ipcRenderer.invoke('recap:delete', id),
+    info: (id) => ipcRenderer.invoke('recap:info', id),
+    summarize: (opts) => ipcRenderer.invoke('recap:summarize', opts),
+    testKey: (key) => ipcRenderer.invoke('recap:testKey', key)
+  },
   onShown: (fn) => ipcRenderer.on('deck:shown', () => fn()),
   onAway: (fn) => ipcRenderer.on('deck:away', (_e, away) => fn(away)),
   lights: {

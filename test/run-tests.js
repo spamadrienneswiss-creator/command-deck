@@ -150,6 +150,20 @@ check('projects: file tasks into projects, start and query them', () => {
   assert.strictEqual(parseCommand('Call Sam Thursday at 3', pctx, evening).task.projectId, null);
 });
 
+console.log('Deck pages');
+check('"page two", "go to page 1", named pages and next page', () => {
+  const pc = { ...ctx, pageNames: ['MAIN', 'GARAGE'] };
+  assert.deepStrictEqual(parseCommand('Computer, page two', pc, ref), { intent: 'page', page: 2 });
+  assert.deepStrictEqual(parseCommand('go to page 1', pc, ref), { intent: 'page', page: 1 });
+  assert.deepStrictEqual(parseCommand('switch to the garage page', pc, ref), { intent: 'page', page: 2 });
+  assert.deepStrictEqual(parseCommand('show the main page', pc, ref), { intent: 'page', page: 1 });
+  assert.deepStrictEqual(parseCommand('next page', pc, ref), { intent: 'page', page: 'toggle' });
+});
+check('"page the plumber" is still a task', () => {
+  assert.strictEqual(parseCommand('page the plumber tomorrow', ctx, ref).intent, 'add-task');
+  assert.strictEqual(parseCommand('print the front page', ctx, ref).intent, 'add-task');
+});
+
 console.log('Calendar feeds');
 check('weekly recurrence with an exception, all-day event', () => {
   const ics = [

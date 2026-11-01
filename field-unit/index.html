@@ -29,18 +29,17 @@
 <link rel="stylesheet" href="boot.css">
 </head>
 <body data-theme="dusk">
-<!-- Load-up screen (signal lock). Inline so it shows before any script runs; boot.js takes it from here. -->
-<div id="boot" class="boot radar" aria-hidden="true">
-  <div class="bt-word">FIELD UNIT</div>
-  <div class="bt-radar">
-    <i class="bt-ring r1"></i><i class="bt-ring r2"></i><i class="bt-ring r3"></i><i class="bt-cross"></i>
-    <div class="bt-sweep"></div>
-    <i class="bt-blip b1"></i><i class="bt-blip b2"></i><i class="bt-blip b3"></i><i class="bt-blip b4"></i>
-    <div class="bt-core"><svg width="64" height="64" viewBox="-4 -4 100 100"><polygon points="20.5,2 71.5,2 90,20.5 90,71.5 71.5,90 20.5,90 2,71.5 2,20.5" fill="var(--bg, #0B0C11)" stroke="currentColor" stroke-width="3"/><g transform="translate(-5 -1)"><path d="M38 36 L48 46 L38 56" fill="none" stroke="currentColor" stroke-width="3.2"/><path d="M52 58 H64" stroke="currentColor" stroke-width="3.2"/></g></svg></div>
-  </div>
-  <div class="bt-status bt-mono"><span class="bt-acq">ACQUIRING COMMAND DECK<span class="bt-dots"></span></span><span class="bt-lock">◆ SIGNAL LOCKED</span></div>
-  <div class="bt-sub" data-sub></div>
-  <div class="bt-hi" data-hi></div>
+<!-- Load-up screen ("Signal"). Inline so the boot log paints before any script runs; boot.js takes it from here. -->
+<div id="boot" class="boot s1" aria-hidden="true" data-chip="CMD·DECK" data-align="ALIGNING LINK" data-scan="SCANNING FOR DECK" data-rows="CHRONO,CALENDAR,TASKS,NOTES,COMMS,UPLINK" data-handoff="Hailing Command Deck">
+  <i class="sb-c tl"></i><i class="sb-c tr"></i><i class="sb-c bl"></i><i class="sb-c br"></i>
+  <section class="sb-st sb-log">
+    <div class="sb-mbox"><svg class="sb-mark" viewBox="0 0 11 7" aria-hidden="true"><path d="M1 0h4v1h-4z M0 1h1v5h-1z M1 6h4v1h-4z M6 0h4v1h-4z M6 1h1v5h-1z M10 1h1v5h-1z M6 6h4v1h-4z" fill="currentColor"/></svg></div>
+    <div class="sb-lines"><div class="hd">FIELD UNIT SELF-TEST</div><div class="sub" data-sub>WAKING HANDHELD LINK...</div><div data-lines></div></div>
+  </section>
+  <section class="sb-st sb-align"></section>
+  <section class="sb-st sb-radar"></section>
+  <section class="sb-st sb-lock"></section>
+  <div class="sb-foot">FIELD UNIT</div>
 </div>
 <script>
   // Paint the load-up screen in the saved theme, not the default, from the very first frame.
@@ -49,7 +48,7 @@
     if (s.theme) document.body.dataset.theme = s.theme;
     var sh = JSON.parse(localStorage.getItem('fu.shared') || 'null');
     var loc = sh && sh.location;
-    if (loc && loc.lat != null) document.querySelector('[data-sub]').textContent =
+    if (loc && loc.lat != null) document.querySelector('.sb-foot').textContent = 'FIELD UNIT · ' +
       Math.abs(loc.lat).toFixed(2) + '\u00b0 ' + (loc.lat >= 0 ? 'N' : 'S') + ' \u00b7 ' + Math.abs(loc.lon).toFixed(2) + '\u00b0 ' + (loc.lon >= 0 ? 'E' : 'W');
   } catch (e) {}
 </script>
@@ -71,6 +70,7 @@
 </div>
 
 <input type="file" id="scanInput" accept="image/*" class="offscreen" tabindex="-1" aria-hidden="true">
+<input type="file" id="recapInput" accept="audio/*,.m4a,.mp3,.wav,.aac,.caf,.mp4" class="offscreen" tabindex="-1" aria-hidden="true">
 <div id="overlay"></div>
 <div id="sheet-root"></div>
 <div id="alert" class="alert" role="alert" hidden></div>

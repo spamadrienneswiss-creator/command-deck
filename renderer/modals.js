@@ -801,7 +801,30 @@ export function openNoteEditor(note) {
   setTimeout(() => (isNew ? $('#nTitle', m) : $('#nBody', m)).focus(), 30);
 }
 
+// ================================================================ DATA RECAP
+export function openRecap(id) {
+  app.rcTabReset(id);
+  const m = mount(`
+    <i class="br br-tr amber"></i><i class="br br-bl lav"></i>
+    <div class="m-head"><span>DATA RECAP</span><button type="button" class="x-btn" data-x aria-label="Close">${X_SVG}</button></div>
+    <div class="m-body scroll rc-dialog" id="rcBody"></div>`, { wide: true, onClose: () => app.setRecapRefresh(null) });
+  const body = $('#rcBody', m);
+  const draw = () => {
+    const n = app.S.notes.find((x) => x.id === id);
+    if (!n) { closeModal(true); return; }
+    const top = body.scrollTop;
+    body.innerHTML = app.recapHtml(n);
+    app.fillAudioLine(body, n);
+    body.scrollTop = top;
+  };
+  body.addEventListener('click', (e) => app.recapClick(e, id, draw));
+  app.setRecapRefresh(draw);
+  draw();
+}
+
 // ================================================================ SETTINGS
+const PAGE_PANELS = [['clock', 'CLOCK'], ['weather', 'WEATHER'], ['computer', 'COMPUTER'], ['calendar', 'CALENDAR'], ['events', 'UPCOMING'], ['notes', 'NOTEPAD'], ['tasks', 'TASKS']];
+
 const TABS = [
   ['operator', 'OPERATOR'],
   ['location', 'LOCATION'],
@@ -844,6 +867,36 @@ export function openSettings(welcome = false) {
     <div class="m-foot" id="setFoot"></div>`, { wide: true, locked: welcome, onClose: revert });
 
   const body = $('#setBody', m);
+
+  const recapSection = () => {
+    const rc = { geminiKey: '', audio: 'd30', ...(draft.recap || {}) };
+    return `<div class="f"><span class="f-label">DATA RECAP · MEETING SUMMARIES</span>
+      <div class="f-hint">Record a meeting in Voice Memos and send it from Field Unit (Notes › DATA RECAP). This computer transcribes it, then Gemini writes the summary, main points and action items.</div>
+      <label class="f-label" for="rcKey" style="margin-top:10px">GEMINI KEY</label>
+      <div class="inline"><input id="rcKey" class="in" type="password" autocomplete="off" spellcheck="false" placeholder="Paste a key from Google AI Studio" value="${esc(rc.geminiKey)}"><button type="button" class="btn line" id="rcKeyShow">SHOW</button><button type="button" class="btn line" id="rcKeyTest">TEST KEY</button></div>
+      <div class="f-hint" id="rcKeyMsg">Free from <b>aistudio.google.com</b> › Get API key › Create API key. It stays on this computer. On Google's free tier, what you send may be used to improve their models; transcripts are made here either way.</div>
+      <span class="f-label" style="margin-top:12px">AUDIO AFTER THE RECAP · DEFAULT</span>
+      <div class="pills" id="rcAudio">${pills([['keep', 'KEEP'], ['d30', '30 DAYS'], ['now', 'DELETE NOW']], rc.audio || 'd30')}</div>
+      <div class="f-hint">Recordings are kept on this computer, not in the cloud. You can still pick for each one when you send it, or change it later on the recap. The transcript always stays.</div></div>`;
+  };
+  const wireRecapSection = () => {
+    const key = $('#rcKey', body);
+    if (!key) return;
+    draft.recap = { geminiKey: '', audio: 'd30', ...(draft.recap || {}) };
+    key.addEventListener('input', () => { draft.recap = { ...draft.recap, geminiKey: key.value.trim(), model: '' }; });
+    $('#rcKeyShow', body).addEventListener('click', (e) => { key.type = key.type === 'password' ? 'text' : 'password'; e.currentTarget.textContent = key.type === 'password' ? 'SHOW' : 'HIDE'; });
+    $('#rcKeyTest', body).addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      const msg = $('#rcKeyMsg', body);
+      btn.disabled = true;
+      msg.textContent = 'Checking with Google…';
+      const r = await app.testGeminiKey(key.value.trim()).catch((err) => ({ ok: false, error: err.message }));
+      btn.disabled = false;
+      msg.innerHTML = r.ok ? `<span class="ok-t">KEY WORKS</span> · summaries will use ${esc(r.model)}. Save to keep it.` : `<span class="err-t">${esc(r.error || 'That key did not work.')}</span>`;
+      if (r.ok) draft.recap = { ...draft.recap, model: r.model };
+    });
+    wirePills($('#rcAudio', body), (v) => { draft.recap = { ...draft.recap, audio: v }; });
+  };
 
   const views = {
     operator() {
@@ -955,6 +1008,14 @@ export function openSettings(welcome = false) {
         <div class="f"><span class="f-label">LAYOUT</span>
           <div class="pills" data-key="layoutMode">${pills([['auto', 'AUTO'], ['standard', 'STANDARD'], ['edge', 'XENEON EDGE']], draft.layoutMode || 'auto')}</div>
           <div class="f-hint">AUTO uses the Edge layout on a wide, short screen like the Xeneon Edge and the standard layout anywhere else, switching as you move the window. The <b>LAYOUT</b> chip at the top of the deck flips between the two on the spot. Each layout remembers its own panel arrangement.</div></div>
+        <div class="f"><span class="f-label">PAGES</span>
+          <div class="f-row">
+            <div class="f"><label class="f-label" for="sPage1">PAGE 1 NAME</label><input id="sPage1" class="in" maxlength="12" value="${esc(((draft.pages || {}).names || [])[0] || 'MAIN')}"></div>
+            <div class="f"><label class="f-label" for="sPage2">PAGE 2 NAME</label><input id="sPage2" class="in" maxlength="12" value="${esc(((draft.pages || {}).names || [])[1] || 'WORK')}"></div>
+          </div>
+          <span class="f-label" style="margin-top:6px">PANELS ON PAGE 2</span>
+          <div class="pills" id="sTiles2">${PAGE_PANELS.map(([v, l]) => `<button type="button" class="pill${(((draft.pages || {}).tiles2) || ['clock', 'tasks', 'notes']).includes(v) ? ' on' : ''}" data-v="${v}" aria-pressed="${(((draft.pages || {}).tiles2) || ['clock', 'tasks', 'notes']).includes(v)}">${l}</button>`).join('')}</div>
+          <div class="f-hint">Page 1 always has every panel. Page 2 shows only the ones picked here, so they can be bigger: unlock the layout on page 2 and resize them. Flip pages with the <b>PAGE</b> chip at the top, <span class="kbd">Ctrl</span> + <span class="kbd">1</span> / <span class="kbd">2</span>, a sideways swipe on a touchscreen, or say "page two."</div></div>
         <div class="f"><span class="f-label">UPDATES</span>
           <div class="toggle-row"><span id="sUpd">${esc(app.updateInfo().text)}</span><button type="button" class="btn line" id="sUpdBtn">${app.updateInfo().state === 'ready' ? 'RESTART TO UPDATE' : 'CHECK NOW'}</button></div>
           <div class="f-hint">New versions download in the background. When one is ready, UPDATE READY appears at the top; tap it to restart, or it installs the next time Command Deck closes.</div></div>`;
@@ -1026,6 +1087,7 @@ export function openSettings(welcome = false) {
             Categories, crew, location, units and calendar feeds follow the main console, so change those there. Look and layout stay your own.<br>
             Pair phones and add consoles from the main console. Phone notifications come from the main console too.</div></div>
         <div class="f"><span class="f-label">ON THIS DECK</span><div class="row-list">${crew}</div></div>
+        <div class="f"><span class="f-label">DATA RECAP</span><div class="f-hint">Recordings sent from Field Unit are transcribed and summarized on the main console. Their recaps show up here in Notepad › RECAPS.</div></div>
         <div class="f"><span class="f-label">LINK</span>
           <div class="inline" style="flex:none"><button type="button" class="btn danger" id="fuUnlink">LEAVE THIS DECK</button></div>
           <div class="f-hint">Stops syncing. What's on this computer stays here. You can join again with a new code.</div></div>`;
@@ -1055,6 +1117,7 @@ export function openSettings(welcome = false) {
           </div>` : `<div class="inline" style="flex:none"><button type="button" class="btn primary" id="fuPair">SHOW PAIRING CODE</button></div>`}
         </div>
         <div class="f"><span class="f-label">PAIRED DEVICES</span><div class="row-list">${devices}</div></div>
+        ${recapSection()}
         <div class="f"><span class="f-label">LINK</span>
           <div class="inline" style="flex:none"><button type="button" class="btn danger" id="fuUnlink">UNLINK THIS CONSOLE</button></div>
           <div class="f-hint">Stops syncing. Tasks stay on this computer. Linking again creates a fresh uplink, and phones need to pair again.</div></div>`;
@@ -1259,6 +1322,19 @@ export function openSettings(welcome = false) {
           }
         });
       });
+      draft.pages = { names: ['MAIN', 'WORK'], tiles2: ['clock', 'tasks', 'notes'], ...(draft.pages || {}) };
+      $('#sPage1', body).addEventListener('input', (e) => { draft.pages = { ...draft.pages, names: [e.target.value.trim().toUpperCase() || 'MAIN', draft.pages.names[1]] }; });
+      $('#sPage2', body).addEventListener('input', (e) => { draft.pages = { ...draft.pages, names: [draft.pages.names[0], e.target.value.trim().toUpperCase() || 'WORK'] }; });
+      $('#sTiles2', body).addEventListener('click', (e) => {
+        const b = e.target.closest('.pill');
+        if (!b) return;
+        app.sounds.click();
+        const set = new Set(draft.pages.tiles2);
+        if (set.has(b.dataset.v)) { if (set.size === 1) { app.toast('Page 2 needs at least one panel'); return; } set.delete(b.dataset.v); } else set.add(b.dataset.v);
+        draft.pages = { ...draft.pages, tiles2: PAGE_PANELS.map(([v]) => v).filter((v) => set.has(v)) };
+        b.classList.toggle('on', set.has(b.dataset.v));
+        b.setAttribute('aria-pressed', String(set.has(b.dataset.v)));
+      });
       const op = $('#sOpacity', body);
       const fill = () => op.style.setProperty('--fill', `${((Number(op.value) - 30) / 70) * 100}%`);
       fill();
@@ -1375,7 +1451,7 @@ export function openSettings(welcome = false) {
     },
     fieldunit() {
       const fu = app.fieldUnit;
-      const rerender = () => { if (tab === 'fieldunit' && document.body.contains(body) && !['fuUrl', 'fuJoinCode'].includes(document.activeElement?.id)) render(); };
+      const rerender = () => { if (tab === 'fieldunit' && document.body.contains(body) && !['fuUrl', 'fuJoinCode', 'rcKey'].includes(document.activeElement?.id)) render(); };
       const off = fu.onChange(rerender);
       const tick = setInterval(() => {
         if (tab !== 'fieldunit' || !document.body.contains(body)) { clearInterval(tick); off(); return; }
@@ -1449,6 +1525,7 @@ export function openSettings(welcome = false) {
         app.toast(joined ? 'Left the deck' : 'Uplink closed');
         render();
       });
+      wireRecapSection();
     },
     data() {
       $('#dExport', body).addEventListener('click', async () => {

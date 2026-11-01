@@ -318,7 +318,7 @@ async function start() {
     P.fire = startFirebase(fb, cfg, 'schedule');
     await signIn(fb, P.fire.auth);
   } catch (e) { P.state = 'error'; P.error = 'Couldn\'t connect. Check your connection and reload.'; boot.skip(); render(); return; }
-  boot.progress(12);
+  boot.line(0, 'Relay uplink', 'ONLINE');
 
   let first = true;
   fb.onSnapshot(fb.doc(P.fire.db, 'rosters', P.token), (snap) => {
@@ -327,7 +327,9 @@ async function start() {
     if (!live()) { P.state = 'ended'; boot.skip(); render(); return; }
     if (first) {
       first = false;
-      boot.line(0, `SIGNAL · ${owner().toUpperCase()}'S DECK`, 'OK');
+      const access = P.r && P.r.level === 'add' ? 'READ + ADD' : 'READ ONLY';
+      boot.line(1, `Link token · ${owner().toUpperCase()}'S SCHEDULE`, 'VALID');
+      boot.line(2, 'Access level', access);
       let landed = false;
       P.state = 'main';
       const title = `${owner()}'s Schedule`;
@@ -344,9 +346,12 @@ async function start() {
         render();
         if (!landed) {
           landed = true;
-          boot.line(1, `SCHEDULE · ${weekLabel(P.week).split(' · ').pop()}`, 'OK');
-          boot.line(2, `ACCESS · ${guest().toUpperCase()}${P.r && P.r.level === 'add' ? ' · READ + ADD' : ''}`, 'GRANTED');
-          boot.lock(`Hi, ${guest()}.`);
+          const from = ymd(P.week);
+          const to = ymd(addDays(P.week, 6));
+          const week = [...P.entries.values()].filter((x) => !x.deleted && x.date >= from && x.date <= to).length;
+          boot.line(3, 'Entries this week', String(week));
+          boot.line(4, 'Guest', guest().toUpperCase());
+          boot.lock(`Welcome, ${guest()}.`, `${owner().toUpperCase()}'S SCHEDULE · ${access}`);
         }
       }, () => { boot.skip(); });
     } else if (P.state === 'ended') P.state = 'main';

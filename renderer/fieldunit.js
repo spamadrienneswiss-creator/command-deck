@@ -237,6 +237,7 @@ function startSync(deckId) {
     F.sync.watchMeta('setup', (d) => { follow.setup = d; adopt(); });
     return;
   }
+  watchRecap(deckId);
   relayShared(h.getSettings());
   beat();
   clearInterval(F.heartbeat);
@@ -438,6 +439,8 @@ export function relayShared(s) {
     tempUnit: s.tempUnit, clock24: s.clock24, defaultReminder: s.defaultReminder, snoozeMinutes: s.snoozeMinutes,
     localCalendarName: s.localCalendarName, localCalendarColor: s.localCalendarColor,
     calendars: (s.calendars || []).filter((c) => c.enabled !== false).map((c) => ({ id: c.id, name: c.name, color: c.color })),
+    // Data Recap: the default audio choice, and whether summaries are set up (never the key itself).
+    recapAudio: (s.recap && s.recap.audio) || 'd30', recapSummaries: !!(s.recap && s.recap.geminiKey),
     updatedAt: Date.now()
   }).catch(() => {});
 }
@@ -455,6 +458,59 @@ export function relayCalendar(events) {
   if (json === lastCalJson) return;
   lastCalJson = json;
   F.sync.setMeta('calendar', { events: list, updatedAt: Date.now() }).catch(() => {});
+}
+
+// ---------------------------------------------------------------- data recap (recordings from the phone)
+// Field Unit sends a recording through the deck's own database in small pieces (free plan, no file
+// storage): decks/{deckId}/recapUploads/{uploadId} says what's coming, and
+// decks/{deckId}/recapChunks/{uploadId}-{n} hold the pieces. The main console collects them,
+// saves the file on this computer and deletes the pieces.
+const recapListeners = new Set();
+let recapUploads = [];
+/** Calls cb(list) with the recordings waiting to be collected, whenever that changes (main console only). */
+export function onRecapUploads(cb) {
+  recapListeners.add(cb);
+  if (recapUploads.length) cb(recapUploads);
+  return () => recapListeners.delete(cb);
+}
+function watchRecap(deckId) {
+  F.unsubs.push(fb.onSnapshot(fb.collection(F.fire.db, 'decks', deckId, 'recapUploads'), (snap) => {
+    const list = [];
+    snap.forEach((d) => { const v = d.data(); if (v && v.complete) list.push({ id: d.id, ...v }); });
+    recapUploads = list;
+    recapListeners.forEach((fn) => { try { fn(list); } catch (e) { console.error(e); } });
+  }, () => {}));
+}
+
+export async function fetchRecapUpload(up, onProgress) {
+  const deckId = F.hooks.getSettings().fieldUnit.deckId;
+  const parts = [];
+  let total = 0;
+  for (let i = 0; i < up.chunks; i++) {
+    const snap = await fb.getDoc(fb.doc(F.fire.db, 'decks', deckId, 'recapChunks', `${up.id}-${i}`));
+    if (!snap.exists()) throw new Error(`Piece ${i + 1} of ${up.chunks} is missing. Send the recording again from Field Unit.`);
+    const bin = atob(snap.data().data || '');
+    const bytes = new Uint8Array(bin.length);
+    for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+    parts.push(bytes);
+    total += bytes.length;
+    if (onProgress) onProgress((i + 1) / up.chunks);
+  }
+  const out = new Uint8Array(total);
+  let o = 0;
+  parts.forEach((p) => { out.set(p, o); o += p.length; });
+  return out;
+}
+
+export async function clearRecapUpload(up) {
+  if (!F.sync) return;
+  const deckId = F.hooks.getSettings().fieldUnit.deckId;
+  for (let i = 0; i < up.chunks; i += 200) {
+    const batch = fb.writeBatch(F.fire.db);
+    for (let k = i; k < Math.min(up.chunks, i + 200); k++) batch.delete(fb.doc(F.fire.db, 'decks', deckId, 'recapChunks', `${up.id}-${k}`));
+    await batch.commit();
+  }
+  await fb.deleteDoc(fb.doc(F.fire.db, 'decks', deckId, 'recapUploads', up.id));
 }
 
 // Sends a notification to every paired phone that has alerts turned on.

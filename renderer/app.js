@@ -5,14 +5,15 @@ import sounds from './sound.js';
 import { loadModel, transcribe, record, onVoiceStatus, voiceStatus } from './voice.js';
 import { loadTts, speakNeural, stopNeural, onTtsStatus, ttsStatus } from './tts.js';
 import * as U from './util.js';
-import { initModals, openTaskEditor, openEventEditor, openNoteEditor, openProject, openProjectEditor, openScheduleEditor, openScheduleShare, openSettings, closeModal, isModalOpen } from './modals.js';
+import { initModals, openTaskEditor, openEventEditor, openNoteEditor, openRecap, openProject, openProjectEditor, openScheduleEditor, openScheduleShare, openSettings, closeModal, isModalOpen } from './modals.js';
 import * as FU from './fieldunit.js';
+import * as Recap from './recap.js';
 import * as Motion from './motion.js';
 import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ymd, parseYmd, typeOf, shortName, timeRange, parseTime, chipName } from '../shared/roster.js';
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.15.0';
+const VERSION = 'v1.16.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -92,10 +93,12 @@ function saveProjects() {
   FU.push('projects');
   renderTasks();
 }
+let recapRefresh = null; // redraws an open recap dialog when its note changes
 function saveNotes() {
   deck.save('notes', S.notes);
   FU.push('notes');
   renderNotes();
+  if (recapRefresh) recapRefresh();
 }
 function saveSchedule() {
   deck.save('schedule', S.schedule);
@@ -129,6 +132,8 @@ function applyRemote(kind, list) {
     S.notes = list;
     deck.save('notes', list);
     renderNotes();
+    if (recapRefresh) recapRefresh();
+    Recap.notesChanged();
   } else if (kind === 'projects') {
     S.projects = list;
     deck.save('projects', list);
@@ -212,6 +217,7 @@ async function saveSettings(next, { refetch = true } = {}) {
   FU.relayShared(next);
   if (deck.lights && JSON.stringify((prev || {}).lighting) !== JSON.stringify(next.lighting)) deck.lights.configure(next.lighting).catch(() => {});
   if (!prev || prev.layoutMode !== next.layoutMode) applyLayout();
+  if (prev && JSON.stringify(prev.pages) !== JSON.stringify(next.pages)) applyLayout(true);
 }
 
 // ---------------------------------------------------------------- toast & log
@@ -615,7 +621,7 @@ function findProject(query) {
 }
 
 function wireProjects() {
-  $$('.tk-views button').forEach((b) => b.addEventListener('click', () => {
+  $$('.tk-views button[data-tkview]').forEach((b) => b.addEventListener('click', () => {
     sounds.click();
     S.tkView = b.dataset.tkview;
     renderTasks();
@@ -759,8 +765,11 @@ function wireSchedule() {
 }
 
 // ---------------------------------------------------------------- notepad
-const NOTE_SRC = { scan: ['SCANNED', 'var(--lav)'], voice: ['VOICE', 'var(--amber)'], comms: ['COMMS', 'var(--amber)'], typed: ['TYPED', 'var(--muted)'] };
+const NOTE_SRC = { scan: ['SCANNED', 'var(--lav)'], voice: ['VOICE', 'var(--amber)'], comms: ['COMMS', 'var(--amber)'], typed: ['TYPED', 'var(--muted)'], recap: ['RECAP', 'var(--teal)'] };
 let noteQuery = '';
+let ntView = 'notes'; // notes | recaps
+let ntSel = null; // the note open in the reading pane (wide panel only)
+const rcTab = new Map(); // recap id -> 'summary' | 'transcript'
 
 function sortedNotes() {
   return S.notes.slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || new Date(b.editedAt || b.createdAt) - new Date(a.editedAt || a.createdAt));
@@ -773,29 +782,177 @@ function noteWhen(iso, now = new Date()) {
   return U.dayLabel(d, now);
 }
 
+function notesWide() {
+  const panel = $('.notes-panel');
+  return !!panel && panel.classList.contains('wide');
+}
+
+const RC_STEP = {
+  uploading: 'SENDING FROM FIELD UNIT', queued: 'WAITING FOR COMMAND', receiving: 'RECEIVING', decoding: 'READING THE AUDIO',
+  transcribing: 'TRANSCRIBING', summarizing: 'WRITING THE RECAP', error: 'NEEDS ATTENTION'
+};
+function fmtDur(sec) {
+  const s = Math.round(Number(sec) || 0);
+  if (!s) return '';
+  if (s < 60) return `${s} SEC`;
+  const m = Math.round(s / 60);
+  return m >= 60 ? `${Math.floor(m / 60)} HR ${m % 60 ? `${m % 60} MIN` : ''}`.trim() : `${m} MIN`;
+}
+function fmtStamp(sec) {
+  const s = Math.max(0, Math.round(Number(sec) || 0));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const r = s % 60;
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+}
+function fmtMb(bytes) { return bytes ? `${Math.max(1, Math.round(bytes / 1048576))} MB` : ''; }
+function recapMeta(n) {
+  const rc = n.recap || {};
+  if (rc.status !== 'ready') return `${RC_STEP[rc.status] || 'WORKING'}${rc.status !== 'error' && rc.progress ? ` · ${rc.progress}%` : ''}`;
+  return [fmtDur(rc.durationSec), noteWhen(n.createdAt)].filter(Boolean).join(' · ');
+}
+
 function renderNotes() {
   const el = $('#ntList');
   if (!el) return;
   const norm = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
   const q = norm(noteQuery);
-  const all = sortedNotes();
-  const list = q ? all.filter((n) => norm(`${n.title} ${n.body}`).includes(q)) : all;
-  $('#ntCount').textContent = S.notes.length ? String(S.notes.length) : '';
+  const recaps = S.notes.filter(Recap.isRecap);
+  const plain = S.notes.filter((n) => !Recap.isRecap(n));
+  $('#ntCount').textContent = plain.length ? String(plain.length) : '';
+  $('#rcCount').textContent = recaps.length ? String(recaps.length) : '';
+  $$('.nt-views button[data-ntview]').forEach((b) => { const on = b.dataset.ntview === ntView; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+  $('#btnNewNote').hidden = ntView === 'recaps';
+  const pool = sortedNotes().filter((n) => (ntView === 'recaps' ? Recap.isRecap(n) : !Recap.isRecap(n)));
+  const hay = (n) => norm(`${n.title} ${n.body} ${Recap.isRecap(n) ? (n.recap.transcript || []).map((l) => l.text).join(' ') : ''}`);
+  const list = q ? pool.filter((n) => hay(n).includes(q)) : pool;
+  const wide = notesWide();
+  if (wide && (!ntSel || !list.some((n) => n.id === ntSel))) ntSel = list.length ? list[0].id : null;
   if (!list.length) {
     el.innerHTML = q
-      ? `<div class="empty">No notes match "${esc(noteQuery)}".</div>`
-      : '<div class="empty">No notes yet. Tap <b>+ Note</b>, say <b>"take a note…"</b>, or use <b>Field Scan</b> on the phone.</div>';
-    return;
-  }
-  el.innerHTML = list.map((n) => {
-    const [src, col] = NOTE_SRC[n.src] || NOTE_SRC.typed;
-    const preview = String(n.body || '').split('\n').map((l) => l.trim()).filter(Boolean).filter((l) => l !== n.title).join(' · ');
-    return `<button type="button" class="nt-row" data-note="${esc(n.id)}">
-      <span class="nt-top"><span class="nt-title">${esc(n.title || 'Untitled')}</span>${n.pinned ? '<svg class="nt-pin" width="11" height="11" viewBox="0 0 12 12" role="img" aria-label="Pinned"><path d="M4 1 H8 L7.4 5 L9.5 7 H2.5 L4.6 5 Z M6 7 V11" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>' : ''}</span>
+      ? `<div class="empty">Nothing matches "${esc(noteQuery)}".</div>`
+      : ntView === 'recaps'
+        ? '<div class="empty">No recaps yet. Record a meeting in <b>Voice Memos</b>, then send it from Field Unit with <b>DATA RECAP</b> on the Notes tab.</div>'
+        : '<div class="empty">No notes yet. Tap <b>+ Note</b>, say <b>"take a note…"</b>, or use <b>Field Scan</b> on the phone.</div>';
+  } else {
+    el.innerHTML = list.map((n) => {
+      const [src, col] = NOTE_SRC[n.src] || NOTE_SRC.typed;
+      const isRc = Recap.isRecap(n);
+      const preview = isRc ? (n.recap.summary || (n.recap.points || []).join(' · ') || (n.recap.transcript || []).slice(0, 2).map((l) => l.text).join(' '))
+        : String(n.body || '').split('\n').map((l) => l.trim()).filter(Boolean).filter((l) => l !== n.title).join(' · ');
+      const fresh = isRc && n.recap.status === 'ready' && n.recap.readyAt && Date.now() - n.recap.readyAt < 6 * 3600e3;
+      const sel = wide && n.id === ntSel;
+      return `<button type="button" class="nt-row${sel ? ' sel' : ''}${isRc ? ' rc' : ''}" data-note="${esc(n.id)}"${sel ? ' aria-current="true"' : ''}>
+      <span class="nt-top"><span class="nt-title">${esc(n.title || 'Untitled')}</span>${fresh ? '<span class="rc-new">NEW</span>' : ''}${n.pinned ? '<svg class="nt-pin" width="11" height="11" viewBox="0 0 12 12" role="img" aria-label="Pinned"><path d="M4 1 H8 L7.4 5 L9.5 7 H2.5 L4.6 5 Z M6 7 V11" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>' : ''}</span>
       ${preview ? `<span class="nt-prev">${esc(preview)}</span>` : ''}
-      <span class="nt-meta"><span class="src" style="color:${col};box-shadow:inset 0 0 0 1px ${col}">${src}</span><span>${esc(noteWhen(n.editedAt || n.createdAt))}</span></span>
+      <span class="nt-meta">${isRc ? '' : `<span class="src" style="color:${col};box-shadow:inset 0 0 0 1px ${col}">${src}</span>`}<span class="${isRc && n.recap.status === 'error' ? 'err-t' : ''}">${esc(isRc ? recapMeta(n) : noteWhen(n.editedAt || n.createdAt))}</span></span>
+      ${isRc && n.recap.status !== 'ready' && n.recap.status !== 'error' ? `<span class="rc-bar" aria-hidden="true"><i style="width:${Math.max(3, n.recap.progress || 0)}%"></i></span>` : ''}
     </button>`;
-  }).join('');
+    }).join('');
+  }
+  renderNotePane();
+}
+
+function renderNotePane() {
+  const pane = $('#ntPane');
+  if (!pane) return;
+  if (!notesWide()) { pane.innerHTML = ''; return; }
+  const n = ntSel && S.notes.find((x) => x.id === ntSel);
+  if (!n) { pane.innerHTML = '<div class="empty">Pick something on the left.</div>'; return; }
+  const keepScroll = pane.dataset.for === n.id ? pane.scrollTop : 0;
+  pane.dataset.for = n.id;
+  pane.innerHTML = Recap.isRecap(n) ? recapHtml(n) : `
+    <div class="np-head"><div class="np-title">${esc(n.title || 'Untitled')}</div>
+      <div class="np-tools"><button type="button" class="mini-btn" data-np-edit>EDIT</button><button type="button" class="mini-btn" data-np-task>→ TASK</button></div></div>
+    <div class="np-meta">${esc((NOTE_SRC[n.src] || NOTE_SRC.typed)[0])} · ${esc(noteWhen(n.editedAt || n.createdAt))}</div>
+    <div class="np-text">${esc(n.body || '')}</div>`;
+  pane.scrollTop = keepScroll;
+  if (Recap.isRecap(n)) fillAudioLine(pane, n);
+}
+
+/** The recap view: used in the wide Notepad pane and in the recap dialog. */
+function recapHtml(n) {
+  const rc = n.recap || {};
+  const tab = rcTab.get(n.id) || 'summary';
+  const head = `<div class="np-head"><div class="np-title">${esc(n.title || 'Data Recap')}</div>
+      <div class="np-tools">${rc.status === 'ready' && (rc.transcript || []).length ? `<span class="nt-views rc-views" role="tablist" aria-label="Recap view"><button type="button" role="tab" data-rc-tab="summary" class="${tab === 'summary' ? 'on' : ''}" aria-selected="${tab === 'summary'}">SUMMARY</button><button type="button" role="tab" data-rc-tab="transcript" class="${tab === 'transcript' ? 'on' : ''}" aria-selected="${tab === 'transcript'}">TRANSCRIPT</button></span>` : ''}</div></div>
+    <div class="np-meta"><span class="src rc-src">RECAP</span> FROM FIELD UNIT${rc.durationSec ? ` · ${esc(fmtDur(rc.durationSec))}` : ''}${rc.status === 'ready' ? ' · TRANSCRIBED ON THIS PC' : ''}</div>`;
+  if (rc.status !== 'ready') {
+    const steps = [['receiving', 'Receiving the recording'], ['transcribing', 'Transcribing on Command'], ['summarizing', 'Writing the recap']];
+    const order = ['uploading', 'queued', 'receiving', 'decoding', 'transcribing', 'summarizing', 'ready'];
+    const at = order.indexOf(rc.status === 'decoding' ? 'transcribing' : rc.status);
+    return `${head}
+      <div class="rc-steps">${steps.map(([k, label]) => {
+        const i = order.indexOf(k);
+        const state = rc.status === 'error' ? (i < at ? 'done' : 'wait') : i < at ? 'done' : i === at ? 'now' : 'wait';
+        return `<div class="rc-step ${state}"><i aria-hidden="true"></i><span>${label}${state === 'now' && rc.progress ? ` · ${rc.progress}%` : ''}</span></div>`;
+      }).join('')}</div>
+      ${rc.status === 'uploading' || rc.status === 'queued' ? `<div class="f-hint">${rc.status === 'uploading' ? 'Field Unit is still sending it.' : 'It starts as soon as this console picks it up.'}</div>` : ''}
+      ${rc.status === 'error' ? `<div class="rc-err">${esc(rc.error || 'Something went wrong.')}</div><div class="np-row"><button type="button" class="accent-btn" data-rc-retry>TRY AGAIN</button><button type="button" class="ghost-btn" data-rc-remove>DELETE RECAP</button></div>` : ''}`;
+  }
+  if (tab === 'transcript') {
+    return `${head}<div class="rc-transcript">${(rc.transcript || []).map((l) => `<div class="rc-line"><span class="rc-t">${fmtStamp(l.t)}</span><span>${esc(l.text)}</span></div>`).join('') || '<div class="empty">No transcript was kept for this one.</div>'}</div>
+      <div class="rc-audio" data-rc-audio></div>`;
+  }
+  const acts = rc.actions || [];
+  const done = acts.filter((a) => a.taskId).length;
+  return `${head}
+    ${rc.summaryError ? `<div class="rc-err">${esc(rc.summaryError)}</div><div class="np-row"><button type="button" class="accent-btn" data-rc-summarize>SUMMARIZE</button></div>` : ''}
+    <div class="rc-cols">
+      <div>
+        ${rc.summary ? `<div class="rc-h">SUMMARY</div><p class="rc-sum">${esc(rc.summary)}</p>` : ''}
+        ${(rc.points || []).length ? `<div class="rc-h">MAIN POINTS</div><ul class="rc-points">${rc.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}
+      </div>
+      ${acts.length ? `<div class="rc-acts">
+        <div class="rc-h"><span>ACTION ITEMS</span><span class="dim-t">${done} OF ${acts.length}</span></div>
+        ${acts.map((a) => `<div class="rc-act"><span>${esc(a.text)}</span>${a.taskId ? '<span class="rc-intask">✓ IN TASKS</span>' : `<button type="button" class="mini-btn" data-rc-task="${esc(a.id)}">→ TASK</button>`}</div>`).join('')}
+        ${done < acts.length ? '<button type="button" class="ghost-btn rc-all" data-rc-alltasks>→ ALL TO TASKS</button>' : ''}
+      </div>` : ''}
+    </div>
+    <div class="rc-audio" data-rc-audio></div>`;
+}
+
+/** "AUDIO 31 MB · DELETES NOV 30" with KEEP / 30 DAYS / DELETE NOW, or UNDO while it's about to go. */
+function fillAudioLine(root, n) {
+  const el = $('[data-rc-audio]', root);
+  if (!el) return;
+  const rc = n.recap || {};
+  const a = rc.audio || {};
+  if (FU.isJoined()) { el.innerHTML = '<span class="dim-t">AUDIO IS KEPT ON THE MAIN CONSOLE</span>'; return; }
+  if (a.deleted) { el.innerHTML = '<span class="dim-t">AUDIO DELETED · TRANSCRIPT KEPT</span><button type="button" class="mini-btn danger-t" data-rc-remove>DELETE RECAP</button>'; return; }
+  if (a.deleting) { el.innerHTML = '<span class="err-t">DELETING THE AUDIO…</span><button type="button" class="mini-btn" data-rc-undo>UNDO</button>'; return; }
+  const at = Recap.audioDeleteAt(rc);
+  const when = a.keep === 'keep' || at == null ? 'KEPT' : `DELETES ${U.MONTHS[new Date(at).getMonth()].slice(0, 3).toUpperCase()} ${new Date(at).getDate()}`;
+  el.innerHTML = `<span>AUDIO ${esc(fmtMb(rc.sizeBytes))} · ${when}</span>
+    <button type="button" class="mini-btn" data-rc-keep="${a.keep === 'keep' ? 'd30' : 'keep'}">${a.keep === 'keep' ? '30 DAYS' : 'KEEP'}</button>
+    <button type="button" class="mini-btn danger-t" data-rc-delete>DELETE NOW</button>`;
+}
+
+/** Click handling shared by the pane and the recap dialog. Returns true if it handled the click. */
+function recapClick(e, id, rerender) {
+  const t = e.target.closest('[data-rc-tab],[data-rc-task],[data-rc-alltasks],[data-rc-keep],[data-rc-delete],[data-rc-undo],[data-rc-retry],[data-rc-summarize],[data-rc-remove]');
+  if (!t) return false;
+  sounds.click();
+  if (t.dataset.rcTab) { rcTab.set(id, t.dataset.rcTab); rerender(); return true; }
+  if (t.dataset.rcTask) { const task = Recap.actionToTask(id, t.dataset.rcTask); if (task) toast(`Task logged: ${task.title}`); rerender(); return true; }
+  if (t.hasAttribute('data-rc-alltasks')) { const c = Recap.allActionsToTasks(id); toast(`${c} task${c === 1 ? '' : 's'} logged`); rerender(); return true; }
+  if (t.dataset.rcKeep) { Recap.setAudioKeep(id, t.dataset.rcKeep); rerender(); return true; }
+  if (t.hasAttribute('data-rc-delete')) { Recap.deleteAudioSoon(id); rerender(); return true; }
+  if (t.hasAttribute('data-rc-undo')) { Recap.cancelDelete(id); rerender(); return true; }
+  if (t.hasAttribute('data-rc-retry')) { Recap.retry(id); rerender(); return true; }
+  if (t.hasAttribute('data-rc-summarize')) {
+    if (!(S.settings.recap || {}).geminiKey) { toast('Add a Gemini key in Settings › Field Unit first', 3600); return true; }
+    Recap.summarizeAgain(id); toast('Asking Gemini…'); rerender(); return true;
+  }
+  if (t.hasAttribute('data-rc-remove')) {
+    if (t.dataset.armed !== '1') { t.dataset.armed = '1'; t.textContent = 'CONFIRM DELETE'; return true; }
+    deck.recap.remove(id).catch(() => {});
+    deleteNote(id);
+    closeModal(true);
+    toast('Recap deleted');
+    return true;
+  }
+  return false;
 }
 
 function upsertNote(note, isNew) {
@@ -811,6 +968,7 @@ function upsertNote(note, isNew) {
 
 function deleteNote(id) {
   S.notes = S.notes.filter((n) => n.id !== id);
+  if (ntSel === id) ntSel = null;
   saveNotes();
 }
 
@@ -818,6 +976,11 @@ function noteToTask(note) {
   const t = { ...blankTask(), title: note.title || 'From a note', notes: note.body || '' };
   upsertTask(t, true);
   toast(`Task logged: ${t.title}`);
+}
+
+function openNote(n) {
+  if (Recap.isRecap(n)) openRecap(n.id);
+  else openNoteEditor(n);
 }
 
 function wireNotes() {
@@ -829,12 +992,42 @@ function wireNotes() {
   });
   $('#ntSearch').addEventListener('input', (e) => { noteQuery = e.target.value; renderNotes(); });
   $('#ntSearch').addEventListener('keydown', (e) => { if (e.key === 'Escape') $('#btnNoteSearch').click(); });
+  $$('.nt-views button[data-ntview]').forEach((b) => b.addEventListener('click', () => {
+    if (ntView === b.dataset.ntview) return;
+    sounds.click();
+    ntView = b.dataset.ntview;
+    ntSel = null;
+    renderNotes();
+  }));
   $('#ntList').addEventListener('click', (e) => {
     const b = e.target.closest('[data-note]');
     if (!b) return;
     const n = S.notes.find((x) => x.id === b.dataset.note);
-    if (n) { sounds.click(); openNoteEditor(n); }
+    if (!n) return;
+    sounds.click();
+    if (notesWide()) { ntSel = n.id; renderNotes(); } else openNote(n);
   });
+  $('#ntList').addEventListener('dblclick', (e) => {
+    const b = e.target.closest('[data-note]');
+    const n = b && S.notes.find((x) => x.id === b.dataset.note);
+    if (n && !Recap.isRecap(n)) openNoteEditor(n);
+  });
+  $('#ntPane').addEventListener('click', (e) => {
+    const n = ntSel && S.notes.find((x) => x.id === ntSel);
+    if (!n) return;
+    if (e.target.closest('[data-np-edit]')) { sounds.click(); openNoteEditor(n); return; }
+    if (e.target.closest('[data-np-task]')) { sounds.click(); noteToTask(n); return; }
+    recapClick(e, n.id, renderNotePane);
+  });
+  // The reading pane appears when the Notepad is wide enough (on page 2, or dragged bigger).
+  const panel = $('.notes-panel');
+  if (panel && window.ResizeObserver) {
+    new ResizeObserver(() => {
+      const wide = panel.clientWidth >= 470 && panel.clientHeight >= 300;
+      panel.classList.toggle('narrow', panel.clientWidth < 380);
+      if (wide !== panel.classList.contains('wide')) { panel.classList.toggle('wide', wide); renderNotes(); }
+    }).observe(panel);
+  }
 }
 
 function renderEvents() {
@@ -935,7 +1128,7 @@ function taskRow(t, now) {
 }
 
 function renderTasks() {
-  $$('.tk-views button').forEach((b) => b.classList.toggle('on', b.dataset.tkview === S.tkView));
+  $$('.tk-views button[data-tkview]').forEach((b) => b.classList.toggle('on', b.dataset.tkview === S.tkView));
   $('#btnAddTask').textContent = S.tkView === 'projects' ? '+ PROJECT' : S.tkView === 'schedule' ? '+ ADD' : '+ ADD TASK';
   $('#tkChips').hidden = S.tkView !== 'queue';
   if (S.tkView === 'projects') { renderProjects(); checkRedAlert(); return; }
@@ -1502,7 +1695,7 @@ function editItem(r) {
 
 async function handleCommand(text, { fromVoice = false, noEdit = false, skipLog = false } = {}) {
   if (!skipLog) pushLog('u', text);
-  const ctx = { categories: S.settings.categories, people: S.settings.people, defaultReminder: S.settings.defaultReminder, noEdit, projects: S.projects.filter((p) => p.status !== 'done').map((p) => ({ id: p.id, name: p.name })) };
+  const ctx = { pageNames: pageSettings().names, categories: S.settings.categories, people: S.settings.people, defaultReminder: S.settings.defaultReminder, noEdit, projects: S.projects.filter((p) => p.status !== 'done').map((p) => ({ id: p.id, name: p.name })) };
   let r;
   try {
     r = await deck.parse(text, ctx);
@@ -1663,6 +1856,13 @@ async function handleCommand(text, { fromVoice = false, noEdit = false, skipLog 
           : v >= 60 ? `Humor setting ${v} percent. This should be fun.`
             : `Humor setting ${v} percent.`;
       kind = 'ok';
+      break;
+    }
+    case 'page': {
+      const want = r.page === 'toggle' ? (pageNow === 1 ? 2 : 1) : r.page;
+      const nm = pageSettings().names[want - 1];
+      if (setPage(want)) { reply = `Page ${want}, ${nm.toLowerCase()}.`; kind = 'ok'; }
+      else reply = `Already on page ${want}.`;
       break;
     }
     case 'humor-query': reply = `Humor setting is at ${S.settings.humor ?? 0} percent.`; break;
@@ -2101,45 +2301,108 @@ function fireReminder(t, now) {
   setTimeout(() => speak(msg), 900);
 }
 
-// ---------------------------------------------------------------- boot sequence
+// ---------------------------------------------------------------- boot sequence ("Signal")
+// Stages: 1 boot log (the real system checks) · 2 mark + load bar · 3 systems array ·
+// 4 alignment rows · 5 radar · 6 signal locked, then the panels flicker in.
+// FULL plays it all (about 6 seconds), SUBTLE just the log and the lock, STILL skips it.
+const SG_ROWS = ['CHRONO', 'ATMOS', 'COMMS', 'CALENDAR', 'TASKS', 'NOTEPAD', 'LIGHTS', 'UPLINK'];
+const SG_PIX = ['10101110101', '01110101110', '10101110101'];
+const SG_TILES = ['A3', 'A8', 'A2', 'J1', 'L1', 'L8', 'L3', 'K9', 'D1', 'B6', 'D8', 'N5', 'A1', 'E5', 'A3', 'T4'];
+const SG_LIT = { 2: -0.2, 5: -1.1, 8: -0.6, 11: -1.7, 12: -0.9, 14: -2.0, 15: -1.4 };
+let booting = false;
+
+function bootLines() {
+  const s = S.settings;
+  const cals = (s.calendars || []).filter((c) => c.enabled !== false && c.url).length;
+  const fu = FU.state();
+  const lt = s.lighting || {};
+  const city = String((s.location && s.location.name) || '').split(',')[0].toUpperCase();
+  return [
+    ['Memory check', 'OK'],
+    ['Mounting local store', 'OK'],
+    ['Chronometer sync', 'LOCKED'],
+    [`Atmospherics feed${city ? ` (${city})` : ''}`, 'ONLINE'],
+    [`Calendar relays (${cals} link${cals === 1 ? '' : 's'})`, 'SYNCED'],
+    [`Task queue (${activeTasks().length} active)`, 'READY'],
+    ['Voice core (Whisper)', 'LOADED'],
+    ['Field Unit uplink', !fu.linked ? 'OFF' : fu.role === 'joined' ? 'JOINED' : fu.phones ? 'PAIRED' : 'LINKED'],
+    ['Lighting bus (iCUE)', lt.enabled ? 'READY' : 'IDLE']
+  ];
+}
+
 async function bootSequence() {
+  if (booting) return;
   const motion = S.settings.motion;
   const panels = $$('.panel');
   if (motion === 'still') {
     sounds.boot(true);
     return;
   }
+  booting = true;
   const short = motion === 'subtle';
-  const step = short ? 110 : 250;
   const boot = $('#boot');
-  const linesEl = $('#bootLines');
-  const fill = $('#bootFill');
+  const s = S.settings;
+  const name = (s.consoleName || 'Command Deck').toUpperCase();
+  const loc = s.location || {};
+  const ll = loc.lat != null ? `${Math.abs(loc.lat).toFixed(2)} ${loc.lat >= 0 ? 'N' : 'S'} · ${Math.abs(loc.lon).toFixed(2)} ${loc.lon >= 0 ? 'E' : 'W'}` : '';
+  $('#sgFootL').innerHTML = `CMD_DECK ${esc(VERSION)}<br>NODE: ${esc(name.slice(0, 18))}`;
+  $('#sgFootR').innerHTML = `${esc(ll)}<br>UPLINK: ${FU.state().linked ? 'FIELD UNIT' : 'LOCAL'}`;
+  $('#sgRails').innerHTML = 'PWR_STATE: COLD\nBUS_FREQ: 2.4 GHz\n<b>RAIL_3V3: OK</b>\nRAIL_12V: OK\nCRYPTO_SEED: OK';
+  $('#sgWord').textContent = name;
+  $('#sgName').innerHTML = `${esc(name)}<br>SYSTEMS ARRAY`;
+  $('#sgTiles').innerHTML = SG_TILES.map((t, i) => `<i class="${SG_LIT[i] != null ? 'lit' : ''}" style="${SG_LIT[i] != null ? `animation-delay:${SG_LIT[i]}s` : ''}">${t}</i>`).join('');
+  $('#sgPx').innerHTML = SG_PIX.join('').split('').map((c) => `<i class="${c === '1' ? 'on' : ''}"></i>`).join('');
+  $('#sgHi').textContent = `Welcome back, ${s.operatorName || 'Commander'}.`;
+  $('#sgSub').textContent = 'ALL SYSTEMS NOMINAL · 8 / 8 ALIGNED';
+  $('#sgBar').style.width = '0%';
+  const linesEl = $('#sgLines');
+  linesEl.innerHTML = `<div class="hd">${esc(name)} POWER-ON SELF-TEST // BUILD ${esc(VERSION.replace(/^v/, ''))}</div><div class="sub">INITIALIZING CONSOLE CONTROLLER...</div>`;
+
+  const stage = (n) => { boot.classList.remove('s1', 's2', 's3', 's4', 's5', 's6', 'go2'); boot.classList.add(`s${n}`); };
   panels.forEach((p) => p.classList.add('boot-hide'));
+  boot.classList.remove('fade');
   boot.classList.add('on');
   sounds.boot(short);
-  const cals = S.settings.calendars.filter((c) => c.enabled !== false && c.url).length;
-  const name = (S.settings.consoleName || 'Command Deck').toUpperCase();
-  const lines = [
-    [`${name} // ${VERSION}`, 'hd'],
-    ['POWER BUS ............ ', 'ONLINE'],
-    ['CHRONOMETER .......... ', 'SYNCED'],
-    ['ATMOSPHERICS ......... ', 'LINKED'],
-    ['CALENDAR ARRAY ....... ', `${cals} FEED${cals === 1 ? '' : 'S'}`],
-    ['TASK QUEUE ........... ', `${activeTasks().length} ACTIVE`],
-    ['VOICE CORE ........... ', 'STANDBY'],
-    ['ALL SYSTEMS NOMINAL', 'hd']
-  ];
-  linesEl.innerHTML = '';
+
+  // 1 · the log ticks through the real checks
+  stage(1);
+  const step = short ? 70 : 170;
+  const lines = bootLines();
   for (let i = 0; i < lines.length; i++) {
-    const [a, b] = lines[i];
+    const [label, res] = lines[i];
     const div = document.createElement('div');
-    if (b === 'hd') div.innerHTML = `<span class="hd">${esc(a)}</span>`;
-    else div.innerHTML = `${esc(a)}<span class="ok">${esc(b)}</span>`;
+    const addr = `0x${(i * 0x17 + 0x0c).toString(16).toUpperCase().padStart(4, '0')}`;
+    div.innerHTML = `${addr} [ ${(i * 0.0061).toFixed(3)} ] ${esc(label)} ... <span class="ok">${esc(res)}</span>`;
     linesEl.appendChild(div);
-    fill.style.width = `${Math.round(((i + 1) / lines.length) * 100)}%`;
-    await U.wait(i === 0 ? step * 2 : step);
+    await U.wait(step);
   }
-  await U.wait(short ? 200 : 600);
+  const last = document.createElement('div');
+  last.className = 'cur';
+  last.textContent = `0x00F4 [ 0.058 ] Handing control to console`;
+  linesEl.appendChild(last);
+  await U.wait(short ? 200 : 420);
+
+  if (!short) {
+    // 2 · the mark and the load bar
+    stage(2);
+    await U.wait(60);
+    for (let p = 0; p <= 100; p += 10) { $('#sgBar').style.width = `${p}%`; await U.wait(70); }
+    await U.wait(200);
+    // 3 · systems array, then 4 · the alignment rows over it
+    stage(3);
+    await U.wait(650);
+    boot.classList.add('go2');
+    await U.wait(450);
+    $('#sgRows').innerHTML = SG_ROWS.map((r, i) => `<div class="sg-row" style="margin:0 calc(var(--u) * ${i * 6});animation-delay:${(i * 0.06).toFixed(2)}s"><b class="l" style="--to:${(24 + i * 1.8).toFixed(1)}%"></b><b class="r" style="--to:${(24 + i * 1.8).toFixed(1)}%"></b><span class="l">+ ${r}</span><span class="r">${r} +</span></div>`).join('');
+    stage(4);
+    await U.wait(1250);
+    // 5 · radar
+    stage(5);
+    await U.wait(1400);
+  }
+  // 6 · signal locked
+  stage(6);
+  await U.wait(short ? 650 : 1100);
   boot.classList.add('fade');
   panels.forEach((p, i) => {
     p.style.setProperty('--bd', `${(i * (short ? 0.05 : 0.11)).toFixed(2)}s`);
@@ -2147,8 +2410,9 @@ async function bootSequence() {
     p.classList.add('boot-in');
   });
   await U.wait(650);
-  boot.classList.remove('on', 'fade');
+  boot.classList.remove('on', 'fade', 's1', 's2', 's3', 's4', 's5', 's6', 'go2');
   setTimeout(() => panels.forEach((p) => p.classList.remove('boot-in')), 1500);
+  booting = false;
 }
 
 async function maybeBriefing() {
@@ -2171,12 +2435,36 @@ async function maybeBriefing() {
 // (24 columns) for a wide, short touch strip like Corsair's 2560 x 720 Xeneon Edge.
 // AUTO picks by the window's shape; each layout remembers its own rearrangements.
 const LAYOUTS = {
-  standard: { columns: 12, key: 'layout', defaults: { clock: [0, 0, 5, 4], weather: [5, 0, 3, 4], computer: [8, 0, 4, 4], calendar: [0, 4, 4, 8], events: [4, 4, 3, 4], notes: [4, 8, 3, 4], tasks: [7, 4, 5, 8] } },
-  edge: { columns: 24, key: 'layoutEdge', defaults: { clock: [0, 0, 4, 6], weather: [0, 6, 4, 6], calendar: [4, 0, 5, 12], events: [9, 0, 4, 6], notes: [9, 6, 4, 6], tasks: [13, 0, 7, 12], computer: [20, 0, 4, 12] } }
+  standard: {
+    columns: 12, key: 'layout', key2: 'layoutP2',
+    defaults: { clock: [0, 0, 5, 4], weather: [5, 0, 3, 4], computer: [8, 0, 4, 4], calendar: [0, 4, 4, 8], events: [4, 4, 3, 4], notes: [4, 8, 3, 4], tasks: [7, 4, 5, 8] },
+    // Page 2: a slim clock strip across the top, the work panels big underneath.
+    defaults2: { clock: [0, 0, 12, 2], tasks: [0, 2, 7, 10], notes: [7, 2, 5, 10], calendar: [0, 12, 4, 8], events: [4, 12, 4, 6], weather: [8, 12, 4, 4], computer: [8, 16, 4, 4] }
+  },
+  edge: {
+    columns: 24, key: 'layoutEdge', key2: 'layoutEdgeP2',
+    defaults: { clock: [0, 0, 4, 6], weather: [0, 6, 4, 6], calendar: [4, 0, 5, 12], events: [9, 0, 4, 6], notes: [9, 6, 4, 6], tasks: [13, 0, 7, 12], computer: [20, 0, 4, 12] },
+    defaults2: { clock: [0, 0, 4, 12], tasks: [4, 0, 11, 12], notes: [15, 0, 9, 12], calendar: [0, 12, 6, 12], events: [6, 12, 6, 12], weather: [12, 12, 6, 12], computer: [18, 12, 6, 12] }
+  }
 };
+const PANEL_IDS = ['clock', 'weather', 'computer', 'calendar', 'events', 'notes', 'tasks'];
 const EDGE_RATIO = 2.6; // a window at least this many times wider than tall counts as an Edge
 let layoutNow = null;
+let pageNow = 1;
 let applyingLayout = false;
+
+function pageSettings() {
+  const p = (S.settings && S.settings.pages) || {};
+  const names = Array.isArray(p.names) ? p.names : [];
+  const tiles2 = Array.isArray(p.tiles2) && p.tiles2.length ? p.tiles2.filter((id) => PANEL_IDS.includes(id)) : ['clock', 'tasks', 'notes'];
+  return { names: [String(names[0] || 'MAIN').toUpperCase(), String(names[1] || 'WORK').toUpperCase()], tiles2 };
+}
+function onPage(id, page = pageNow) {
+  return page === 1 || pageSettings().tiles2.includes(id);
+}
+function layoutKey(mode = layoutNow || 'standard', page = pageNow) {
+  return page === 2 ? LAYOUTS[mode].key2 : LAYOUTS[mode].key;
+}
 
 function wantedLayout() {
   const m = S.settings.layoutMode || 'auto';
@@ -2199,12 +2487,33 @@ function columnCss(n) {
 
 function placePanels(mode) {
   const L = LAYOUTS[mode];
-  const saved = Array.isArray(S.data[L.key]) && S.data[L.key].length ? S.data[L.key] : null;
-  const pos = saved ? Object.fromEntries(saved.map((it) => [it.id, [it.x, it.y, it.w, it.h]])) : L.defaults;
+  const key = layoutKey(mode);
+  const defaults = pageNow === 2 ? L.defaults2 : L.defaults;
+  const saved = Array.isArray(S.data[key]) && S.data[key].length ? S.data[key] : null;
+  const pos = saved ? Object.fromEntries(saved.map((it) => [it.id, [it.x, it.y, it.w, it.h]])) : {};
   grid.batchUpdate();
-  Object.entries({ ...L.defaults, ...pos }).forEach(([id, [x, y, w, h]]) => {
+  // Panels that aren't on this page leave the grid (their content stays put, just hidden).
+  PANEL_IDS.forEach((id) => {
     const el = document.querySelector(`.grid-stack-item[gs-id="${CSS.escape(id)}"]`);
-    if (el) grid.update(el, { x, y, w, h });
+    if (!el) return;
+    const want = onPage(id);
+    if (!want && el.gridstackNode) { grid.removeWidget(el, false, false); el.hidden = true; }
+    else if (want && !el.gridstackNode) { el.hidden = false; grid.makeWidget(el); }
+  });
+  PANEL_IDS.filter((id) => onPage(id)).forEach((id) => {
+    const el = document.querySelector(`.grid-stack-item[gs-id="${CSS.escape(id)}"]`);
+    const p = pos[id] || defaults[id];
+    if (!el || !p) return;
+    const [x, y, w, h] = p;
+    // The clock may shrink to a slim strip on page 2.
+    if (id === 'clock' && el.gridstackNode) {
+      const min = pageNow === 2 ? 2 : 3;
+      el.gridstackNode.minH = min;
+      el.gridstackNode.minW = min;
+      el.setAttribute('gs-min-h', String(min));
+      el.setAttribute('gs-min-w', String(min));
+    }
+    grid.update(el, { x, y, w, h });
   });
   grid.batchUpdate(false);
 }
@@ -2216,10 +2525,12 @@ function applyLayout(force = false) {
   applyingLayout = true;
   layoutNow = mode;
   document.body.dataset.layout = mode;
+  document.body.dataset.page = String(pageNow);
   columnCss(LAYOUTS[mode].columns);
   grid.column(LAYOUTS[mode].columns, 'none');
   placePanels(mode);
   applyingLayout = false;
+  renderPageChip();
   const chip = $('#layoutChip');
   if (chip) {
     chip.classList.toggle('on', mode === 'edge');
@@ -2227,6 +2538,57 @@ function applyLayout(force = false) {
     chip.title = mode === 'edge' ? 'Switch to the standard layout' : 'Switch to the Xeneon Edge layout';
   }
   fitGrid();
+}
+
+/** Pages: page 1 is the whole deck, page 2 the panels picked in Settings › System › PAGES. */
+function setPage(n, { announce = false } = {}) {
+  const page = n === 2 ? 2 : 1;
+  if (page === pageNow) return false;
+  pageNow = page;
+  S.data.meta.page = page;
+  saveMeta();
+  applyLayout(true);
+  renderNotes();
+  if (announce) toast(`Page ${page} · ${pageSettings().names[page - 1]}`);
+  return true;
+}
+function renderPageChip() {
+  const el = $('#segPage');
+  if (!el) return;
+  const { names } = pageSettings();
+  el.innerHTML = names.map((nm, i) => `<button type="button" data-page="${i + 1}" role="tab" aria-selected="${pageNow === i + 1}" class="${pageNow === i + 1 ? 'on' : ''}">${i + 1} · ${esc(nm)}</button>`).join('');
+}
+function wirePages() {
+  const seg = $('#segPage');
+  if (seg) seg.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-page]');
+    if (!b) return;
+    sounds.click();
+    setPage(Number(b.dataset.page));
+  });
+  // Ctrl+1 / Ctrl+2 from the keyboard.
+  document.addEventListener('keydown', (e) => {
+    if (!e.ctrlKey || e.altKey || e.metaKey || isModalOpen()) return;
+    if (e.key === '1' || e.key === '2') { e.preventDefault(); if (setPage(Number(e.key))) sounds.click(); }
+  });
+  // A sideways swipe on a touchscreen (the Xeneon Edge) flips pages.
+  const wrap = $('.grid-wrap');
+  let sw = null;
+  wrap.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch' || !S.settings.layoutLocked) { sw = null; return; }
+    sw = { x: e.clientX, y: e.clientY, t: performance.now() };
+  }, { passive: true });
+  wrap.addEventListener('pointerup', (e) => {
+    if (!sw || e.pointerType !== 'touch') return;
+    const dx = e.clientX - sw.x;
+    const dy = e.clientY - sw.y;
+    const quick = performance.now() - sw.t < 700;
+    sw = null;
+    if (quick && Math.abs(dx) > 140 && Math.abs(dy) < Math.abs(dx) * 0.4) {
+      if (setPage(dx < 0 ? 2 : 1)) sounds.click();
+    }
+  }, { passive: true });
+  wrap.addEventListener('pointercancel', () => { sw = null; }, { passive: true });
 }
 
 /** The header chip: flip between the two layouts right now (and stay there until switched back). */
@@ -2268,11 +2630,12 @@ function initGrid() {
     }
   }
   S.data.layout = saved;
+  pageNow = S.data.meta && S.data.meta.page === 2 ? 2 : 1;
   applyLayout(true);
   grid.on('change', () => {
     if (applyingLayout || !layoutNow) return;
     const layout = grid.save(false).map((n) => ({ id: n.id, x: n.x, y: n.y, w: n.w, h: n.h }));
-    const key = LAYOUTS[layoutNow].key;
+    const key = layoutKey();
     S.data[key] = layout;
     deck.save(key, layout);
   });
@@ -2284,7 +2647,7 @@ function initGrid() {
 }
 
 function resetLayout() {
-  const key = LAYOUTS[layoutNow || 'standard'].key;
+  const key = layoutKey();
   S.data[key] = null;
   deck.save(key, null);
   applyLayout(true);
@@ -2552,6 +2915,7 @@ async function start() {
   initGrid();
   applySettings();
   initGrip();
+  wirePages();
   wire();
   wireNotes();
   wireProjects();
@@ -2578,6 +2942,9 @@ async function start() {
     upsertNote,
     deleteNote,
     noteToTask,
+    recapHtml, fillAudioLine, recapClick, rcTabReset: (id) => rcTab.delete(id),
+    setRecapRefresh: (fn) => { recapRefresh = fn; },
+    testGeminiKey: (key) => deck.recap.testKey(key),
     upsertProject,
     deleteProject,
     completeProject,
@@ -2662,6 +3029,18 @@ async function start() {
       speak(`Uplink established. ${msg}`);
     }
   }).then(() => { if (S.calEvents.length) FU.relayCalendar(S.calEvents); });
+  Recap.initRecap({
+    deck,
+    FU,
+    getNotes: () => S.notes,
+    saveNotes,
+    render: () => { renderNotes(); if (recapRefresh) recapRefresh(); },
+    getSettings: () => S.settings,
+    saveRecapSettings: (recap) => saveSettings({ ...S.settings, recap }, { refetch: false }),
+    newTask: ({ title, notes }) => { const t = { ...blankTask(), title, notes }; upsertTask(t, true); return t; },
+    toast,
+    pushLog
+  });
   startTimers();
   checkRedAlert();
   renderFooter();
@@ -2699,4 +3078,4 @@ function afterSetup() {
   saveMeta();
 }
 
-start();
+start().catch((e) => console.error("Start failed:", e && e.stack ? e.stack : e));

@@ -370,7 +370,7 @@ async function start() {
     P.fire = startFirebase(fb, cfg, 'manifest');
     await signIn(fb, P.fire.auth);
   } catch (e) { P.state = 'error'; P.error = 'Couldn\'t sign in to the project. Check your connection and reload.'; boot.skip(); render(); return; }
-  boot.progress(12);
+  boot.line(0, 'Relay uplink', 'ONLINE');
 
   let first = true;
   fb.onSnapshot(fb.doc(P.fire.db, 'manifests', P.token), (snap) => {
@@ -380,7 +380,9 @@ async function start() {
     if (first) {
       first = false;
       const theirs = P.m && P.m.owner ? `${P.m.owner.toUpperCase()}'S DECK` : 'COMMAND DECK';
-      boot.line(0, `SIGNAL · ${theirs}`, 'OK');
+      const pjName = String((P.m.project || {}).name || 'PROJECT').toUpperCase();
+      boot.line(1, `Link token · ${theirs}`, 'VALID');
+      boot.line(2, 'Project', pjName);
       let landed = false;
       P.state = P.name ? 'main' : 'welcome';
       document.title = `${(P.m.project || {}).name || 'Project'} · Project Manifest`;
@@ -390,9 +392,10 @@ async function start() {
         render();
         if (!landed) {
           landed = true;
-          boot.line(1, `MANIFEST · ${String((P.m.project || {}).name || 'PROJECT').toUpperCase()}`, 'OK');
-          boot.line(2, `ACCESS · ${P.name ? P.name.toUpperCase() : 'GUEST'}`, 'GRANTED');
-          boot.lock(P.name ? `Hi, ${P.name}.` : 'Welcome.');
+          const open = [...P.tasks.values()].filter((x) => !x.done && !x.deleted).length;
+          boot.line(3, 'Open tasks', String(open));
+          boot.line(4, 'Guest', P.name ? P.name.toUpperCase() : 'NEW');
+          boot.lock(P.name ? `Welcome, ${P.name}.` : 'Welcome aboard.', `${pjName} · ${String(level().name || 'CREW ACCESS').toUpperCase()}`);
         }
       }, () => { boot.skip(); });
       fb.onSnapshot(fb.collection(P.fire.db, 'manifests', P.token, 'log'), (s) => {

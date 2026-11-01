@@ -94,6 +94,7 @@ Field Unit is keyboard-only: it doesn't listen or speak (the desktop console kee
 - **No signal?** Field Unit says "Data stored locally" and transmits automatically when signal returns. The same goes for Command Deck.
 - **COMMAND OFFLINE** on the phone means the computer is off, asleep or Command Deck isn't running. The phone keeps working. While Command is offline, timers and reminders ring on the phone whenever Field Unit is open.
 - **Calendars** on the phone are the ones Command Deck reads, relayed when the console is running. Events added on the phone go to the console's Local calendar.
+- **Meeting recaps:** record in Voice Memos, **Save to Files**, then **Notes › DATA RECAP** in Field Unit. The main console transcribes it and files the recap under **RECAPS** (README › *Data Recap*). For the summary and action items, paste a free Gemini key in Command Deck › **Settings › Field Unit › DATA RECAP**. Nothing extra to deploy: recordings travel through the same free Firebase project in small pieces and are deleted from it as soon as the deck has them.
 - **Another phone?** Show a new pairing code and repeat Part 4.
 - **Another computer?** Install Command Deck there, then in its Settings › Field Unit enter the same web address and a pairing code from the main console under **JOIN DECK** (README › *A second Command Deck*). No extra deploy is needed.
 - **Remove a phone:** in Command Deck › Settings › Field Unit, press **UNPAIR** next to it (the phone returns to its pairing screen), or on the phone, *Settings › Unpair this device*.

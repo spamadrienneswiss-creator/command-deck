@@ -16,25 +16,17 @@
 <link rel="stylesheet" href="boot.css">
 </head>
 <body data-theme="dusk" data-frame="dark" data-trim="none" class="pm-body">
-<!-- Load-up screen (DECK RELAY). Inline so it shows before any script runs; boot.js takes it from here. -->
-<div id="boot" class="boot relay" aria-hidden="true">
-  <div class="bt-scanline"></div>
-  <div class="bt-emblem"><svg width="104" height="104" viewBox="0 0 92 92">
-    <polygon class="bt-draw" points="21.6,4 70.4,4 88,21.6 88,70.4 70.4,88 21.6,88 4,70.4 4,21.6" fill="none" stroke="currentColor" stroke-width="2"/>
-    <polygon class="bt-glyph" points="26.3,12 65.7,12 80,26.3 80,65.7 65.7,80 26.3,80 12,65.7 12,26.3" fill="rgba(var(--accent-rgb, 242, 166, 90), 0.06)" stroke="rgba(var(--accent-rgb, 242, 166, 90), 0.25)" stroke-width="1"/>
-    <g class="bt-glyph">
-      <path d="M46 40 V54 M39 66 L46 54 L53 66" fill="none" stroke="currentColor" stroke-width="3"/>
-      <circle class="bt-da" cx="46" cy="37" r="3" fill="currentColor"/><circle class="bt-dg" cx="46" cy="37" r="3" fill="var(--lime, #B8E27A)"/>
-      <path class="bt-a0" d="M37 29 A11 11 0 0 0 37 45 M55 29 A11 11 0 0 1 55 45" fill="none" stroke="currentColor" stroke-width="2.6"/>
-      <path class="bt-a1" d="M30 23 A19 19 0 0 0 30 51 M62 23 A19 19 0 0 1 62 51" fill="none" stroke="currentColor" stroke-width="2.4"/>
-      <path class="bt-gg" d="M37 29 A11 11 0 0 0 37 45 M55 29 A11 11 0 0 1 55 45 M30 23 A19 19 0 0 0 30 51 M62 23 A19 19 0 0 1 62 51" fill="none" stroke="var(--lime, #B8E27A)" stroke-width="5" stroke-linecap="round"/>
-      <path class="bt-g" d="M37 29 A11 11 0 0 0 37 45 M55 29 A11 11 0 0 1 55 45" fill="none" stroke="var(--lime, #B8E27A)" stroke-width="2.6"/>
-      <path class="bt-g" d="M30 23 A19 19 0 0 0 30 51 M62 23 A19 19 0 0 1 62 51" fill="none" stroke="var(--lime, #B8E27A)" stroke-width="2.4"/>
-    </g></svg></div>
-  <div class="bt-word">DECK RELAY</div>
-  <div class="bt-log"><div class="bt-line"><i>▸</i><span class="t"></span><span class="r"></span></div><div class="bt-line"><i>▸</i><span class="t"></span><span class="r"></span></div><div class="bt-line"><i>▸</i><span class="t"></span><span class="r"></span></div></div>
-  <div class="bt-prog"><div class="bt-ph"><span>RECEIVING</span><b data-pct>000%</b></div><div class="bt-bar"><i></i></div></div>
-  <div class="bt-hi" data-hi></div>
+<!-- Load-up screen ("Signal"). Inline so the boot log paints before any script runs; boot.js takes it from here. -->
+<div id="boot" class="boot s1" aria-hidden="true" data-chip="DECK RELAY" data-align="OPENING PROJECT" data-scan="REACHING THE DECK" data-rows="PROJECT,TASKS,SUBTASKS,NOTES,CREW,RELAY" data-handoff="Opening the project">
+  <i class="sb-c tl"></i><i class="sb-c tr"></i><i class="sb-c bl"></i><i class="sb-c br"></i>
+  <section class="sb-st sb-log">
+    <div class="sb-mbox"><svg class="sb-mark" viewBox="0 0 11 7" aria-hidden="true"><path d="M1 0h4v1h-4z M0 1h1v5h-1z M1 6h4v1h-4z M6 0h4v1h-4z M6 1h1v5h-1z M10 1h1v5h-1z M6 6h4v1h-4z" fill="currentColor"/></svg></div>
+    <div class="sb-lines"><div class="hd">DECK RELAY // SHARED PROJECT</div><div class="sub" data-sub>OPENING THE PROJECT...</div><div data-lines></div></div>
+  </section>
+  <section class="sb-st sb-align"></section>
+  <section class="sb-st sb-radar"></section>
+  <section class="sb-st sb-lock"></section>
+  <div class="sb-foot">DECK RELAY · SHARED LINK</div>
 </div>
 <div id="pm" class="pm"></div>
 <div id="toast" class="toast" role="status"></div>

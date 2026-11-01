@@ -82,6 +82,10 @@
           <button type="button" data-v="still">STILL</button>
         </div>
       </div>
+      <div class="ctl">
+        <span class="ctl-label">PAGE</span>
+        <div class="seg" id="segPage" role="tablist" aria-label="Deck page"></div>
+      </div>
       <button type="button" id="layoutChip" class="layout-chip" title="Switch layout"><svg width="20" height="10" viewBox="0 0 20 10" aria-hidden="true"><rect x="0.75" y="0.75" width="18.5" height="8.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span>STANDARD LAYOUT</span></button>
       <button type="button" id="updChip" class="upd-chip" hidden title="A new version is downloaded. Restart to install it.">UPDATE READY · RESTART</button>
       <div class="icon-btns">
@@ -185,14 +189,17 @@
         <section class="grid-stack-item-content panel notes-panel" aria-label="Notepad">
           <i class="br br-tr amber"></i><i class="br br-bl lav"></i>
           <div class="p-head">
-            <span class="p-label">07 · NOTEPAD <span id="ntCount" class="amber-t"></span></span>
+            <span class="p-label nt-head">07 · NOTEPAD <span class="nt-views" role="tablist" aria-label="Notepad view"><button type="button" role="tab" data-ntview="notes" class="on">NOTES <i id="ntCount"></i></button><button type="button" role="tab" data-ntview="recaps">RECAPS <i id="rcCount"></i></button></span></span>
             <span class="nt-tools">
               <button type="button" class="sq-btn" id="btnNoteSearch" aria-label="Search notes" title="Search notes"><svg width="12" height="12" viewBox="0 0 18 18" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 12 L16 16" stroke="currentColor" stroke-width="1.8"/></svg></button>
               <button type="button" class="accent-btn" id="btnNewNote">+ NOTE</button>
             </span>
           </div>
           <input id="ntSearch" class="in nt-search" type="search" placeholder="Search notes" aria-label="Search notes" hidden>
-          <div class="nt-list scroll" id="ntList"></div>
+          <div class="nt-body">
+            <div class="nt-list scroll" id="ntList"></div>
+            <div class="nt-pane scroll" id="ntPane" aria-live="polite"></div>
+          </div>
         </section>
       </div>
 
@@ -225,14 +232,67 @@
   <div class="win-grip" id="winGrip" title="Resize" aria-hidden="true"></div>
 </div>
 
-<div id="boot" class="boot" aria-hidden="true">
-  <div class="boot-inner">
-    <div class="boot-mark">
-      <svg width="40" height="40" viewBox="0 0 22 22" aria-hidden="true"><path d="M11 1 L21 11 L11 21 L1 11 Z" fill="none" stroke="currentColor" stroke-width="1"/><path d="M11 6 L16 11 L11 16 L6 11 Z" fill="currentColor" fill-opacity="0.4"/></svg>
+<!-- Load-up screen: "Signal". bootSequence() in app.js fills in the live lines and steps through the stages. -->
+<div id="boot" class="boot sg" aria-hidden="true">
+  <i class="sg-c tl"></i><i class="sg-c tr"></i><i class="sg-c bl"></i><i class="sg-c br"></i>
+  <div class="sg-foot l" id="sgFootL"></div>
+  <div class="sg-foot r" id="sgFootR"></div>
+
+  <section class="sg-stage sg-log">
+    <div class="sg-left">
+      <div class="sg-markbox"><svg class="sg-mark" viewBox="0 0 11 7" aria-hidden="true"><path d="M1 0h4v1h-4z M0 1h1v5h-1z M1 6h4v1h-4z M6 0h4v1h-4z M6 1h1v5h-1z M10 1h1v5h-1z M6 6h4v1h-4z" fill="currentColor"/></svg></div>
+      <div class="sg-rails" id="sgRails"></div>
     </div>
-    <div id="bootLines" class="boot-lines"></div>
-    <div class="boot-bar"><i id="bootFill"></i></div>
-  </div>
+    <div class="sg-lines" id="sgLines"></div>
+  </section>
+
+  <section class="sg-stage sg-logo">
+    <svg class="sg-mark big" viewBox="0 0 11 7" aria-hidden="true"><path d="M1 0h4v1h-4z M0 1h1v5h-1z M1 6h4v1h-4z M6 0h4v1h-4z M6 1h1v5h-1z M10 1h1v5h-1z M6 6h4v1h-4z" fill="currentColor"/></svg>
+    <div class="sg-bar"><i id="sgBar"></i></div>
+    <div class="sg-word" id="sgWord">COMMAND DECK</div>
+  </section>
+
+  <section class="sg-stage sg-array">
+    <div class="sg-arr">
+      <div class="sg-col">
+        <div class="sg-card"><div class="sg-tiny">LOC: DESK-01</div><div class="sg-name" id="sgName">COMMAND DECK<br>SYSTEMS ARRAY</div>
+          <div class="sg-state"><span class="off">OFFLINE</span><span class="on">ONLINE</span></div></div>
+        <div class="sg-card sg-sig"><div class="sg-band">SIGNAL STRENGTH</div><svg viewBox="0 0 250 70" preserveAspectRatio="none" aria-hidden="true"><path d="M8 38 L28 34 L42 42 L58 30 L72 46 L90 32 L106 40 L122 28 L138 44 L154 34 L170 40 L188 31 L204 42 L220 35 L242 38" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
+      </div>
+      <div class="sg-card sg-wires"><svg viewBox="0 0 360 380" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <path d="M70 300 H260 M180 300 V90 M180 200 H110 M110 200 V160 M180 140 H250 M250 140 V70 M110 300 V330" fill="none" class="w0" stroke-width="8"/>
+        <path d="M70 300 H260 M180 300 V90 M180 200 H110 M110 200 V160" fill="none" class="w1" stroke-width="8"/>
+        <g class="wn"><rect x="225" y="52" width="50" height="18"/><rect x="225" y="122" width="50" height="18"/><rect x="85" y="142" width="50" height="18"/><rect x="40" y="330" width="50" height="18"/><rect x="130" y="330" width="50" height="18"/></g>
+        <g class="wt"><text x="232" y="64">NULL</text><text x="229" y="134">ACTIVE</text><text x="92" y="154">ACTIVE</text><text x="47" y="342">CHRONO</text><text x="139" y="342">COMMS</text></g></svg></div>
+      <div class="sg-card sg-tiles" id="sgTiles"></div>
+      <div class="sg-card sg-scr"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+    <div class="sg-btn"><span class="go">INITIATE SYSTEMS CHECK</span><span class="wait">CHECK IN PROGRESS</span></div>
+  </section>
+
+  <section class="sg-stage sg-align">
+    <div class="sg-al">
+      <div class="sg-al-h"><span class="sg-chip">CMD·DECK</span><span>SYSTEMS ALIGNMENT INITIATING<span class="sg-dots"></span></span></div>
+      <div class="sg-rows" id="sgRows"></div>
+    </div>
+  </section>
+
+  <section class="sg-stage sg-radar">
+    <div class="sg-scan">SCANNING FOR FIELD UNIT<span class="sg-dots"></span></div>
+    <div class="sg-rad">
+      <i class="sg-base"></i><i class="sg-ticks"><b></b><b></b><b></b><b></b><b></b><b></b><b></b></i>
+      <i class="sg-mast"></i><i class="sg-ray l"></i><i class="sg-ray r"></i>
+      <i class="sg-arc a1"></i><i class="sg-arc a2"></i><i class="sg-arc a3"></i><i class="sg-arc a4"></i><i class="sg-arc a5"></i>
+      <i class="sg-blip"></i>
+    </div>
+  </section>
+
+  <section class="sg-stage sg-lock">
+    <div class="sg-px" id="sgPx"></div>
+    <div class="sg-locked">SIGNAL LOCKED</div>
+    <div class="sg-hi" id="sgHi"></div>
+    <div class="sg-sub" id="sgSub"></div>
+  </section>
 </div>
 
 <div id="modalRoot"></div>

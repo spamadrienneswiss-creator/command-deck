@@ -60,6 +60,10 @@ const DEFAULTS = {
     defaultReminder: 15,
     layoutLocked: true,
     layoutMode: 'auto', // auto (Edge layout on a wide, short screen) | standard | edge
+    // Two pages of panels: page 1 is the full deck, page 2 holds a few panels at a bigger size.
+    pages: { names: ['MAIN', 'WORK'], tiles2: ['clock', 'tasks', 'notes'] },
+    // Data Recap: meeting recordings sent from Field Unit, transcribed here, summarized by Gemini.
+    recap: { geminiKey: '', audio: 'd30' }, // audio after the recap: keep | d30 | now
     fieldUnit: { url: '', config: null, deckId: null, role: 'main' },
     // Rig lighting through iCUE (off until switched on in Settings › LIGHTING)
     lighting: { enabled: false, boot: true, alert: true, speaking: true, crew: true, brightness: 80 }
@@ -72,8 +76,10 @@ const DEFAULTS = {
   schedule: [], // { id, type, title, date: 'YYYY-MM-DD', note, replies: { [linkToken]: { state: ok|change, comment, at, by } }, createdAt }
   layout: null,
   layoutEdge: null, // panel positions for the Xeneon Edge layout (24 columns)
+  layoutP2: null, // page 2 panel positions, standard layout
+  layoutEdgeP2: null, // page 2 panel positions, Edge layout
   window: { bounds: null },
-  meta: { lastBriefingDate: null, lastLaunch: null },
+  meta: { lastBriefingDate: null, lastLaunch: null, page: 1 },
   push: { publicKey: null, privateKey: null }
 };
 

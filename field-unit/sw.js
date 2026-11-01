@@ -1,5 +1,5 @@
 // Field Unit service worker: offline shell + alerts relayed by Command.
-const CACHE = 'field-unit-v1.15.0';
+const CACHE = 'field-unit-v1.16.0';
 const SHELL = ['./', 'index.html', 'styles.css', 'boot.css', 'app.js', 'boot.js', 'manifest.webmanifest', 'lib/core.js', 'lib/sync.js', 'lib/util.js', 'lib/manifest.js', 'lib/roster.js', 'icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {
@@ -35,14 +35,20 @@ self.addEventListener('push', (e) => {
     tag: data.tag || undefined,
     icon: 'icons/icon-192.png',
     badge: 'icons/icon-192.png',
-    data: { taskId: data.taskId || null }
+    data: { taskId: data.taskId || null, recapId: data.recapId || null }
   }));
 });
 
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
+  const recapId = (e.notification.data && e.notification.data.recapId) || null;
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
-    for (const c of list) { if ('focus' in c) return c.focus(); }
-    return self.clients.openWindow('./');
+    for (const c of list) {
+      if ('focus' in c) {
+        if (recapId) c.postMessage({ openRecap: recapId });
+        return c.focus();
+      }
+    }
+    return self.clients.openWindow(recapId ? `./?recap=${encodeURIComponent(recapId)}` : './');
   }));
 });

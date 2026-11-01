@@ -16,27 +16,16 @@ export const DEVICES = [
   [393, 852, 3], [390, 844, 3], [375, 812, 3], [375, 667, 2]
 ];
 
-const font = pathToFileURL(path.join(root, 'node_modules/@fontsource/chakra-petch/files/chakra-petch-latin-500-normal.woff2')).href;
-// Neutral colors so it hands over cleanly to whichever theme the load-up screen paints in.
-// Laid out to line up with the load-up screens (boot.css), so the hand-off doesn't jump.
-const page = (word, rings) => `<!doctype html><html><head><style>
-@font-face { font-family: CP; src: url('${font}'); font-weight: 500; }
-html, body { margin: 0; height: 100%; background: #0B0C11; }
-body { display: flex; flex-direction: column; align-items: center; justify-content: center; font: 500 22px/1 CP, sans-serif; letter-spacing: .32em; color: #F4EFE9; }
-.w { padding-left: .32em; }
-.r { position: relative; width: 240px; height: 240px; margin: 48px 0 40px; }
-.r i { position: absolute; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(236,231,225,.13); }
-</style></head><body>${rings
-    ? `<div class="w">${word}</div><div class="r"><i style="inset:0"></i><i style="inset:40px"></i><i style="inset:80px"></i></div><div style="height:90px"></div>`
-    : `<div style="height:130px"></div><div class="w">${word}</div><div style="height:268px"></div>`}</body></html>`;
+// The "Signal" load-up screens start on a plain black field (the boot log types onto it), so the
+// launch image is that same black: nothing to line up, nothing that jumps when the page takes over.
+const page = () => '<!doctype html><html><head><style>html, body { margin: 0; height: 100%; background: #0B0C0D; }</style></head><body></body></html>';
 
 fs.mkdirSync(out, { recursive: true });
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
-for (const [name, word, rings] of [['fieldunit', 'FIELD UNIT', true], ['relay', 'DECK RELAY', false]]) {
+for (const name of ['fieldunit', 'relay']) {
   for (const [w, h, dpr] of DEVICES) {
     const p = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: dpr });
-    await p.setContent(page(word, rings));
-    await p.evaluate(() => document.fonts.ready);
+    await p.setContent(page());
     await p.screenshot({ path: path.join(out, `${name}-${w * dpr}x${h * dpr}.png`) });
     await p.close();
   }

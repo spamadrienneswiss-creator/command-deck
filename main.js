@@ -11,6 +11,7 @@ const store = require('./src/store');
 const { parseCommand } = require('./src/commands');
 const { fetchCalendars } = require('./src/calendar');
 const { Lighting, fetchSdkWindows } = require('./src/lighting');
+const gemini = require('./src/gemini');
 
 let webpush = null; // loaded on first use
 let QRCode = null;
@@ -288,6 +289,43 @@ function registerIpc() {
     setImmediate(() => updater.quitAndInstall(true, true));
     return true;
   });
+  // ---- Data Recap: recordings live in the app's folder until their audio is deleted
+  const recapDir = () => path.join(app.getPath('userData'), 'recaps');
+  const recapFile = (id) => {
+    const safe = String(id || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64);
+    if (!safe) return null;
+    const dir = recapDir();
+    const hit = fs.existsSync(dir) ? fs.readdirSync(dir).find((f) => f.startsWith(`${safe}.`)) : null;
+    return { safe, dir, path: hit ? path.join(dir, hit) : null };
+  };
+  ipcMain.handle('recap:save', (_e, id, ext, bytes) => {
+    const f = recapFile(id);
+    if (!f || !bytes) return null;
+    fs.mkdirSync(f.dir, { recursive: true });
+    const file = path.join(f.dir, `${f.safe}.${String(ext || 'm4a').replace(/[^a-z0-9]/gi, '').slice(0, 5) || 'm4a'}`);
+    fs.writeFileSync(file, Buffer.from(bytes));
+    return { size: fs.statSync(file).size };
+  });
+  ipcMain.handle('recap:read', (_e, id) => {
+    const f = recapFile(id);
+    if (!f || !f.path) return null;
+    return new Uint8Array(fs.readFileSync(f.path));
+  });
+  ipcMain.handle('recap:delete', (_e, id) => {
+    const f = recapFile(id);
+    if (!f || !f.path) return false;
+    try { fs.unlinkSync(f.path); return true; } catch (e) { return false; }
+  });
+  ipcMain.handle('recap:info', (_e, id) => {
+    const f = recapFile(id);
+    if (!f || !f.path) return { exists: false, size: 0 };
+    return { exists: true, size: fs.statSync(f.path).size };
+  });
+  ipcMain.handle('recap:summarize', async (_e, opts) => {
+    try { return { ok: true, ...(await gemini.summarize(opts || {})) }; } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
+  });
+  ipcMain.handle('recap:testKey', (_e, key) => gemini.testKey(String(key || '').trim()));
+
   ipcMain.handle('sys:hostname', () => { try { return require('os').hostname(); } catch (e) { return ''; } });
   ipcMain.handle('clip:write', (_e, text) => {
     clipboard.writeText(String(text || '').slice(0, 2000));

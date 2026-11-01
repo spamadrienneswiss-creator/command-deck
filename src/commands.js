@@ -381,6 +381,21 @@ function parseNote(text) {
   return { intent: 'add-note', note: { title, body: full } };
 }
 
+// "page two", "go to page 1", "switch to the work page", "show the main page" → 1 or 2.
+// Only whole requests count, so "page the plumber" stays a task.
+function parsePage(lower, names) {
+  const nm = Array.isArray(names) ? names.map((n) => String(n || '').toLowerCase().trim()) : [];
+  const m = lower.match(/^(?:(?:go|switch|flip|change|jump|turn)\s+(?:back\s+)?to\s+|show\s+(?:me\s+)?|open\s+|back\s+to\s+)?(?:the\s+)?(?:page\s+(one|two|1|2)|(.+?)\s+page|(next|other|previous)\s+page)$/);
+  if (!m) return null;
+  if (m[1]) return /^(?:one|1)$/.test(m[1]) ? 1 : 2;
+  if (m[3]) return 'toggle';
+  const word = (m[2] || '').trim();
+  if (/^(?:next|other|previous|last)$/.test(word)) return 'toggle';
+  if (/^(?:first|main|home|1|one)$/.test(word) || (nm[0] && word === nm[0])) return 1;
+  if (/^(?:second|work|2|two)$/.test(word) || (nm[1] && word === nm[1])) return 2;
+  return null;
+}
+
 function parseCommand(raw, ctx = {}, ref = new Date()) {
   const text = stripWake(clean(String(raw || '')).replace(/[.!?]+$/, ''));
   if (!text) return { intent: 'empty' };
@@ -389,6 +404,9 @@ function parseCommand(raw, ctx = {}, ref = new Date()) {
   const humor = lower.match(/\bhumou?r(?:\s+(?:setting|level))?\s*(?:to|at|is|=)?\s*(\d{1,3})\s*(?:%|percent)?/);
   if (humor) return { intent: 'set-humor', value: Math.min(100, Number(humor[1])) };
   if (/\b(?:what(?:'s| is)|how much is)\s+(?:your|the)\s+humou?r(?:\s+(?:setting|level))?\b/.test(lower)) return { intent: 'humor-query' };
+
+  const page = parsePage(lower, ctx.pageNames);
+  if (page) return { intent: 'page', page };
 
   const note = parseNote(text);
   if (note) return note;

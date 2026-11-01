@@ -9,7 +9,7 @@ import { RosterRelay, scheduleUrl, DEFAULT_TYPES, weekStart, addDays, weekLabel,
 import { bootScreen } from './boot.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.15.0';
+const VERSION = 'v1.16.0';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
@@ -180,6 +180,7 @@ function quip() {
 function categoryById(id) { return categories().find((c) => c.id === id); }
 
 const IC = {
+  wave: '<svg width="22" height="22" viewBox="0 0 26 26" aria-hidden="true"><path d="M3 13 V13 M7 9 V17 M11 5 V21 M15 8 V18 M19 11 V15 M23 13 V13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
   check: '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5 L5 9 L10 3" fill="none" stroke="#14151B" stroke-width="2"/></svg>',
   plus: '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="1.6"/></svg>',
   close: '<svg width="14" height="14" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 2 L8 8 M8 2 L2 8" stroke="currentColor" stroke-width="1.2"/></svg>',
@@ -288,6 +289,7 @@ function startSync() {
       if (S.firstSync) { S.firstSync(); S.firstSync = null; }
       if (kind === 'tasks' || kind === 'projects') { if (S.relay) S.relay.schedule(); refreshProjectSheet(); }
       if (kind === 'schedule' && S.roster) S.roster.schedule();
+      if (kind === 'notes') refreshRecapSheet();
     }, (err) => console.warn('sync', kind, err));
   }
   // Project Manifest: keep shared projects' guest links in step (Command Deck does the same when it's on).
@@ -1045,7 +1047,7 @@ function viewCalendar() {
 
 
 // ---------------------------------------------------------------- notes
-const NOTE_SRC = { scan: ['SCANNED', 'var(--lav)'], voice: ['VOICE', 'var(--amber)'], comms: ['COMMS', 'var(--amber)'], typed: ['TYPED', 'var(--muted)'] };
+const NOTE_SRC = { scan: ['SCANNED', 'var(--lav)'], voice: ['VOICE', 'var(--amber)'], comms: ['COMMS', 'var(--amber)'], typed: ['TYPED', 'var(--muted)'], recap: ['RECAP', 'var(--teal)'] };
 function normText(x) { return String(x || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); }
 function noteWhen(iso, now = new Date()) {
   if (!iso) return '';
@@ -1064,10 +1066,12 @@ function noteRow(n) {
 function viewNotes() {
   const q = S.noteSearch == null ? '' : normText(S.noteSearch);
   const all = S.notes.slice().sort((a, b) => new Date(b.editedAt || b.createdAt) - new Date(a.editedAt || a.createdAt));
-  const list = q ? all.filter((n) => normText(`${n.title} ${n.body}`).includes(q)) : all;
-  const pinned = list.filter((n) => n.pinned);
-  const recent = list.filter((n) => !n.pinned);
-  const group = (label, items, accent) => (items.length ? `<div class="group-h${accent ? ' amber-h' : ''}"><span>${label}</span><span>${items.length}</span></div>${items.map(noteRow).join('')}` : '');
+  const hay = (n) => normText(`${n.title} ${n.body} ${isRecap(n) ? (n.recap.transcript || []).map((l) => l.text).join(' ') : ''}`);
+  const list = q ? all.filter((n) => hay(n).includes(q)) : all;
+  const recaps = list.filter(isRecap);
+  const pinned = list.filter((n) => n.pinned && !isRecap(n));
+  const recent = list.filter((n) => !n.pinned && !isRecap(n));
+  const group = (label, items, accent, rowFn = noteRow) => (items.length ? `<div class="group-h${accent ? ` ${accent}` : ''}"><span>${label}</span><span>${items.length}</span></div>${items.map(rowFn).join('')}` : '');
   return `
     <header style="display:flex;justify-content:space-between;align-items:center">
       <h1 class="h1" style="margin:0;font-size:28px">Notes</h1>
@@ -1077,11 +1081,12 @@ function viewNotes() {
       </div>
     </header>
     ${S.noteSearch != null ? `<div class="f"><input class="in" id="noteSearch" type="search" placeholder="Search notes" aria-label="Search notes" value="${esc(S.noteSearch)}"></div>` : ''}
-    ${FIELD_SCAN ? `<button type="button" class="scan-btn" data-scan>
-      ${IC.scan}
-      <span><span class="t1">FIELD SCAN</span><span class="t2">Capture a page and file it with Command</span></span>
-    </button>` : ''}
-    ${group('PINNED', pinned, true)}
+    <div class="note-acts${FIELD_SCAN ? ' two' : ''}">
+      ${FIELD_SCAN ? `<button type="button" class="scan-btn" data-scan>${IC.scan}<span><span class="t1">FIELD SCAN</span></span></button>` : ''}
+      <button type="button" class="scan-btn recap-btn" data-recap-pick>${IC.wave}<span><span class="t1">DATA RECAP</span>${FIELD_SCAN ? '' : '<span class="t2">Send a Voice Memos recording to Command</span>'}</span></button>
+    </div>
+    ${group('RECAPS', recaps, 'teal-h', recapRow)}
+    ${group('PINNED', pinned, 'amber-h')}
     ${group(q ? 'MATCHES' : 'RECENT', recent)}
     ${!list.length ? `<div class="empty">${q ? 'No notes match that.' : `No notes yet. Tap ${FIELD_SCAN ? '<b>Field Scan</b>, ' : ''}the <b>+</b>, or open the terminal and type <b>take a note: …</b>`}</div>` : ''}
     <div class="hint" style="margin-top:16px">Copying from paper? Open a note, tap in the text and choose <b>Scan Text</b>. iPhone reads printed pages and handwriting straight into it.</div>`;
@@ -1144,6 +1149,299 @@ function openNoteEditor(note) {
     });
   }
   if (isNew) setTimeout(() => $('#nTitle', sh).focus(), 50);
+}
+
+// ---------------------------------------------------------------- data recap
+// A meeting recorded in Voice Memos goes to Command Deck through the deck's own database in
+// small pieces (the free plan has no file storage). Command transcribes it on the PC, Gemini
+// writes the recap, and it comes back here as a note with src "recap".
+const RECAP_CHUNK = 700 * 1024; // raw bytes per piece; base64 keeps each document under 1 MB
+const RECAP_MAX = 150 * 1048576;
+const RC_LABEL = { uploading: 'SENDING', queued: 'WAITING FOR COMMAND', receiving: 'COMMAND RECEIVING', decoding: 'TRANSCRIBING', transcribing: 'TRANSCRIBING', summarizing: 'WRITING THE RECAP', error: 'NEEDS ATTENTION' };
+const DAY_MS = 864e5;
+function isRecap(n) { return !!(n && n.src === 'recap' && n.recap); }
+function fmtMin(sec) {
+  const s = Math.round(Number(sec) || 0);
+  if (!s) return '';
+  if (s < 60) return `${s} SEC`;
+  const m = Math.round(s / 60);
+  return m >= 60 ? `${Math.floor(m / 60)} HR${m % 60 ? ` ${m % 60} MIN` : ''}` : `${m} MIN`;
+}
+function fmtMB(b) { return b ? `${Math.max(1, Math.round(b / 1048576))} MB` : ''; }
+function fmtStamp(sec) {
+  const s = Math.max(0, Math.round(Number(sec) || 0));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const r = s % 60;
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+}
+function audioDeleteAt(rc) {
+  if (!rc || !rc.audio || rc.audio.deleted) return null;
+  if (rc.audio.keep === 'now') return Date.now();
+  if (rc.audio.keep === 'd30' && rc.readyAt) return rc.readyAt + 30 * DAY_MS;
+  return null;
+}
+function recapRow(n) {
+  const rc = n.recap || {};
+  const ready = rc.status === 'ready';
+  const preview = ready ? (rc.summary || (rc.points || []).join(' · ') || (rc.transcript || []).slice(0, 2).map((l) => l.text).join(' ')) : '';
+  const meta = ready ? [fmtMin(rc.durationSec), noteWhen(n.createdAt)].filter(Boolean).join(' · ') : `${RC_LABEL[rc.status] || 'WORKING'}${rc.progress && rc.status !== 'error' ? ` · ${rc.progress}%` : ''}`;
+  const fresh = ready && rc.readyAt && Date.now() - rc.readyAt < 6 * 3600e3;
+  return `<button type="button" class="nrow rc-row" data-recap="${esc(n.id)}">
+    <span class="nrow-top"><span class="nrow-title">${esc(n.title || 'Data Recap')}</span>${fresh ? '<span class="rc-new">NEW</span>' : ''}</span>
+    ${preview ? `<span class="nrow-prev">${esc(preview)}</span>` : ''}
+    <span class="nrow-meta"><span class="tag" style="color:var(--teal);box-shadow:inset 0 0 0 1px var(--teal)">RECAP</span><span class="${rc.status === 'error' ? 'err-t' : ''}">${esc(meta)}</span></span>
+    ${!ready && rc.status !== 'error' ? `<span class="rc-bar" aria-hidden="true"><i style="width:${Math.max(3, rc.progress || 0)}%"></i></span>` : ''}
+  </button>`;
+}
+
+function pickRecording() {
+  if (!S.deckId) { showPairing(); return; }
+  const inp = $('#recapInput');
+  inp.value = '';
+  inp.click();
+}
+
+function probeDuration(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const a = new Audio();
+    const done = (v) => { URL.revokeObjectURL(url); resolve(v); };
+    a.preload = 'metadata';
+    a.onloadedmetadata = () => done(Number.isFinite(a.duration) ? a.duration : 0);
+    a.onerror = () => done(0);
+    setTimeout(() => done(0), 4000);
+    a.src = url;
+  });
+}
+
+function toBase64(bytes) {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+async function openRecapSend(file) {
+  if (!file) return;
+  if (file.size > RECAP_MAX) { toast(`That recording is ${fmtMB(file.size)}. Up to ${fmtMB(RECAP_MAX)} works; try a shorter one.`, 4500); return; }
+  const dur = await probeDuration(file);
+  const base = String(file.name || 'Recording').replace(/\.[a-z0-9]{2,5}$/i, '');
+  const when = file.lastModified ? new Date(file.lastModified) : new Date();
+  const opts = { summary: true, points: true, actions: true, transcript: true };
+  let keep = shared().recapAudio || 'd30';
+  const notes = { keep: 'Kept on Command until you delete it.', d30: 'Deleted from Command 30 days after the recap.', now: 'Deleted from Command as soon as the recap is written. The transcript stays.' };
+  const sh = openSheet(`
+    <div class="sheet-head"><span class="label teal-t">DATA RECAP</span><button type="button" class="icon-btn" data-close aria-label="Cancel">${IC.close}</button></div>
+    <div class="rc-file"><span class="rc-wave">${IC.wave}</span><span><span class="rc-fname">${esc(file.name || 'Recording')}</span>
+      <span class="rc-fmeta">${esc([fmtMin(dur), fmtMB(file.size), `${U.dayLabel(when, new Date()).toUpperCase()} ${U.fmtTimeShort(when, clock24())}`].filter(Boolean).join(' · '))}</span></span></div>
+    <div class="f"><span class="label" style="display:block;margin-bottom:8px">TITLE</span><input class="in title" id="rcTitle" value="${esc(base)}" aria-label="Title"></div>
+    <div class="f"><span class="label" style="display:block;margin-bottom:6px">THE RECAP WILL HAVE</span>
+      ${[['summary', 'Summary'], ['points', 'Main points'], ['actions', 'Action items'], ['transcript', 'Full transcript']].map(([k, l]) => `<label class="rc-check"><input type="checkbox" data-inc="${k}" checked> ${l}</label>`).join('')}
+      ${shared().recapSummaries === false ? '<div class="hint">Command has no Gemini key yet, so you\'ll get the transcript; add one on the deck under Settings › Field Unit for summaries.</div>' : ''}</div>
+    <div class="f"><span class="label" style="display:block;margin-bottom:8px">AUDIO AFTER THE RECAP</span>
+      <div class="rc-seg" id="rcKeep">${[['keep', 'KEEP'], ['d30', '30 DAYS'], ['now', 'DELETE NOW']].map(([v, l]) => `<button type="button" class="chip${keep === v ? ' on' : ''}" data-keep="${v}" style="--pc:var(--teal)">${l}</button>`).join('')}</div>
+      <div class="hint" id="rcKeepNote">${notes[keep]}</div></div>
+    <div class="sheet-foot"><button type="button" class="btn primary block rc-go" id="rcGo">TRANSMIT TO COMMAND</button></div>
+    <div class="hint" style="text-align:center">Keep Field Unit open until the upload finishes.</div>`);
+  sh.addEventListener('click', (e) => {
+    if (e.target.closest('[data-close]')) { closeSheet(); return; }
+    const k = e.target.closest('[data-keep]');
+    if (k) { keep = k.dataset.keep; $$('#rcKeep .chip', sh).forEach((b) => b.classList.toggle('on', b.dataset.keep === keep)); $('#rcKeepNote', sh).textContent = notes[keep]; }
+  });
+  $$('[data-inc]', sh).forEach((c) => c.addEventListener('change', () => { opts[c.dataset.inc] = c.checked; }));
+  $('#rcGo', sh).addEventListener('click', () => {
+    const title = $('#rcTitle', sh).value.trim() || base;
+    sendRecording(file, { title, include: { ...opts }, keep, durationSec: dur, recordedAt: when.getTime() });
+  });
+}
+
+async function sendRecording(file, meta) {
+  if (!S.sync || !S.fire) { toast('No uplink right now. Try again with signal.', 3500); return; }
+  const now = new Date().toISOString();
+  const upId = makeId('up_');
+  const note = {
+    id: makeId('n_'), title: meta.title, body: '', pinned: false, src: 'recap', createdAt: now,
+    recap: { status: 'uploading', progress: 0, fileName: file.name || 'recording.m4a', sizeBytes: file.size, durationSec: Math.round(meta.durationSec || 0), recordedAt: meta.recordedAt, uploadId: upId, include: meta.include, audio: { keep: meta.keep } }
+  };
+  saveNote(note, true);
+  openRecapSheet(note.id);
+  S.recapSending = note.id;
+  let written = 0;
+  try {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const chunks = Math.max(1, Math.ceil(bytes.length / RECAP_CHUNK));
+    let shown = 0;
+    for (let i = 0; i < chunks; i++) {
+      const piece = bytes.subarray(i * RECAP_CHUNK, Math.min(bytes.length, (i + 1) * RECAP_CHUNK));
+      await fb.setDoc(fb.doc(S.fire.db, 'decks', S.deckId, 'recapChunks', `${upId}-${i}`), { data: toBase64(piece), i, upId });
+      written = i + 1;
+      const pct = Math.round(((i + 1) / chunks) * 100);
+      if (pct - shown >= 10 || i === chunks - 1) { shown = pct; recapPatch(note.id, { progress: pct }); }
+    }
+    recapPatch(note.id, { status: 'queued', progress: 0 });
+    await fb.setDoc(fb.doc(S.fire.db, 'decks', S.deckId, 'recapUploads', upId), {
+      complete: true, noteId: note.id, chunks, size: bytes.length, fileName: note.recap.fileName, title: meta.title,
+      include: meta.include, audio: meta.keep, recordedAt: meta.recordedAt, createdAt: Date.now()
+    });
+    toast('Recording sent · Command takes it from here');
+  } catch (e) {
+    recapPatch(note.id, { status: 'error', error: `The upload stopped: ${e.message || e}. Send it again from Notes › DATA RECAP.` });
+    // Don't leave half a recording sitting in the uplink: take back the pieces that made it.
+    for (let i = 0; i < written; i += 200) {
+      const batch = fb.writeBatch(S.fire.db);
+      for (let k = i; k < Math.min(written, i + 200); k++) batch.delete(fb.doc(S.fire.db, 'decks', S.deckId, 'recapChunks', `${upId}-${k}`));
+      batch.commit().catch(() => {});
+    }
+  } finally {
+    S.recapSending = null;
+    refreshRecapSheet();
+  }
+}
+
+function recapPatch(id, fields) {
+  const n = S.notes.find((x) => x.id === id);
+  if (!n) return;
+  const audio = fields.audio ? { ...((n.recap && n.recap.audio) || {}), ...fields.audio } : null;
+  n.recap = { ...n.recap, ...fields };
+  if (audio) n.recap.audio = audio;
+  saveNote(n, false);
+  refreshRecapSheet();
+}
+
+let recapSheet = null; // { id, tab }
+function refreshRecapSheet() {
+  if (!recapSheet || !$('.sheet [data-recap-sheet]')) return;
+  const box = $('.sheet [data-recap-sheet]');
+  const n = S.notes.find((x) => x.id === recapSheet.id);
+  if (!n) { closeSheet(); recapSheet = null; return; }
+  const sc = $('.sheet').scrollTop;
+  box.innerHTML = recapSheetHtml(n);
+  $('.sheet').scrollTop = sc;
+}
+
+function recapSheetHtml(n) {
+  const rc = n.recap || {};
+  const tab = recapSheet ? recapSheet.tab : 'recap';
+  const head = `<div class="rc-top"><span class="tag" style="color:var(--teal);box-shadow:inset 0 0 0 1px var(--teal)">RECAP</span><span class="label">${esc([fmtMin(rc.durationSec), noteWhen(n.createdAt)].filter(Boolean).join(' · '))}</span></div>
+    <h2 class="rc-h1">${esc(n.title || 'Data Recap')}</h2>`;
+  if (rc.status !== 'ready') {
+    const order = ['uploading', 'queued', 'receiving', 'decoding', 'transcribing', 'summarizing', 'ready'];
+    const at = order.indexOf(rc.status === 'decoding' ? 'transcribing' : rc.status);
+    const step = (key, title, sub) => {
+      const i = order.indexOf(key);
+      const st = rc.status === 'error' ? (i < at ? 'done' : 'wait') : i < at ? 'done' : i === at ? 'now' : 'wait';
+      const pct = st === 'now' && rc.progress ? ` · ${rc.progress}%` : '';
+      return `<li class="rc-step ${st}"><i aria-hidden="true"></i><span><b>${title}${pct}</b><small>${sub}</small></span></li>`;
+    };
+    const sending = rc.status === 'uploading';
+    return `${head}
+      <ol class="rc-steps">
+        ${step('uploading', sending ? 'Sending to Command' : 'Uplink complete', `${fmtMB(rc.sizeBytes)}${sending ? ' · keep Field Unit open' : ' sent'}`)}
+        ${step('transcribing', 'Transcribing on Command', rc.status === 'queued' ? (commandOnline() ? 'Starting…' : 'Starts when Command Deck is on') : 'On the PC, privately')}
+        ${step('summarizing', 'Writing the recap', 'Summary, main points, action items')}
+      </ol>
+      ${rc.status === 'error' ? `<div class="rc-err">${esc(rc.error || 'Something went wrong.')}</div>` : !sending ? '<div class="rc-safe">Safe to close Field Unit now. Command will ping your phone when the recap is ready.</div>' : ''}
+      <div class="sheet-foot"><button type="button" class="btn line block" data-close>${sending ? 'HIDE' : 'CLOSE'}</button>${rc.status === 'error' ? '<button type="button" class="btn danger" data-rc-del>DELETE</button>' : ''}</div>`;
+  }
+  const tabs = `<div class="rc-tabs" role="tablist"><button type="button" role="tab" data-rc-tab="recap" class="${tab === 'recap' ? 'on' : ''}" aria-selected="${tab === 'recap'}">RECAP</button>${(rc.transcript || []).length ? `<button type="button" role="tab" data-rc-tab="transcript" class="${tab === 'transcript' ? 'on' : ''}" aria-selected="${tab === 'transcript'}">TRANSCRIPT</button>` : ''}</div>`;
+  let content;
+  if (tab === 'transcript') {
+    content = `<div class="f"><input class="in" type="search" id="rcFind" placeholder="Search transcript" aria-label="Search transcript" value="${esc(recapSheet.find || '')}"></div>
+      <div class="rc-lines">${(rc.transcript || []).filter((l) => !recapSheet.find || normText(l.text).includes(normText(recapSheet.find))).map((l) => `<div class="rc-line"><span class="rc-t">${fmtStamp(l.t)}</span><span>${esc(l.text)}</span></div>`).join('') || '<div class="empty">No lines match.</div>'}</div>`;
+  } else {
+    const acts = rc.actions || [];
+    const done = acts.filter((a) => a.taskId).length;
+    content = `${rc.summaryError ? `<div class="rc-err">${esc(rc.summaryError)}</div>` : ''}
+      ${rc.summary ? `<div class="rc-sec">SUMMARY</div><p class="rc-sum">${esc(rc.summary)}</p>` : ''}
+      ${(rc.points || []).length ? `<div class="rc-sec">MAIN POINTS</div><ul class="rc-points">${rc.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}
+      ${acts.length ? `<div class="rc-sec"><span>ACTION ITEMS</span><span class="dim">${done} OF ${acts.length} IN TASKS</span></div>
+        <div class="rc-acts">${acts.map((a) => `<div class="rc-act"><span>${esc(a.text)}</span>${a.taskId ? '<span class="rc-intask">✓ IN TASKS</span>' : `<button type="button" class="chip" data-rc-task="${esc(a.id)}" style="--pc:var(--teal)">+ TASK</button>`}</div>`).join('')}</div>` : ''}`;
+  }
+  const a = rc.audio || {};
+  const at = audioDeleteAt(rc);
+  const audio = a.deleted ? 'AUDIO DELETED · TRANSCRIPT KEPT' : a.deleting ? 'DELETING THE AUDIO…' : `AUDIO ON COMMAND · ${at == null ? 'KEPT' : `DELETES ${U.MONTHS[new Date(at).getMonth()].slice(0, 3).toUpperCase()} ${new Date(at).getDate()}`}`;
+  return `${head}${tabs}${content}
+    <div class="rc-audio"><span>${audio}</span>${a.deleted || a.deleting ? '' : `<button type="button" class="chip" data-rc-keep="${a.keep === 'keep' ? 'd30' : 'keep'}">${a.keep === 'keep' ? '30 DAYS' : 'KEEP'}</button><button type="button" class="chip" data-rc-keep="now" style="--pc:var(--coral)">DELETE NOW</button>`}</div>
+    <div class="sheet-foot wrap"><button type="button" class="btn line" data-rc-copy>COPY RECAP</button><button type="button" class="btn line" data-rc-project>ADD TO PROJECT</button><button type="button" class="btn danger" data-rc-del>DELETE</button></div>`;
+}
+
+function openRecapSheet(id) {
+  const n = S.notes.find((x) => x.id === id);
+  if (!n) return;
+  recapSheet = { id, tab: 'recap', find: '' };
+  const sh = openSheet(`<div class="sheet-head"><span class="label teal-t">DATA RECAP</span><button type="button" class="icon-btn" data-close aria-label="Close">${IC.close}</button></div><div data-recap-sheet>${recapSheetHtml(n)}</div>`);
+  sh.addEventListener('input', (e) => {
+    if (e.target.id === 'rcFind') { recapSheet.find = e.target.value; const pos = e.target.selectionStart; refreshRecapSheet(); const f = $('#rcFind'); if (f) { f.focus(); f.setSelectionRange(pos, pos); } }
+  });
+  sh.addEventListener('click', (e) => {
+    const t = e.target;
+    const cur = S.notes.find((x) => x.id === id);
+    if (t.closest('[data-close]')) { closeSheet(); recapSheet = null; return; }
+    if (!cur) return;
+    const tb = t.closest('[data-rc-tab]');
+    if (tb) { recapSheet.tab = tb.dataset.rcTab; refreshRecapSheet(); return; }
+    const tk = t.closest('[data-rc-task]');
+    if (tk) {
+      const act = (cur.recap.actions || []).find((x) => x.id === tk.dataset.rcTask);
+      if (!act || act.taskId) return;
+      const task = { ...blankTask(), title: act.text, notes: `From the Data Recap "${cur.title}".` };
+      upsertTask(task);
+      recapPatch(id, { actions: cur.recap.actions.map((x) => (x.id === act.id ? { ...x, taskId: task.id } : x)) });
+      toast(`Task logged: ${act.text}`);
+      return;
+    }
+    const kp = t.closest('[data-rc-keep]');
+    if (kp) { recapPatch(id, { audio: { keep: kp.dataset.rcKeep } }); toast(kp.dataset.rcKeep === 'now' ? 'Command will delete the audio' : kp.dataset.rcKeep === 'keep' ? 'Audio kept on Command' : 'Audio deletes 30 days after the recap'); return; }
+    if (t.closest('[data-rc-copy]')) {
+      const rc = cur.recap;
+      const text = [cur.title, '', rc.summary, '', ...(rc.points || []).map((p) => `• ${p}`), ...((rc.actions || []).length ? ['', 'Action items:', ...rc.actions.map((x) => `☐ ${x.text}`)] : [])].filter((x) => x != null).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => toast('Recap copied'), () => toast('Couldn\'t copy on this phone'));
+      return;
+    }
+    if (t.closest('[data-rc-project]')) { pickRecapProject(id); return; }
+    const del = t.closest('[data-rc-del]');
+    if (del) {
+      if (del.dataset.armed !== '1') { del.dataset.armed = '1'; del.textContent = 'CONFIRM'; return; }
+      deleteNote(id); // Command deletes the audio once the recap is gone
+      closeSheet();
+      recapSheet = null;
+      toast('Recap deleted');
+    }
+  });
+}
+
+/** ADD TO PROJECT: the action items become tasks in that project (ones already in tasks move there). */
+function pickRecapProject(id) {
+  const n = S.notes.find((x) => x.id === id);
+  const pjs = liveProjects();
+  if (!n) return;
+  if (!pjs.length) { toast('No active projects yet. Start one on the Tasks tab.', 3500); return; }
+  const sh = openSheet(`<div class="sheet-head"><span class="label teal-t">ADD TO PROJECT</span><button type="button" class="icon-btn" data-close aria-label="Close">${IC.close}</button></div>
+    <div class="hint" style="margin-top:0">The action items from "${esc(n.title)}" go into the project you pick.</div>
+    <div class="rc-pjs">${pjs.map((p) => `<button type="button" class="pj-pick" data-pj="${esc(p.id)}"><i style="background:${esc(p.color || 'var(--lav)')}"></i>${esc(p.name)}</button>`).join('')}</div>`);
+  sh.addEventListener('click', (e) => {
+    if (e.target.closest('[data-close]')) { closeSheet(); openRecapSheet(id); return; }
+    const b = e.target.closest('[data-pj]');
+    if (!b) return;
+    const cur = S.notes.find((x) => x.id === id);
+    const pj = projectById(b.dataset.pj);
+    let count = 0;
+    const acts = (cur.recap.actions || []).map((a) => {
+      count++;
+      if (a.taskId) {
+        const tk = S.tasks.find((x) => x.id === a.taskId);
+        if (tk && tk.projectId !== pj.id) upsertTask({ ...tk, projectId: pj.id });
+        return a;
+      }
+      const task = { ...blankTask(), title: a.text, notes: `From the Data Recap "${cur.title}".`, projectId: pj.id };
+      upsertTask(task);
+      return { ...a, taskId: task.id };
+    });
+    recapPatch(id, { actions: acts, projectId: pj.id });
+    closeSheet();
+    openRecapSheet(id);
+    toast(count ? `${count} action item${count === 1 ? '' : 's'} added to ${pj.name}` : `No action items to add`);
+  });
 }
 
 // ---------------------------------------------------------------- field scan (photo → text)
@@ -2758,8 +3056,11 @@ function wire() {
     if (t.closest('[data-scan]')) { ac(); startFieldScan(); return; }
     const go = t.closest('[data-go]');
     if (go) { S.view = go.dataset.go; $('#view').scrollTop = 0; render(); return; }
+    if (t.closest('[data-recap-pick]')) { pickRecording(); return; }
+    const rr = t.closest('[data-recap]');
+    if (rr) { openRecapSheet(rr.dataset.recap); return; }
     const nr = t.closest('[data-note]');
-    if (nr) { const n = S.notes.find((x) => x.id === nr.dataset.note); if (n) openNoteEditor(n); return; }
+    if (nr) { const n = S.notes.find((x) => x.id === nr.dataset.note); if (n) { if (isRecap(n)) openRecapSheet(n.id); else openNoteEditor(n); } return; }
     if (t.closest('[data-note-search]')) { S.noteSearch = S.noteSearch == null ? '' : null; render(); if (S.noteSearch != null) setTimeout(() => { const i = $('#noteSearch'); if (i) i.focus(); }, 30); return; }
     if (t.closest('[data-new-event]')) return openEventEditor(null, S.calSel);
     if (t.closest('[data-dismiss-install]')) { S.settings.installDismissed = true; saveSettings(); render(); return; }
@@ -2797,6 +3098,10 @@ function wire() {
     const t = e.target;
     if (t.id === 'sCallsign') { S.settings.callsign = t.value.trim() || 'Field Unit'; saveSettings(); }
   });
+  $('#recapInput').addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) openRecapSend(f);
+  });
   $('#scanInput').addEventListener('change', (e) => {
     const f = e.target.files && e.target.files[0];
     if (f && FIELD_SCAN) runFieldScan(f);
@@ -2826,19 +3131,33 @@ async function start() {
   const params = new URLSearchParams(location.search);
   const code = params.get('pair');
   if (code) S.pairCodeFromLink = normalizePairCode(code);
+  const wantRecap = params.get('recap');
+  if (wantRecap) history.replaceState(null, '', location.pathname);
+  // A "Data Recap ready" notification tapped while Field Unit was already open.
+  if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', (e) => {
+    const id = e.data && e.data.openRecap;
+    if (id && S.notes.some((n) => n.id === id)) { S.view = 'notes'; render(); openRecapSheet(id); }
+  });
   wire();
   render();
 
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
+  // The boot log ticks through the real steps as they finish.
+  boot.line(0, `Local cache (${S.tasks.length} task${S.tasks.length === 1 ? '' : 's'}, ${S.notes.length} note${S.notes.length === 1 ? '' : 's'})`, 'OK');
   try {
     await connect();
     if (S.deckId) {
-      // The radar locks once the first real data lands (or after a few seconds, whichever comes first).
-      const landed = new Promise((r) => { S.firstSync = r; setTimeout(r, 4000); });
+      boot.line(1, 'Sync relay', 'ONLINE');
+      // The signal locks once the first real data lands (or after a few seconds, whichever comes first).
+      let synced = false;
+      const landed = new Promise((r) => { S.firstSync = () => { synced = true; r(); }; setTimeout(r, 4000); });
       startSync();
       await landed;
-      boot.lock(`Welcome back, ${operator()}.`);
+      boot.line(2, 'Command Deck', synced ? (commandOnline() ? 'IN SYNC' : 'SYNCED · DECK ASLEEP') : 'SLOW SIGNAL');
+      boot.line(3, 'Operator profile', operator().toUpperCase());
+      boot.lock(`Welcome back, ${operator()}.`, commandOnline() ? 'COMMAND DECK · IN SYNC' : 'WORKING FROM THE LAST SYNC');
+      if (wantRecap && S.notes.some((n) => n.id === wantRecap)) { S.view = 'notes'; render(); setTimeout(() => openRecapSheet(wantRecap), 600); }
     } else boot.skip();
   } catch (e) {
     boot.skip();

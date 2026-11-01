@@ -70,13 +70,22 @@ async function open(url, { keepBoot = false } = {}) {
 const doc = (page, p) => page.evaluate((p) => window.__fake.docs.get(p) || null, p);
 
 let page = await open(`${BASE}/s/${TOK}`, { keepBoot: true });
-check(await page.locator('#boot.relay').count() === 1 && /DECK RELAY/.test(await page.locator('#boot').innerText()), 'DECK RELAY load-up shows first');
-await page.waitForSelector('#boot.locked', { timeout: 6000 });
+check(await page.locator('#boot.s1 .sb-log').count() === 1 && /DECK RELAY \/\/ SHARED SCHEDULE/.test(await page.locator('#boot').innerText()), 'Signal load-up shows first, on the boot log');
+await page.waitForSelector('#boot.s2', { timeout: 6000 });
+let bt = await page.locator('#boot .sb-log').evaluate((el) => el.textContent);
+check(/Relay uplink \.\.\. ONLINE/.test(bt) && /Link token · SAM'S SCHEDULE \.\.\. VALID/.test(bt) && /Access level \.\.\. READ \+ ADD/.test(bt), 'the log ticks through uplink, link and access');
+check(/Entries this week \.\.\. \d+/.test(bt) && /Guest \.\.\. JORDAN/.test(bt) && /Opening the schedule/.test(bt), 'then this week\'s entries and the guest, and hands over');
+await shot(page, 'boot-align');
+check(/OPENING SCHEDULE/.test(await page.locator('#boot .sb-align').innerText()) && (await page.locator('#boot .sb-row').count()) === 6, 'alignment card with the schedule\'s six rows');
+await page.waitForSelector('#boot.s3', { timeout: 3000 });
+await page.waitForTimeout(700);
+await shot(page, 'boot-radar');
+check(/REACHING THE DECK/.test(await page.locator('#boot .sb-radar').innerText()), 'radar sweep');
+await page.waitForSelector('#boot.s4', { timeout: 3000 });
+await page.waitForTimeout(300);
 await shot(page, 'boot-locked');
-let bt = await page.locator('#boot').innerText();
-check(/SIGNAL · SAM'S DECK/.test(bt) && /SCHEDULE · /.test(bt) && /ACCESS · JORDAN/.test(bt) && /GRANTED/.test(bt), 'status lines tick through signal, schedule and access');
-check(/Hi, Jordan\./.test(bt) && /100%/.test(bt), 'locks at 100% and greets them');
-check(await page.locator('#boot .bt-g').first().evaluate((el) => getComputedStyle(el).opacity) !== '0', 'signal lines turn green once synced');
+bt = await page.locator('#boot .sb-lock').innerText();
+check(/SIGNAL LOCKED/.test(bt) && /Welcome, Jordan\./.test(bt) && /SAM'S SCHEDULE · READ \+ ADD/.test(bt), 'locks and greets them by name, with whose schedule and their access');
 await page.waitForSelector('#boot', { state: 'detached', timeout: 6000 });
 check(true, 'then fades away');
 await shot(page, 'week');

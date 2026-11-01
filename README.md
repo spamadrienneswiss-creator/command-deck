@@ -97,7 +97,7 @@ The **quick-add line** at the bottom of the task queue understands the same phra
 - **Weather:** click the weather panel for the full forecast on weather.com.
 - **Opacity:** Settings › System › Console opacity fades the whole console (30–100%) so the desktop shows through. It previews live as you drag.
 - **Background darkness:** Settings › System darkens just the space between and behind the panels, from see-through to near-black.
-- **Motion:** FULL (boot sequence, scan lines, pulses), SUBTLE (quieter), STILL (no animation). To stay light on the CPU, the looping animations run at an easy 10 frames a second (full speed while the computer is talking or listening), and they pause completely when nobody's at the PC: after 5 minutes without mouse or keyboard, when the screen is locked, or when the console is hidden. They pick up the moment you're back.
+- **Motion:** FULL (boot sequence, scan lines, pulses), SUBTLE (quieter), STILL (no animation). The boot sequence, *Signal*, is acid green on black in every theme: a self-test log of the deck's real systems, the CD mark, a systems array, an alignment readout, a radar sweep and **SIGNAL LOCKED** (about 8 seconds on FULL; SUBTLE plays just the log and the lock; STILL skips it). To stay light on the CPU, the looping animations run at an easy 10 frames a second (full speed while the computer is talking or listening), and they pause completely when nobody's at the PC: after 5 minutes without mouse or keyboard, when the screen is locked, or when the console is hidden. They pick up the moment you're back.
 - **Sound:** FULL, KEY MOMENTS, or SILENT, in Settings › System.
 - **Color themes:** Settings › System › Color theme: *Dusk* (amber, default), *Deep Space* (cyan), *Red Alert* (crimson), *Terminal* (green), *Retro* (colorful 80s terminal with scan lines), *Moonbase '79* (white plastic modules with an orange stripe), *Blueprint* (navy drafting grid with registration marks), *Cryo* (frosted white and ice blue), *Freighter* (green phosphor, scan lines and a hazard stripe, after the ship in *Alien*), *Skydock* (sunlit white hull plating with a dark rim of running lights, lit sign labels and red stencil codes) and *Vector* (a modern ship cockpit: a canopy windshield onto space, glass flight displays, a Master Caution alert and a switch panel along the bottom; panels take pilot names like Flight Plan and Waypoints).
 - **Typeface:** Settings › System › Typeface. *Theme default* lets each theme use its own (Moonbase: Michroma, Blueprint: Space Mono, Cryo: Exo 2, Freighter: B612 Mono, Skydock: Quantico, Vector: Tektur, the rest: Chakra Petch). Or pick any of Chakra, Michroma, Space Mono, Exo 2, B612 Mono, VT323, Orbitron, Oxanium, Rajdhani, Share Tech Mono, Major Mono, Quantico or Tektur with any theme.
@@ -148,7 +148,7 @@ Panel 06's third tab, **SCHEDULE**, holds your work shifts and appointments, one
 - **Your chip:** set the name and color on your own entries in **Settings › Operator › YOUR CHIP ON SHARED SCHEDULES**. The entry editor shows **Shows as [chip]**.
 - **‹ ›** step through the weeks; **THIS WEEK** jumps back.
 - **SHARE** opens the share window: type their name, pick their **color** (colors already in use are dimmed), their access (**READ ONLY**, or **READ + ADD NEW ITEMS**) and when the link stops working (in 7 days, in 30 days, never), then press **CREATE LINK**. It's copied, with a QR code to scan. Everyone you've shared with is listed with their color, access, **COPY LINK** and **STOP** (press twice). Tap their color to recolor them, or their access to switch it, without sending a new link.
-- **On their side** the link opens a page called **SCHEDULE**, one week at a time with everyone's name chips, type chips and notes (a note reads *"JORDAN: Can someone drive?"*). On a **READ + ADD** link they get **+ ADD TO SCHEDULE** (type, title, date, optional times, optional note, with a *Shows as* preview of their chip), plus **EDIT** and **DELETE** on the entries they added, and only those. The link opens with a short **DECK RELAY** load-up while it connects. On an iPhone they can tap **Share › Add to Home Screen** and it opens full screen, like an app.
+- **On their side** the link opens a page called **SCHEDULE**, one week at a time with everyone's name chips, type chips and notes (a note reads *"JORDAN: Can someone drive?"*). On a **READ + ADD** link they get **+ ADD TO SCHEDULE** (type, title, date, optional times, optional note, with a *Shows as* preview of their chip), plus **EDIT** and **DELETE** on the entries they added, and only those. The link opens with a short **DECK RELAY** load-up in the Signal style while it connects (its log shows the real steps, like their access and this week's entries) and ends on *"Welcome, Jordan."* with their name. Project links open the same way. On an iPhone they can tap **Share › Add to Home Screen** and it opens full screen, like an app.
 - **Their look:** the gear next to their name opens **YOUR VIEW · ONLY ON THIS PHONE**: a theme (Dusk, Moonbase '79, Blueprint, Skydock, Vector), a typeface (theme default, Michroma, Space Mono, VT323, Orbitron) and a frame (Dark, Bone, Midnight Navy). It only changes their phone; **USE [YOUR NAME]'S LOOK** puts yours back.
 - **When someone adds, edits or deletes**, you get a toast and a line in the log, and the change goes out to everyone else's link.
 - Types are managed in **Settings › Tasks & Crew › SCHEDULE TYPES** (rename, recolor, remove; a removed type's entries become Other).
@@ -161,6 +161,23 @@ Panel 07 holds notes, shared with Field Unit on the phone.
 - The magnifier searches every note.
 - Say or type **"take a note: …"** (also "note that…", "jot this down…") to the computer or the quick-add line.
 - Each note is tagged with where it came from: *Typed*, *Voice*, *Comms* (the phone's terminal), or *Scanned* (from Field Scan, while it was on).
+- Two tabs: **NOTES** and **RECAPS** (meeting recaps, below). When the panel is wide enough (on page 2, or dragged bigger) it splits into a list and a reading pane; click a note to read it there, double-click or **EDIT** to change it.
+
+### Data Recap (meetings recorded on the phone)
+
+Record a meeting or a long conversation on the iPhone, and Command Deck turns it into a transcript, a summary, the main points and a list of action items. Made for 30-minute to one-hour recordings.
+
+1. **Record in Voice Memos** on the iPhone. It keeps recording with the screen locked or other apps open.
+2. In Voice Memos, tap the recording's **···** › **Save to Files**.
+3. In Field Unit: **Notes › DATA RECAP**, pick the recording, give it a title, choose what the recap includes and what happens to the audio afterwards, then **TRANSMIT TO COMMAND**. Keep Field Unit open until the upload finishes (a minute or two for an hour of audio on Wi-Fi); after that it's safe to close.
+4. The main console picks it up, **transcribes it on this PC** with the same Whisper engine the voice uses (a few minutes for an hour with a decent graphics card, longer without), then asks Google's **Gemini** for the summary, main points and action items. The phone gets a notification when it's ready.
+
+- Recaps live in **Notepad › RECAPS** on the deck and in **Notes › RECAPS** on the phone: **SUMMARY** (summary, main points, action items) and **TRANSCRIPT** (every line with its time, searchable on the phone). **→ TASK** turns an action item into a task, **→ ALL TO TASKS** does them all; on the phone, **ADD TO PROJECT** files them into a project and **COPY RECAP** copies the lot.
+- **The audio** stays on the main console only (never in the cloud). Choose per recording when you send it: **KEEP**, **30 DAYS** (the default) or **DELETE NOW**, and change it later on the recap. **DELETE NOW** on the deck waits a few seconds with **UNDO**. The transcript always stays. The default is in **Settings › Field Unit › DATA RECAP**.
+- **Summaries need a free Gemini key:** [aistudio.google.com](https://aistudio.google.com) › *Get API key* › *Create API key*, then paste it in **Settings › Field Unit › DATA RECAP**, press **TEST KEY**, then **SAVE**. It stays on this computer and never goes to the phone. Without a key you still get the full transcript, and **SUMMARIZE** on the recap fills in the rest once a key is added. On Google's free tier, what's sent to Gemini (the transcript, not the audio) may be used to improve Google's models.
+- **How the recording travels:** through the deck's own Firebase database in small pieces, which the deck deletes as soon as it has the file. That keeps it on the free plan, which has no file storage. Recordings up to 150 MB work (well over an hour in Voice Memos' usual quality).
+- If Command Deck is off when you send one, it waits and starts the next time the deck opens. If the PC goes off mid-transcription, it carries on from the saved audio. **TRY AGAIN** on a recap that needs attention starts it over.
+- No speaker labels: the transcript is one continuous conversation.
 
 ---
 
@@ -172,6 +189,15 @@ Command Deck has two arrangements of the same panels. The **standard** layout su
 - **The LAYOUT chip** at the top of the deck flips between the two on the spot.
 - Each layout remembers its own panel arrangement (unlock the layout to drag and resize), and **Reset layout** restores the one you're looking at.
 - On the Xeneon Edge, Windows display scale of 100% or 125% gives the panels the most room; 150% works, but lists show fewer rows.
+
+### Pages
+
+The deck has two pages. **Page 1 (MAIN)** is the whole deck, as always. **Page 2 (WORK)** holds just the panels you pick, so they can be much bigger: by default a slim clock strip across the top with **Tasks** and **Notepad** filling the rest. Every tab still works on page 2 (QUEUE, PROJECTS and SCHEDULE on Tasks; NOTES and RECAPS on Notepad).
+
+- **Flip pages** with the **PAGE · 1 / 2** chip at the top, `Ctrl` + `1` / `Ctrl` + `2`, a quick sideways swipe on a touchscreen like the Xeneon Edge, or say *"page two"*, *"go to the work page"*, *"main page"*, *"next page"*.
+- **Settings › System › PAGES:** rename the pages and pick which panels are on page 2 (at least one).
+- Page 2 has its own arrangement, in both the standard and the Edge layout: unlock the layout there to drag and resize without touching page 1. The clock can shrink to a one-line strip on page 2.
+- The deck remembers which page you were on.
 
 ### Rig lighting (Corsair iCUE)
 
@@ -197,7 +223,8 @@ Once set up (see [FIELD-UNIT-SETUP.md](FIELD-UNIT-SETUP.md)), **Settings › Fie
 - The console relays its calendars, categories, crew list and weather location to the phone.
 - While the console is running, it sends the phone notifications for task reminders, alarms, and timers set on the phone.
 - The footer shows **UPLINK ONLINE · 1 FIELD UNIT** when everything is connected.
-- **Notes tab:** the same notes as the desktop Notepad, synced within seconds. To copy text from paper, open a note, tap in the text and choose iPhone's own **Scan Text**; it reads printed pages and handwriting. (Field Scan, the in-app page reader, is switched off for now.)
+- **Notes tab:** the same notes as the desktop Notepad, synced within seconds. To copy text from paper, open a note, tap in the text and choose iPhone's own **Scan Text**; it reads printed pages and handwriting. (Field Scan, the in-app page reader, is switched off for now.) **DATA RECAP** at the top sends a Voice Memos recording to the deck for a meeting recap (see *Data Recap* above); recaps are listed under **RECAPS**.
+- **Load-up:** Field Unit opens with the same *Signal* load-up as the deck, its log ticking through the real steps (local data, sync relay, Command Deck), then **SIGNAL LOCKED · Welcome back**.
 - **Projects** on the phone: Tasks › **PROJECTS** shows the same project cards; tap one for its tasks, + Add task, Edit and Mark complete. **SHARE** sends a Project Manifest link (see *Project Manifest* above), the crew strip shows who has access, and **PROJECT LOG** opens the project's shared board.
 - **Schedule** on the phone: Tasks › **SCHEDULE** has the same week-by-week list, **+** to add an entry, **SHARE** to send the link (SEND opens iPhone's share menu) with the same color and access choices, and everyone's name chips on each entry. New types are added on Command Deck.
 - **Comms Terminal:** the `>_` button in the middle of the tab bar opens a keyboard terminal. Type anything you'd have said to the computer (*"call sam thursday at 3, high priority"*, *"take a note: gate code 1357"*, *"new project garage cleanout"*). Field Unit prints its replies like a mainframe readout ("Copy." · "Transmitting data to Command…" · "Command acknowledges."), with a readout card for each change and an **UNDO** button. Deletes wait for **CONFIRM**, or type **y** / **n**. The chips above the keyboard are *Status report*, *Take a note*, *New project* and *Add to calendar* (the last three fill in the start of the command so you just finish the sentence, e.g. *schedule* → *dentist friday at 2*). Type **help** for examples. **CLEAR** (top right) or typing **clear** wipes the screen; **CLOSE TERMINAL** next to it puts the terminal away. The transcript stays while you switch between apps, and is wiped when Field Unit is closed completely (swiped away), so each launch starts fresh. Tap the readout to skip ahead.

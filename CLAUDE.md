@@ -14,6 +14,7 @@ Read this first in any new thread. It's the handoff from earlier work, so a fres
 - **Field Unit**: the iPhone web app (Firebase Hosting, project `command-deck-c3000`). It pairs with the deck and syncs both ways.
 - **Deck Relay**: the shared-link pages. `/s/<token>` is the shared schedule (`field-unit/schedule.js`); project links use `manifest.js`.
 - Design board (mockups): https://claude.ai/code/artifact/ddbcd5e0-9ea9-489d-8053-37ed33ea240d. Read its `project/canvas.json` before adding boards.
+  - Moving Claude accounts? The board belongs to the account that made it. Adri keeps a backup (`command-deck-handoff.zip` › `design-board/`, with RESTORE.md). Rebuild from that if the link won't open, then update the link here.
 
 ## Code map
 - `main.js`, `preload.js`, `src/`: Electron main process (store, commands, calendar, iCUE/lighting).

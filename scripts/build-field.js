@@ -53,4 +53,7 @@ fs.writeFileSync(path.join(root, 'field-unit', 'version.json'), JSON.stringify({
 // Every release gets its own offline cache, so phones drop the old files on the next open.
 const swPath = path.join(root, 'field-unit', 'sw.js');
 fs.writeFileSync(swPath, fs.readFileSync(swPath, 'utf8').replace(/const CACHE = '[^']*';/, `const CACHE = 'field-unit-v${version}';`));
+// Wine Log (field-unit/wine) has its own offline cache, renewed the same way.
+const wineSw = path.join(root, 'field-unit', 'wine', 'sw.js');
+fs.writeFileSync(wineSw, fs.readFileSync(wineSw, 'utf8').replace(/const CACHE = '[^']*';/, `const CACHE = 'wine-log-v${version}';`));
 console.log(`Field Unit ready (v${version}).`);

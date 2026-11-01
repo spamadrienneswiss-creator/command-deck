@@ -27,11 +27,12 @@ Read this first in any new thread. It's the handoff from earlier work, so a fres
 - Load-ups ("Signal"): deck in `renderer/index.html` + `bootSequence()` in app.js (`sg-` classes); phone and links share `field-unit/boot.js` + `boot.css` (`sb-` classes, since schedule CSS already uses `sg-`). Each page names its rows and wording in `data-` attributes on `#boot`. iPhone launch images are plain black (`scripts/make-launch-images.mjs`).
 - Pages: page 2's panels and names in `settings.pages`; layouts in `layoutP2` / `layoutEdgeP2`; `setPage()` in app.js.
 - `field-unit/`: phone app and link pages. `npm run build:field` copies `shared/` and the fonts into it; run it after changing `shared/`.
+- `field-unit/wine/`: **Wine Log**, a separate tasting-journal web app at `/wine/` (own `sw.js` scoped to `/wine/`, own icons from `scripts/make-wine-icons.mjs`). It pairs with the deck like a phone (member `kind: 'wine'`) and keeps data in `decks/{id}/wines`, `winePhotos` (label photo as a ~1200 px data URL) and `wineConfig/main` (Gemini key + model), so no rules change was needed. Label reading calls Gemini from the phone; places come from OpenStreetMap Nominatim (searched on tap only, per its usage policy). Day look "Estate Terrace", night look "Private Cellar", switched at local sunset. Design board: https://claude.ai/artifact/V3434i9Y4vCtsZiYm94ShH. Test: `node tools/ui-tests/wine-test.mjs`.
 - `firestore.rules`: who can read and write what. Guests may only add, edit or soft-delete their own entries, and only on READ + ADD links.
 
 ## Test, build, release
 - `npm test` runs the unit tests. `npm run test:rules` needs the Firestore emulator; it runs in CI, since the emulator download is blocked in cloud sessions.
-- Phone and link UI tests run in headless Chromium against a fake Firestore: `node tools/ui-tests/<name>.mjs`. Current ones: guest-test, sched-guest-test, phone-sched-test, phone-share-test, signal-test (load-ups + Data Recap send), theme-shots. Screenshots go to `tools/ui-tests/out/`.
+- Phone and link UI tests run in headless Chromium against a fake Firestore: `node tools/ui-tests/<name>.mjs`. Current ones: guest-test, sched-guest-test, phone-sched-test, phone-share-test, signal-test (load-ups + Data Recap send), theme-shots, wine-test (Wine Log). Screenshots go to `tools/ui-tests/out/`.
 - Deck screenshots: `tools/deck-shots.js` (usage at the top of the file).
 - **Release:**
   1. `node scripts/bump.js X.Y.Z`
@@ -40,8 +41,9 @@ Read this first in any new thread. It's the handoff from earlier work, so a fres
   4. Watch it with `tools/watch-release.sh Release <sha>`.
 - Commit as `Claude <noreply@anthropic.com>`. Keep the README and FIELD-UNIT-SETUP.md in step with features.
 
-## Where things stand (v1.16.0, Oct 2026)
+## Where things stand (v1.16.1, Nov 2026)
 Shipped recently:
+- v1.16.1: Wine Log (`/wine/`), Nick's tasting journal: scan-the-label autofill, place lookup with Maps / website links, label photos, day / night by sunset.
 - v1.14: Skydock and Vector themes, Dock Lights trim, switch panel, panel renames.
 - v1.14.1: neural voice for the boot briefing. v1.14.2: sync tie fix.
 - v1.15: one shared schedule with name chips, READ ONLY or READ + ADD links, a color per person, guest add / edit / delete, the owner's chip in Settings › Operator, and a look gear on the link.

@@ -245,6 +245,18 @@ What to expect:
 - Phones pair with the main console only. Phone notifications come from the main console; when it's off, the phone rings reminders itself whenever Field Unit is open, as before.
 - The main console lists the second computer under **PAIRED DEVICES**, where **REMOVE** takes it off the deck. On the second computer, **LEAVE THIS DECK** does the same; its own copy of everything stays.
 
+### Wine Log (tasting journal on the phone)
+
+A separate home-screen app for wine tastings, published with Field Unit at **your Field Unit address + `/wine/`** (for example `https://YOUR-PROJECT-ID.web.app/wine/`). Open it in Safari, **Share › Add to Home Screen**, then pair it like a phone: on the main console, **Settings › Field Unit › SHOW PAIRING CODE**, and enter the code in Wine Log. It shows in **PAIRED DEVICES** as *Wine Log · iPhone*.
+
+- **Entries** follow the paper tasting sheet: date, where (Winery / Restaurant / Shop / Home), producer, wine name, vintage, classification, variety, region, label photo; **The Look** (red, white, rosé or sparkling, intensity, hue); **The Nose** (aroma chips plus notes); **The Palate** (flavor chips with *Same as nose*, and tap-to-fill body, tannin, acidity, alcohol and sweetness, each with a note); **Final Thoughts** and a five-star rating.
+- **Scan the label** takes a photo, keeps it as the label photo, and has Gemini read the producer, name, vintage, grape, region, classification and style into the form ("Not on label" when it isn't printed). It needs a free Gemini key pasted once in Wine Log's **Settings** (gear on the log screen); it's kept with the deck, so a re-paired phone keeps it. Without a key, scanning still saves the photo.
+- **Where:** type a name and tap the magnifier to look it up (OpenStreetMap, no key). Pick a match to save its address with buttons that open it in **Maps** and on its **website** (or a web search when it has none). No match is fine; what you typed is kept.
+- **My log:** newest first, with search (producer, grape, region, aroma, place, notes) and **All / Red / White / Rosé / Sparkling** filters. Tap a bottle for its page: the label photo, details, Edit and Delete.
+- **Day and night:** the *Estate Terrace* look by day, the *Private Cellar* look after sunset, switching at real sunset (Los Angeles until you tap **Settings › Use my current location**). The sun / moon button flips it until the next sunrise or sunset.
+- **No signal?** Entries save on the phone and sync when the connection returns. Photos are kept small (about 1,200 px) and stored in Firestore, so no paid Storage plan is needed.
+- Unpairing Wine Log on the deck sends it back to its pairing screen; the tastings stay with the deck.
+
 ---
 
 ## 5 · Data & backup

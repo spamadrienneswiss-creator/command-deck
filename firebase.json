@@ -4,6 +4,9 @@
     "ignore": [
       "**/.*"
     ],
+    "redirects": [
+      { "source": "/wine", "destination": "/wine/", "type": 301 }
+    ],
     "rewrites": [
       { "source": "/m", "destination": "/manifest.html" },
       { "source": "/s", "destination": "/schedule.html" },

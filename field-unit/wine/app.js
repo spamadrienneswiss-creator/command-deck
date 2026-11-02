@@ -32,12 +32,38 @@ const HUES = {
 };
 const TYPE_COLOR = { Red: '#9B1B30', White: '#D4A93A', 'Rosé': '#F29B7E', Sparkling: '#E9DFA0' };
 const INTENSITY = ['Pale', 'Medium', 'Deep'];
-const TAGS = [
-  ['Fruit', ['Cherry', 'Blackberry', 'Plum', 'Raspberry', 'Citrus', 'Apple', 'Peach', 'Tropical']],
-  ['Floral & herb', ['Floral', 'Herbal', 'Mint', 'Grass']],
-  ['Spice', ['Pepper', 'Clove', 'Vanilla', 'Licorice']],
-  ['Oak & earth', ['Oak', 'Toast', 'Earth', 'Leather', 'Tobacco', 'Mineral']]
-];
+// The aroma finder: families → groups → aromas. Fruit follows the style picked under The Look.
+const FAMILIES = {
+  'Fruit': '#8E2C43', 'Floral': '#9B6FA0', 'Herbal & Green': '#5E7A44', 'Spice': '#A0522D',
+  'Oak & Toast': '#8A6A3E', 'Earth & Mineral': '#6E6458', 'Yeast & Cream': '#C9A464'
+};
+const FRUIT = {
+  Red: [['Red fruit', ['Cherry', 'Raspberry', 'Strawberry', 'Cranberry', 'Red plum', 'Pomegranate']], ['Black fruit', ['Black cherry', 'Blackberry', 'Blackcurrant', 'Blueberry', 'Black plum', 'Black olive']], ['Dried fruit', ['Raisin', 'Fig', 'Prune', 'Dried cherry']]],
+  White: [['Citrus', ['Lemon', 'Lime', 'Grapefruit', 'Orange zest', 'Tangerine']], ['Orchard', ['Green apple', 'Yellow apple', 'Pear', 'Quince']], ['Stone fruit', ['Peach', 'Apricot', 'Nectarine']], ['Tropical', ['Pineapple', 'Mango', 'Passion fruit', 'Lychee', 'Melon']]],
+  'Rosé': [['Red fruit', ['Strawberry', 'Raspberry', 'Watermelon', 'Cherry', 'Cranberry']], ['Citrus', ['Lemon', 'Grapefruit', 'Blood orange']], ['Stone fruit', ['Peach', 'Apricot', 'Nectarine']]],
+  Sparkling: [['Citrus', ['Lemon', 'Lime', 'Grapefruit']], ['Orchard', ['Green apple', 'Yellow apple', 'Pear', 'Quince']], ['Red fruit', ['Strawberry', 'Raspberry', 'Cherry']]]
+};
+// No style picked yet: every fruit group, once each.
+FRUIT[''] = (() => {
+  const seen = new Map();
+  for (const t of ['Red', 'White', 'Rosé', 'Sparkling']) for (const [g, tags] of FRUIT[t]) seen.set(g, [...new Set([...(seen.get(g) || []), ...tags])]);
+  return [...seen.entries()];
+})();
+const AROMAS = {
+  'Floral': [['Flowers', ['Rose', 'Violet', 'Lavender', 'Orange blossom', 'Honeysuckle', 'Jasmine', 'Elderflower', 'Chamomile']]],
+  'Herbal & Green': [['Fresh herbs', ['Mint', 'Basil', 'Thyme', 'Sage', 'Dill']], ['Green', ['Bell pepper', 'Cut grass', 'Tomato leaf', 'Green bean', 'Asparagus']], ['Resinous', ['Eucalyptus', 'Pine', 'Rosemary']]],
+  'Spice': [['Sweet spice', ['Cinnamon', 'Clove', 'Nutmeg', 'Anise', 'Licorice']], ['Pepper & heat', ['Black pepper', 'White pepper', 'Pink peppercorn', 'Ginger']]],
+  'Oak & Toast': [['Oak', ['Vanilla', 'Cedar', 'Coconut', 'Sandalwood']], ['Toast & smoke', ['Toast', 'Smoke', 'Coffee', 'Cocoa', 'Tobacco']], ['Nutty & sweet', ['Almond', 'Hazelnut', 'Caramel', 'Honey', 'Butterscotch']]],
+  'Earth & Mineral': [['Earth', ['Forest floor', 'Mushroom', 'Wet leaves', 'Truffle', 'Leather']], ['Mineral', ['Wet stone', 'Chalk', 'Flint', 'Graphite', 'Saline']]],
+  'Yeast & Cream': [['Bakery', ['Brioche', 'Bread dough', 'Biscuit']], ['Dairy', ['Butter', 'Cream', 'Yogurt']]]
+};
+const aromaGroups = (fam, type) => (fam === 'Fruit' ? FRUIT[type] || FRUIT[''] : AROMAS[fam]);
+const familyOrder = (type) => (type === 'White' || type === 'Sparkling'
+  ? ['Fruit', 'Floral', 'Yeast & Cream', 'Herbal & Green', 'Spice', 'Oak & Toast', 'Earth & Mineral']
+  : ['Fruit', 'Floral', 'Spice', 'Oak & Toast', 'Earth & Mineral', 'Herbal & Green', 'Yeast & Cream']);
+const FAMILY_OF = {};
+for (const [fam, groups] of Object.entries(AROMAS)) for (const [, tags] of groups) for (const t of tags) FAMILY_OF[t] ||= fam;
+for (const [, tags] of FRUIT['']) for (const t of tags) FAMILY_OF[t] = 'Fruit';
 const PALATE = [
   ['body', 'Body', ['Light', 'Med−', 'Medium', 'Med+', 'Bold']],
   ['tannin', 'Tannin', ['Low', 'Med−', 'Medium', 'Med+', 'High']],
@@ -92,7 +118,8 @@ const S = {
   draft: null, draftPhoto: undefined, // undefined = unchanged, null = removed, string = new photo
   dirty: false,
   photos: new Map(),
-  mood: 'day', popStars: false
+  mood: 'day', popStars: false,
+  openFam: { 'nose.tags': 'Fruit', 'palate.tags': null }
 };
 
 // ---------------------------------------------------------------- sunset
@@ -583,6 +610,7 @@ function startEntry(w) {
   S.draftPhoto = undefined;
   S.dirty = false;
   S.results = null;
+  S.openFam = { 'nose.tags': 'Fruit', 'palate.tags': null };
   go('entry');
 }
 function entryHero() {
@@ -657,11 +685,34 @@ function renderLook() {
 <span class="label">Intensity</span><div class="chips3">${INTENSITY.map((t) => `<button type="button" class="chip${L.intensity === t ? ' on' : ''}" data-act="intensity" data-v="${t}" aria-pressed="${L.intensity === t}">${t}</button>`).join('')}</div>
 <span class="label">Hue</span>${hues.length ? `<div class="wrap">${hues.map(([h, c]) => `<button type="button" class="tag hue${L.hue === h ? ' on' : ''}" data-act="hue" data-v="${esc(h)}" aria-pressed="${L.hue === h}"><span class="sw" style="background: ${c}"></span>${esc(h)}</button>`).join('')}</div>` : '<p class="hint">Pick red, white, rosé or sparkling to see its hues.</p>'}`;
 }
-const tagGroups = (key, labels) => TAGS.map(([g, tags]) => `<div class="field" style="gap: 6px">${labels ? `<span class="label">${esc(g)}</span>` : ''}<div class="wrap">${tags.map((t) => {
-  const on = get(S.draft, key).includes(t);
-  return `<button type="button" class="tag${on ? ' on' : ''}" data-act="tag" data-k="${key}" data-v="${esc(t)}" aria-pressed="${on}">${esc(t)}</button>`;
-}).join('')}</div></div>`).join('');
-function renderTags() { $('#nose').innerHTML = tagGroups('nose.tags', true); $('#flavors').innerHTML = tagGroups('palate.tags', false); }
+// The aroma finder, used for The Nose ('nose.tags') and the palate's Flavors ('palate.tags').
+function finder(key) {
+  const picks = get(S.draft, key);
+  const type = S.draft.look.type;
+  const open = S.openFam[key];
+  const color = (t) => FAMILIES[FAMILY_OF[t]] || 'var(--muted)';
+  const countIn = (fam) => aromaGroups(fam, type).reduce((c, [, tags]) => c + tags.filter((t) => picks.includes(t)).length, 0);
+  const strip = picks.length
+    ? `<div class="wrap">${picks.map((t) => `<button type="button" class="tag on pick" data-act="tag" data-k="${key}" data-v="${esc(t)}" aria-label="Remove ${esc(t)}"><span class="dot" style="background: ${color(t)}"></span>${esc(t)}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`).join('')}</div>`
+    : `<p class="hint">${key === 'nose.tags' ? 'Smell, then open a family below and tap what you find. Aim for three.' : 'Open a family and tap what you taste.'}</p>`;
+  const grid = `<div class="fam-grid">${familyOrder(type).map((fam) => {
+    const n = countIn(fam);
+    return `<button type="button" class="fam${open === fam ? ' open' : ''}" data-act="fam" data-k="${key}" data-v="${esc(fam)}" aria-expanded="${open === fam}">
+<span class="fam-dot" style="background: ${FAMILIES[fam]}; box-shadow: 0 0 0 3px ${FAMILIES[fam]}33"></span>
+<span class="grow"><span class="fam-name">${esc(fam)}</span><span class="fam-sub">${n ? `${n} picked` : esc(aromaGroups(fam, type).map(([g]) => g).join(' · '))}</span></span></button>`;
+  }).join('')}</div>`;
+  const drawer = open ? `<div class="drawer"><div class="drawer-head"><span class="fam-dot" style="background: ${FAMILIES[open]}"></span><span class="row-title">${esc(open)}</span></div>
+${aromaGroups(open, type).map(([g, tags]) => `<div class="field" style="gap: 6px"><span class="label">${esc(g)}</span><div class="wrap">${tags.map((t) => {
+    const on = picks.includes(t);
+    return `<button type="button" class="tag${on ? ' on' : ''}" data-act="tag" data-k="${key}" data-v="${esc(t)}" aria-pressed="${on}">${esc(t)}</button>`;
+  }).join('')}</div></div>`).join('')}</div>` : '';
+  const head = key === 'nose.tags'
+    ? `<div class="panel"><div class="row-top"><span class="row-title">Your aromas</span><span class="value">${picks.length ? `${picks.length} aroma${picks.length > 1 ? 's' : ''}` : ''}</span></div>${strip}</div>`
+    : strip;
+  return `${head}${grid}${drawer}`;
+}
+function renderTags() { $('#nose').innerHTML = finder('nose.tags'); $('#flavors').innerHTML = finder('palate.tags'); }
+function renderFinder(key) { const box = key === 'nose.tags' ? $('#nose') : $('#flavors'); if (box) box.innerHTML = finder(key); }
 function renderPalate() {
   const box = $('#palate');
   if (!box) return;
@@ -866,16 +917,19 @@ app.addEventListener('click', (e) => {
     }
     case 'place-keep': S.results = null; renderPlaces(); break;
     case 'place-clear': Object.assign(d.place, { name: '', address: '', lat: null, lon: null, website: '' }); S.results = null; S.dirty = true; renderPlaces(); break;
-    case 'type': d.look.type = d.look.type === v ? '' : v; if (!(HUES[d.look.type] || []).some(([h]) => h === d.look.hue)) d.look.hue = ''; S.dirty = true; renderLook(); renderPhotoRow(); break;
+    case 'type': d.look.type = d.look.type === v ? '' : v; if (!(HUES[d.look.type] || []).some(([h]) => h === d.look.hue)) d.look.hue = ''; S.dirty = true; renderLook(); renderPhotoRow(); renderTags(); break;
     case 'intensity': d.look.intensity = d.look.intensity === v ? '' : v; S.dirty = true; renderLook(); break;
     case 'hue': d.look.hue = d.look.hue === v ? '' : v; S.dirty = true; renderLook(); break;
     case 'tag': {
       const list = get(d, a.dataset.k);
       const i = list.indexOf(v);
       if (i >= 0) list.splice(i, 1); else list.push(v);
-      const on = i < 0;
-      a.classList.toggle('on', on); a.setAttribute('aria-pressed', on);
-      S.dirty = true; break;
+      S.dirty = true; renderFinder(a.dataset.k); break;
+    }
+    case 'fam': {
+      const k = a.dataset.k;
+      S.openFam[k] = S.openFam[k] === v ? null : v;
+      renderFinder(k); break;
     }
     case 'same-nose': d.palate.tags = d.nose.tags.slice(); S.dirty = true; renderTags(); toast(d.nose.tags.length ? 'Copied from the nose' : 'Pick some aromas under The Nose first'); break;
     case 'level': { const k = a.dataset.k, n = Number(v); d.palate.levels[k] = d.palate.levels[k] === n ? null : n; S.dirty = true; renderPalate(); break; }

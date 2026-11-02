@@ -143,10 +143,27 @@ check((await page.getAttribute('.place-card a[aria-label="Open in Maps"]', 'href
 // 5. tasting
 await page.click('[data-act="intensity"][data-v="Deep"]');
 await page.click('[data-act="hue"][data-v="Garnet"]');
-for (const t of ['Cherry', 'Vanilla', 'Oak']) await page.click(`[data-act="tag"][data-k="nose.tags"][data-v="${t}"]`);
+// aroma finder: Fruit opens first and follows the style (Red from the scan)
+check((await page.textContent('#nose .drawer')).includes('Black fruit'), 'aroma finder opens on Fruit with red-wine groups');
+await page.click('[data-act="type"][data-v="White"]');
+check((await page.textContent('#nose .drawer')).includes('Orchard') && !(await page.textContent('#nose .drawer')).includes('Black fruit'), 'fruit groups change for a white');
+const famOrder = await page.$$eval('#nose .fam .fam-name', (els) => els.map((e) => e.textContent));
+check(famOrder[2] === 'Yeast & Cream', 'Yeast & Cream moves up for whites');
+await page.click('[data-act="type"][data-v="Red"]');
+await page.click('#nose [data-act="tag"][data-v="Black cherry"]');
+await page.click('#nose [data-act="fam"][data-v="Oak & Toast"]');
+await page.click('#nose [data-act="tag"][data-v="Vanilla"]');
+await page.click('#nose [data-act="fam"][data-v="Spice"]');
+await page.click('#nose [data-act="tag"][data-v="Black pepper"]');
+check(await page.$$eval('#nose .tag.pick', (els) => els.length) === 3, '"Your aromas" lists the three picks');
+check((await page.textContent('#nose [data-act="fam"][data-v="Spice"]')).includes('1 picked'), 'family tile counts its picks');
+await shot(page, 'aroma-finder-day');
+await page.click('#nose .tag.pick[data-v="Black pepper"]');
+check(await page.$$eval('#nose .tag.pick', (els) => els.length) === 2, 'tapping a pick removes it');
+await page.click('#nose [data-act="tag"][data-v="Black pepper"]');
 await page.fill('#f-nose', 'Dark cherry, a little cedar');
 await page.click('[data-act="same-nose"]');
-check(await page.$$eval('[data-act="tag"][data-k="palate.tags"].on', (els) => els.length) === 3, '"Same as nose" copies the aromas');
+check(await page.$$eval('#flavors .tag.pick', (els) => els.length) === 3, '"Same as nose" copies the aromas');
 await page.click('[data-act="level"][data-k="body"][data-v="3"]');
 await page.click('[data-act="level"][data-k="tannin"][data-v="2"]');
 await page.fill('#n-body', 'Plush');
@@ -169,7 +186,7 @@ await shot(page, 'bottle-day-full', true);
 await page.click('[data-act="home"]');
 await page.waitForSelector('.card');
 await shot(page, 'log-day');
-await page.fill('#q', 'vanilla');
+await page.fill('#q', 'black pepper');
 check(await page.$$eval('.card', (c) => c.length) === 1, 'search finds by aroma');
 await page.fill('#q', 'pinot');
 check((await page.textContent('#cards')).includes('Nothing matches'), 'search with no match says so');

@@ -29,7 +29,7 @@ Read this first in any new thread. It's the handoff from earlier work, so a fres
 - Load-ups ("Signal"): deck in `renderer/index.html` + `bootSequence()` in app.js (`sg-` classes); phone and links share `field-unit/boot.js` + `boot.css` (`sb-` classes, since schedule CSS already uses `sg-`). Each page names its rows and wording in `data-` attributes on `#boot`. iPhone launch images are plain black (`scripts/make-launch-images.mjs`).
 - Pages: page 2's panels and names in `settings.pages`; layouts in `layoutP2` / `layoutEdgeP2`; `setPage()` in app.js.
 - `field-unit/`: phone app and link pages. `npm run build:field` copies `shared/` and the fonts into it; run it after changing `shared/`.
-- `field-unit/wine/`: **Wine Log**, a separate tasting-journal web app at `/wine/` (own `sw.js` scoped to `/wine/`, own icons from `scripts/make-wine-icons.mjs`). It pairs with the deck like a phone (member `kind: 'wine'`) and keeps data in `decks/{id}/wines`, `winePhotos` (label photo as a ~1200 px data URL) and `wineConfig/main` (Gemini key + model), so no rules change was needed. Label reading calls Gemini from the phone; places come from OpenStreetMap Nominatim (searched on tap only, per its usage policy). Day look "Estate Terrace", night look "Private Cellar", switched at local sunset. Design board: https://claude.ai/artifact/V3434i9Y4vCtsZiYm94ShH. Test: `node tools/ui-tests/wine-test.mjs`.
+- `field-unit/wine/`: **Wine Log**, a separate tasting-journal web app at `/wine/` (own `sw.js` scoped to `/wine/`, own icons from `scripts/make-wine-icons.mjs`). It pairs with the deck like a phone (member `kind: 'wine'`) and keeps data in `decks/{id}/wines`, `winePhotos` (label photo as a ~1200 px data URL) and `wineConfig/main` (Gemini key + model), so no rules change was needed. Label reading calls Gemini from the phone; places come from OpenStreetMap Nominatim (searched on tap only, per its usage policy). Aromas: the finder in `finder()` (families `FAMILIES`, fruit by style `FRUIT`, the rest `AROMAS`; our own list, not Wine Folly's charts, which Nick keeps separately). Day look "Estate Terrace", night look "Private Cellar", switched at local sunset. Design board: https://claude.ai/artifact/V3434i9Y4vCtsZiYm94ShH. Test: `node tools/ui-tests/wine-test.mjs`.
 - `firestore.rules`: who can read and write what. Guests may only add, edit or soft-delete their own entries, and only on READ + ADD links.
 
 ## Test, build, release
@@ -43,8 +43,9 @@ Read this first in any new thread. It's the handoff from earlier work, so a fres
   4. Watch it with `tools/watch-release.sh Release <sha>`.
 - Commit as `Claude <noreply@anthropic.com>`. Keep the README and FIELD-UNIT-SETUP.md in step with features.
 
-## Where things stand (v1.17.0, Nov 2026)
+## Where things stand (v1.17.1, Nov 2026)
 Shipped recently:
+- v1.17.1: Wine Log aroma finder (The Nose and the palate's Flavors).
 - v1.17: Horizon theme (inspired by Interstellar) on the deck, Field Unit and the shared-link look gear: Jura + IBM Plex Mono, Lensing frame (hairline top light when trim is NONE), black hole seconds dial in the clock (`.clk-hole`, hidden when the clock panel is small), white-hot alert, new panel names; Accretion trim for any theme. Jura ships in `assets/fonts/jura/` (OFL) rather than @fontsource; `build-field.js` copies it to the phone. Board: "New theme · Horizon". Rig lights don't follow themes.
 - v1.16.1–1.16.2: Wine Log (`/wine/`; 1.16.2 fixed a redirect loop: Hosting redirect globs also match the trailing-slash path, so `/wine` → `/wine/` uses an exact `regex`), Nick's tasting journal: scan-the-label autofill, place lookup with Maps / website links, label photos, day / night by sunset.
 - v1.14: Skydock and Vector themes, Dock Lights trim, switch panel, panel renames.

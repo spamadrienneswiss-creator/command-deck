@@ -281,3 +281,27 @@ a { color: var(--accent); }
 @keyframes spin { to { transform: rotate(360deg); } }
 .offline { text-align: center; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); padding: 6px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; } }
+
+/* ---------- aroma finder ---------- */
+.fam-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.fam {
+  min-height: 64px; padding: 10px 12px; border-radius: var(--radius); display: flex; align-items: center; gap: 12px; text-align: left;
+  border: 1px solid var(--border); background: var(--panel); color: var(--text); transition: border-color .25s ease, background-color .25s ease, box-shadow .25s ease;
+}
+.fam .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.fam.open { border: 1.5px solid var(--title); background: #FFFFFF; }
+[data-mood="night"] .fam.open { border: 1px solid #C9A464; background: rgba(201, 164, 100, 0.08); box-shadow: 0 0 18px rgba(201, 164, 100, 0.15); }
+.fam-dot { width: 14px; height: 14px; flex-shrink: 0; border-radius: 7px; }
+.fam-name { font-family: var(--display); font-style: italic; font-size: 19px; font-weight: var(--display-weight); line-height: 1.1; }
+.fam-sub { font-size: 11px; color: var(--muted); }
+.drawer { display: flex; flex-direction: column; gap: 14px; padding: 16px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--border); animation: rise .3s ease both; }
+.drawer-head { display: flex; align-items: center; gap: 10px; }
+.drawer-head .row-title { font-size: 24px; }
+.tag.pick { height: 40px; padding: 0 12px; }
+.tag .dot { width: 8px; height: 8px; border-radius: 4px; }
+#flavors .fam { background: var(--bg); }
+#flavors .fam.open { background: #FFFFFF; }
+[data-mood="night"] #flavors .fam.open { background: rgba(201, 164, 100, 0.08); }
+#flavors .drawer { background: var(--bg); }
+[data-mood="night"] { color-scheme: dark; }
+[data-mood="night"] .chips4 .chip { font-size: 10px; letter-spacing: .5px; padding: 0 2px; }

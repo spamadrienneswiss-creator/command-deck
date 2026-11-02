@@ -114,6 +114,25 @@
             <div id="clkTime" class="clk-time">--:--</div>
             <div class="clk-side"><div id="clkSec" class="clk-sec">:--</div><div id="clkAmpm" class="clk-ampm"></div></div>
           </div>
+          <div class="clk-hole" aria-hidden="true">
+            <svg viewBox="-116 -116 232 232">
+              <defs>
+                <radialGradient id="hzGlow"><stop offset="0.35" stop-color="#F2C38B" stop-opacity="0.3"/><stop offset="1" stop-color="#F2C38B" stop-opacity="0"/></radialGradient>
+                <linearGradient id="hzDisk" x1="0" x2="1"><stop offset="0" stop-color="#D9894A" stop-opacity="0"/><stop offset="0.3" stop-color="#D9894A"/><stop offset="0.52" stop-color="#FFF4E3"/><stop offset="0.75" stop-color="#F2C38B"/><stop offset="1" stop-color="#D9894A" stop-opacity="0"/></linearGradient>
+                <filter id="hzSoft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.4"/></filter>
+              </defs>
+              <circle r="104" fill="url(#hzGlow)"/>
+              <circle r="98" fill="none" stroke="rgba(242,195,139,0.16)" stroke-width="1"/>
+              <circle id="clkHoleArc" r="98" fill="none" stroke="#F2C38B" stroke-width="2" stroke-dasharray="0 616" transform="rotate(-90)"/>
+              <circle id="clkHoleDot" cx="0" cy="-98" r="3" fill="#FFF4E3"/>
+              <path class="hz-disk" d="M -70 2 A 70 58 0 0 1 70 2" fill="none" stroke="url(#hzDisk)" stroke-width="9" filter="url(#hzSoft)" opacity="0.85"/>
+              <path d="M -62 6 A 62 50 0 0 0 62 6" fill="none" stroke="#D9894A" stroke-width="3" filter="url(#hzSoft)" opacity="0.45"/>
+              <circle r="40" fill="#000"/>
+              <circle r="42.5" fill="none" stroke="#FFF4E3" stroke-width="1.2" opacity="0.9"/>
+              <ellipse class="hz-disk" rx="100" ry="12" fill="url(#hzDisk)" filter="url(#hzSoft)" transform="rotate(-9)"/>
+              <ellipse rx="100" ry="3" fill="#FFF4E3" transform="rotate(-9)" opacity="0.5"/>
+            </svg>
+          </div>
           <div class="clock-foot">
             <div class="clk-dates"><div id="clkDay" class="clk-day"></div><div id="clkDate" class="clk-date"></div></div>
             <div class="cycle">

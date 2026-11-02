@@ -1505,3 +1505,108 @@ body[data-theme="vector"] .al-dot { border-radius: 50%; }
 .sh-av { border: 0; padding: 0; cursor: pointer; color: #14151B; }
 .sh-lv { white-space: nowrap; }
 .sh-color-row { display: flex; align-items: center; gap: 12px; padding: 8px 0 10px 34px; box-shadow: inset 0 -1px 0 var(--line-2); }
+
+/* ---------- v1.17 Horizon: a quiet ship's bridge beside a black hole ---------- */
+@font-face { font-family: 'Jura'; font-style: normal; font-weight: 300; font-display: swap; src: url(../assets/fonts/jura/jura-300.woff2) format('woff2'); }
+@font-face { font-family: 'Jura'; font-style: normal; font-weight: 400; font-display: swap; src: url(../assets/fonts/jura/jura-400.woff2) format('woff2'); }
+@font-face { font-family: 'Jura'; font-style: normal; font-weight: 500; font-display: swap; src: url(../assets/fonts/jura/jura-500.woff2) format('woff2'); }
+@font-face { font-family: 'Jura'; font-style: normal; font-weight: 600; font-display: swap; src: url(../assets/fonts/jura/jura-600.woff2) format('woff2'); }
+@font-face { font-family: 'Jura'; font-style: normal; font-weight: 700; font-display: swap; src: url(../assets/fonts/jura/jura-700.woff2) format('woff2'); }
+body[data-font="jura"] { --display: 'Jura', 'Segoe UI', sans-serif; --mono: 'IBM Plex Mono', Consolas, monospace; }
+
+body[data-theme="horizon"] {
+  --frame: rgba(5, 5, 5, var(--frame-alpha));
+  --panel: rgba(14, 12, 10, 0.8); --panel-solid: #0E0C0A; --bone-panel: rgba(14, 12, 10, 0.96);
+  --line: #2E261E; --line-2: #221C16; --line-3: #4A3C2D; --ctl-line: #4A3C2D;
+  --text: #EDE3D6; --text-hi: #FFF4E3; --text-2: #D6CABB; --muted: #A39482; --muted-2: #A39482; --dim: #6E6357;
+  --amber: #F2C38B; --accent-rgb: 242, 195, 139; --accent-hi: #FFF4E3;
+  --peach: #D9894A; --peach-rgb: 217, 137, 74;
+  --lav: #A9C3E0; --lav-rgb: 169, 195, 224;
+  --coral: #FF8A5C; --coral-rgb: 255, 138, 92; --coral-hi: #FFC2A8;
+  --lime: #E8D5A8; --lime-rgb: 232, 213, 168;
+  --pink: #A9C3E0; --teal: #A9C3E0; --teal-rgb: 169, 195, 224;
+  --ink-rgb: 237, 227, 214;
+  --modal-bg: rgba(12, 10, 9, 0.98); --sel-bg: #0E0C0A; --alert-bg: rgba(12, 10, 9, 0.98);
+  --chamfer: inset(0 round 4px); --chamfer-lg: inset(0 round 10px); --oct: circle(50%);
+}
+/* Deep space behind the glass: scattered stars and the black hole's warm glow off the top right. */
+body[data-theme="horizon"][data-frame="dark"] .console {
+  background-image:
+    radial-gradient(1px 1px at 30px 40px, rgba(255, 255, 255, 0.75), transparent) 0 0 / 230px 190px,
+    radial-gradient(1px 1px at 140px 120px, rgba(255, 255, 255, 0.5), transparent) 0 0 / 290px 240px,
+    radial-gradient(1.4px 1.4px at 90px 200px, rgba(255, 244, 227, 0.85), transparent) 0 0 / 410px 330px,
+    radial-gradient(1px 1px at 200px 60px, rgba(169, 195, 224, 0.6), transparent) 0 0 / 370px 280px,
+    radial-gradient(ellipse 60% 55% at 92% -8%, rgba(242, 195, 139, 0.11), transparent 70%);
+  box-shadow: inset 0 0 0 1px rgba(242, 195, 139, 0.16);
+}
+body[data-theme="horizon"] .scanline { display: none; }
+body[data-theme="horizon"] .deck-header { box-shadow: inset 0 -1px 0 rgba(242, 195, 139, 0.14); margin: 0 -16px; padding: 0 22px 10px; height: 50px; }
+/* The mark: a dark disc in a thin bright ring, crossed by a band of warm light. */
+body[data-theme="horizon"] .brand > svg { display: none; }
+body[data-theme="horizon"] .brand::before {
+  content: ''; width: 34px; height: 22px; flex-shrink: 0;
+  background:
+    linear-gradient(171deg, transparent 43%, rgba(242, 195, 139, 0.9) 47%, #FFF4E3 50%, rgba(242, 195, 139, 0.9) 53%, transparent 57%) center / 34px 22px no-repeat,
+    radial-gradient(circle at 50% 50%, #000 0 6px, #FFF4E3 6.5px 7.4px, rgba(242, 195, 139, 0.35) 8px, transparent 10px) center / 22px 22px no-repeat;
+}
+body[data-theme="horizon"] .brand-name { letter-spacing: 0.34em; }
+body[data-theme="horizon"] .brand-op { color: var(--muted); }
+body[data-theme="horizon"] .seg { border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(242, 195, 139, 0.25); }
+body[data-theme="horizon"]:not([data-frame="bone"]) .seg button.on { background: rgba(242, 195, 139, 0.14); color: #F2C38B; box-shadow: none; }
+body[data-theme="horizon"] .layout-chip, body[data-theme="horizon"] .upd-chip, body[data-theme="horizon"] .accent-btn, body[data-theme="horizon"] .ghost-btn, body[data-theme="horizon"] .mini-btn, body[data-theme="horizon"] .al-btn { border-radius: 3px; }
+/* Lensing frame: smoked glass, one hairline edge, soft corners, light bending across the top. */
+body[data-theme="horizon"] .panel { box-shadow: inset 0 0 0 1px rgba(242, 195, 139, 0.16); }
+body[data-theme="horizon"] .panel .br { display: none; }
+body[data-theme="horizon"][data-trim="none"] .panel::before {
+  content: ''; position: absolute; left: 24px; right: 24px; top: 0; height: 1px; z-index: 1; pointer-events: none;
+  background: linear-gradient(90deg, transparent, #F2C38B 30%, #FFF4E3 50%, #F2C38B 70%, transparent);
+}
+body[data-theme="horizon"] .p-head { font: 600 11px/1 var(--display); letter-spacing: 0.24em; color: #A39482; }
+body[data-theme="horizon"] .live { color: #F2C38B; }
+body[data-theme="horizon"] .dot { border-radius: 50%; }
+body[data-theme="horizon"] .panel[aria-label="Task queue"] { container-type: inline-size; }
+@container (min-width: 640px) { body[data-theme="horizon"] .tk-head > span:first-child::after { content: ' OBJECTIVES'; } }
+body[data-theme="horizon"] .clk-time { font-weight: 300; letter-spacing: -0.01em; text-shadow: 0 0 30px rgba(242, 195, 139, 0.22); }
+body[data-theme="horizon"] .clk-day { color: #EDE3D6; letter-spacing: 0.3em; }
+body[data-theme="horizon"] .clk-date { color: #A39482; }
+/* The day cycle becomes one thin line with a bright marker. */
+body[data-theme="horizon"] .cycle-bar { gap: 0; background: rgba(242, 195, 139, 0.16); height: 2px; margin-top: 12px; }
+body[data-theme="horizon"] .cycle-bar i { height: 2px; background: transparent; }
+body[data-theme="horizon"] .cycle-bar i.on { background: #F2C38B; }
+body[data-theme="horizon"] .cycle-bar i.tip { position: relative; box-shadow: none; }
+body[data-theme="horizon"] .cycle-bar i.tip::after { content: ''; position: absolute; right: -1px; top: -4px; width: 2px; height: 10px; background: #FFF4E3; box-shadow: 0 0 8px #F2C38B; }
+body[data-theme="horizon"] .hail { background: radial-gradient(circle, #000 0 52%, rgba(242, 195, 139, 0.22) 54%, rgba(242, 195, 139, 0.04) 72%); box-shadow: inset 0 0 0 1px #F2C38B, 0 0 18px rgba(242, 195, 139, 0.25); color: #FFF4E3; }
+body[data-theme="horizon"] .hail-ring { box-shadow: inset 0 0 0 1px rgba(242, 195, 139, 0.5); }
+body[data-theme="horizon"] .btn.primary { clip-path: inset(0 round 3px); }
+/* Black hole dial beside the clock: the seconds sweep around its ring. Only on Horizon, and only when the clock panel has room. */
+.clk-hole { display: none; }
+body[data-theme="horizon"] .panel[aria-label="Chronometer"] { container-type: size; }
+body[data-theme="horizon"] .clk-hole { display: block; position: absolute; right: 18px; top: 32px; height: calc(100% - 96px); max-height: 210px; aspect-ratio: 1; pointer-events: none; }
+body[data-theme="horizon"] .clk-hole svg { width: 100%; height: 100%; overflow: visible; }
+@container (max-width: 470px) { .clk-hole { display: none !important; } }
+@container (max-height: 190px) { .clk-hole { display: none !important; } }
+.motion-full .clk-hole .hz-disk { animation: hzShimmer 6s ease-in-out infinite; }
+@keyframes hzShimmer { 0%, 100% { opacity: 0.95; } 50% { opacity: 0.75; } }
+/* Horizon alert: the strip's ring flares white-hot and pulses until answered. */
+body[data-theme="horizon"] .alert-strip { clip-path: inset(0 round 6px); box-shadow: inset 0 0 0 1px rgba(242, 195, 139, 0.5), 0 10px 40px rgba(0, 0, 0, 0.6); }
+body[data-theme="horizon"] .alert-strip:is([data-type="alarm"], [data-type="pastdue"]) {
+  background: radial-gradient(ellipse 70% 120% at 50% 0%, rgba(255, 138, 92, 0.2), transparent 70%), rgba(12, 10, 9, 0.98);
+  box-shadow: inset 0 0 0 1px #FFF4E3, inset 0 0 0 2px rgba(255, 138, 92, 0.6), inset 0 0 28px rgba(255, 138, 92, 0.25);
+}
+body[data-theme="horizon"] .al-dot { width: 16px; height: 16px; border-radius: 50%; background: #000; box-shadow: 0 0 0 1.5px #F2C38B, 0 0 10px rgba(242, 195, 139, 0.6); }
+body[data-theme="horizon"] .alert-strip:is([data-type="alarm"], [data-type="pastdue"]) .al-dot { background: #000; box-shadow: 0 0 0 2px #FFF4E3, 0 0 14px #FF8A5C; }
+body[data-theme="horizon"] .alert-strip[data-type="event"] .al-dot { box-shadow: 0 0 0 1.5px #A9C3E0, 0 0 10px rgba(169, 195, 224, 0.6); }
+.motion-full[data-theme="horizon"] .al-dot, .motion-subtle[data-theme="horizon"] .al-dot { animation: hzFlare 1.4s ease-in-out infinite; }
+@keyframes hzFlare { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.55; transform: scale(0.82); } }
+
+/* ---------- Trim: Accretion (a band of hot light along each panel's top edge; works on any theme) ---------- */
+body[data-trim="accretion"] { --t1: #D9894A; --t2: #FFF4E3; --t3: #F2C38B; --t4: transparent; --trim-h: 3px; --trim-accent: #F2C38B; }
+body[data-trim="accretion"] .trim-badge i:nth-child(4) { display: none; }
+body[data-trim="accretion"] .panel::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; z-index: 1; pointer-events: none;
+  background: linear-gradient(90deg, transparent, #D9894A 18%, #F2C38B 38%, #FFF4E3 50%, #F2C38B 62%, #D9894A 82%, transparent) 0 0 / 140% 100%;
+  box-shadow: 0 0 12px rgba(242, 195, 139, 0.5);
+}
+.motion-full[data-trim="accretion"] .panel::before { animation: hzDrift 14s ease-in-out infinite alternate; }
+.motion-subtle[data-trim="accretion"] .panel::before { animation: hzDrift 30s ease-in-out infinite alternate; }
+@keyframes hzDrift { from { background-position: 0 0; } to { background-position: 100% 0; } }

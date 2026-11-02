@@ -5,6 +5,7 @@ Read this first in any new thread. It's the handoff from earlier work, so a fres
 ## Who and how
 - Command Deck belongs to **Nick**. He builds it by talking with Claude and doesn't read or edit code himself, so explain changes in plain words, not code.
 - **Mock up and recap before building.** New features and themes go on the design board first; build only after he says so.
+- **Every new theme also ships for Field Unit** (and the shared-link look gear): mock up phone screens alongside the deck.
 - **One question at a time.** Keep replies short. Tone: JARVIS with some warmth: competent, a little dry, friendly.
 - He decides when a session ends and how much to take on. Offer the next step; don't wrap things up for him.
 - Design board comments: reply in that comment's thread (and resolve it unless a question is still open), then post one short line in chat.
@@ -41,8 +42,9 @@ Read this first in any new thread. It's the handoff from earlier work, so a fres
   4. Watch it with `tools/watch-release.sh Release <sha>`.
 - Commit as `Claude <noreply@anthropic.com>`. Keep the README and FIELD-UNIT-SETUP.md in step with features.
 
-## Where things stand (v1.16.2, Nov 2026)
+## Where things stand (v1.17.0, Nov 2026)
 Shipped recently:
+- v1.17: Horizon theme (inspired by Interstellar) on the deck, Field Unit and the shared-link look gear: Jura + IBM Plex Mono, Lensing frame (hairline top light when trim is NONE), black hole seconds dial in the clock (`.clk-hole`, hidden when the clock panel is small), white-hot alert, new panel names; Accretion trim for any theme. Jura ships in `assets/fonts/jura/` (OFL) rather than @fontsource; `build-field.js` copies it to the phone. Board: "New theme · Horizon". Rig lights don't follow themes.
 - v1.16.1–1.16.2: Wine Log (`/wine/`; 1.16.2 fixed a redirect loop: Hosting redirect globs also match the trailing-slash path, so `/wine` → `/wine/` uses an exact `regex`), Nick's tasting journal: scan-the-label autofill, place lookup with Maps / website links, label photos, day / night by sunset.
 - v1.14: Skydock and Vector themes, Dock Lights trim, switch panel, panel renames.
 - v1.14.1: neural voice for the boot briefing. v1.14.2: sync tie fix.

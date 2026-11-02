@@ -12,7 +12,7 @@ import { bootScreen } from './boot.js';
 const boot = bootScreen();
 
 const { $, esc } = U;
-const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur' };
+const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura' };
 
 const P = {
   token: (location.hash || '').replace(/^#/, '').replace(/[^A-Za-z0-9]/g, ''),

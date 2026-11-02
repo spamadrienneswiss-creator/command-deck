@@ -888,3 +888,42 @@ body[data-theme="vector"] .hail-oct { color: #FFFFFF; background: radial-gradien
 .sh-lv { white-space: nowrap; }
 .sh-lv.on { color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); }
 .sh-color-row { padding: 6px 0 12px 36px; box-shadow: inset 0 -1px 0 var(--line-2); }
+
+/* ---------- v1.17 Horizon: warm light from a black hole on deep black ---------- */
+@font-face { font-family: 'Jura'; font-style: normal; font-weight: 300; font-display: swap; src: url(fonts/jura-300.woff2) format('woff2'); }
+@font-face { font-family: 'Jura'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/jura-400.woff2) format('woff2'); }
+@font-face { font-family: 'Jura'; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/jura-500.woff2) format('woff2'); }
+@font-face { font-family: 'Jura'; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/jura-600.woff2) format('woff2'); }
+@font-face { font-family: 'Jura'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/jura-700.woff2) format('woff2'); }
+body[data-font="jura"] { --display: 'Jura', -apple-system, sans-serif; --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace; }
+body[data-theme="horizon"] {
+  --bg: #050505;
+  --glow-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-116 -116 232 232'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0.35' stop-color='%23F2C38B' stop-opacity='0.28'/%3E%3Cstop offset='1' stop-color='%23F2C38B' stop-opacity='0'/%3E%3C/radialGradient%3E%3ClinearGradient id='d' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%23D9894A' stop-opacity='0'/%3E%3Cstop offset='0.3' stop-color='%23D9894A'/%3E%3Cstop offset='0.52' stop-color='%23FFF4E3'/%3E%3Cstop offset='0.75' stop-color='%23F2C38B'/%3E%3Cstop offset='1' stop-color='%23D9894A' stop-opacity='0'/%3E%3C/linearGradient%3E%3Cfilter id='s' x='-30%25' y='-30%25' width='160%25' height='160%25'%3E%3CfeGaussianBlur stdDeviation='2.6'/%3E%3C/filter%3E%3C/defs%3E%3Ccircle r='110' fill='url(%23g)'/%3E%3Cpath d='M-70 2A70 58 0 0 1 70 2' fill='none' stroke='url(%23d)' stroke-width='10' filter='url(%23s)' opacity='0.8'/%3E%3Cpath d='M-62 6A62 50 0 0 0 62 6' fill='none' stroke='%23D9894A' stroke-width='3' filter='url(%23s)' opacity='0.4'/%3E%3Ccircle r='40' fill='%23000'/%3E%3Ccircle r='42.5' fill='none' stroke='%23FFF4E3' stroke-width='1.2' opacity='0.85'/%3E%3Cellipse rx='104' ry='12' fill='url(%23d)' filter='url(%23s)' transform='rotate(-9)'/%3E%3Cellipse rx='100' ry='3' fill='%23FFF4E3' transform='rotate(-9)' opacity='0.45'/%3E%3C/svg%3E") right -46px top -72px / 170px 170px no-repeat,
+    radial-gradient(1px 1px at 30px 40px, rgba(255, 255, 255, 0.75), transparent) 0 0 / 150px 170px, radial-gradient(1px 1px at 110px 100px, rgba(255, 255, 255, 0.5), transparent) 0 0 / 190px 220px,
+    radial-gradient(1.3px 1.3px at 60px 150px, rgba(255, 244, 227, 0.8), transparent) 0 0 / 260px 300px, #050505;
+  --panel: rgba(14, 12, 10, 0.82); --panel-solid: #0E0C0A;
+  --line: #2E261E; --line-2: #221C16; --line-3: #4A3C2D;
+  --text: #EDE3D6; --text-hi: #FFF4E3; --text-2: #D6CABB; --muted: #A39482; --muted-2: #A39482; --dim: #6E6357;
+  --amber: #F2C38B; --accent-rgb: 242, 195, 139; --accent-hi: #FFF4E3;
+  --peach: #D9894A; --lav: #A9C3E0; --coral: #FF8A5C; --coral-hi: #FFC2A8; --lime: #E8D5A8; --teal: #A9C3E0; --teal-rgb: 169, 195, 224;
+  --ink-rgb: 237, 227, 214;
+  --tab-bg: rgba(5, 5, 5, 0.94); --oct-bg: #050505; --sheet-bg: #0C0A08; --term-bg: #050505; --term-panel: rgba(14, 12, 10, 0.95); --term-foot: rgba(5, 5, 5, 0.92);
+  --chamfer: inset(0 round 4px); --oct: circle(50%);
+}
+/* Lensing frame: smoked glass, one hairline edge, light bending across the top. */
+body[data-theme="horizon"] .card { box-shadow: inset 0 0 0 1px rgba(242, 195, 139, 0.16); }
+body[data-theme="horizon"] .card .br { display: none; }
+body[data-theme="horizon"][data-trim="none"] .card::before { content: ''; position: absolute; left: 18px; right: 18px; top: 0; height: 1px; z-index: 1; pointer-events: none; background: linear-gradient(90deg, transparent, #F2C38B 30%, #FFF4E3 50%, #F2C38B 70%, transparent); }
+body[data-theme="horizon"] .eyebrow { color: var(--amber); font-family: var(--display); font-weight: 600; letter-spacing: 0.3em; }
+body[data-theme="horizon"] .h1 { font-weight: 400; }
+body[data-theme="horizon"] .label, body[data-theme="horizon"] .group-h { font-family: var(--display); font-weight: 600; letter-spacing: 0.22em; }
+body[data-theme="horizon"] .chip, body[data-theme="horizon"] .btn, body[data-theme="horizon"] .ct-send { border-radius: 22px; }
+body[data-theme="horizon"] .tabbar { box-shadow: inset 0 1px 0 rgba(242, 195, 139, 0.14); }
+body[data-theme="horizon"] .tab.on { color: #FFF4E3; text-shadow: 0 0 10px rgba(242, 195, 139, 0.6); }
+body[data-theme="horizon"] .hail-oct { color: #FFF4E3; background: radial-gradient(circle, #000 0 52%, rgba(242, 195, 139, 0.25) 54%, transparent 72%); box-shadow: inset 0 0 0 1px #F2C38B, 0 0 16px rgba(242, 195, 139, 0.35); }
+body[data-theme="horizon"] .btn.primary { clip-path: none; }
+
+/* ---------- Trim: Accretion (a band of hot light along each card's top edge) ---------- */
+body[data-trim="accretion"] { --t1: #D9894A; --t2: #FFF4E3; --t3: #F2C38B; --t4: transparent; --trim-h: 3px; }
+body[data-trim="accretion"] .card::before { background: linear-gradient(90deg, transparent, #D9894A 18%, #F2C38B 38%, #FFF4E3 50%, #F2C38B 62%, #D9894A 82%, transparent); box-shadow: 0 0 12px rgba(242, 195, 139, 0.5); }
+body[data-trim="accretion"] .tabbar::before { height: 2px; background: linear-gradient(90deg, transparent, #D9894A 18%, #FFF4E3 50%, #D9894A 82%, transparent); }

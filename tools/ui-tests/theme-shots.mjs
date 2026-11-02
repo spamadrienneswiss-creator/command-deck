@@ -64,7 +64,9 @@ for (const [theme, font, frame, trim, ink] of combos) {
   page.on('pageerror', (e) => console.log('pageerror', e.message));
   await page.addInitScript(({ seed, settings }) => { localStorage.clear(); for (const [k, v] of Object.entries(seed)) (k === 'fu.comms' ? sessionStorage : localStorage).setItem(k, JSON.stringify(v)); localStorage.setItem('fu.settings', JSON.stringify(settings)); }, { seed, settings: { theme, font: font || 'auto', frame, trim, ink: ink || 'theme', installDismissed: true } });
   await page.goto(BASE);
-  await page.waitForTimeout(700);
+  // Let the Signal load-up finish (it removes #boot) before the Today shot.
+  await page.waitForFunction(() => !document.querySelector('#boot'), null, { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(400);
   const tag = `${theme}-${font || 'auto'}-${frame}-${trim}-${ink || 'theme'}`;
   await page.screenshot({ path: path.join(HERE, 'out', 'themes', `${tag}-today.png`) });
   await page.click('.tab[data-view="tasks"]'); await page.click('[data-tkview="projects"]'); await page.waitForTimeout(200);

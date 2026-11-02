@@ -37,7 +37,7 @@ const DEFAULTS = {
     voiceFxStrength: 60, // 0–100: dry voice → full effect
     humor: 40, // 0–100: strictly professional → dry and deadpan
     micPatience: 'normal', // how long the mic waits after you stop talking: short | normal | long
-    theme: 'dusk', // dusk | space | red | terminal | retro | moonbase | blueprint | cryo | freighter
+    theme: 'dusk', // dusk | space | red | terminal | retro | moonbase | blueprint | cryo | freighter | skydock | vector | horizon
     ink: 'theme', // theme | amber | phosphor | ice | arctic | rose (main text color)
     font: 'auto', // auto (the theme's own) | chakra | michroma | spacemono | exo2 | b612 | vt323 | orbitron
     frame: 'dark', // dark | bone (off-white console tray)

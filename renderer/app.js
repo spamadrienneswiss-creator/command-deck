@@ -13,7 +13,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.16.2';
+const VERSION = 'v1.17.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -153,12 +153,13 @@ function saveMeta() {
 
 // ---------------------------------------------------------------- settings
 // Each theme has its own typeface; the Typeface setting can override it.
-const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur' };
+const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura' };
 const LIGHT_THEMES = new Set(['moonbase', 'cryo', 'skydock']);
 // Some themes rename panels to fit their world. Only the label text changes.
 const PANEL_NAMES = {
   skydock: { computer: '03 · STATION COMPUTER' },
-  vector: { clock: 'PRIMARY · CHRONO', weather: 'EXTERNAL', computer: 'CO-PILOT', calendar: 'FLIGHT PLAN', events: 'WAYPOINTS', notes: 'LOGBOOK' }
+  vector: { clock: 'PRIMARY · CHRONO', weather: 'EXTERNAL', computer: 'CO-PILOT', calendar: 'FLIGHT PLAN', events: 'WAYPOINTS', notes: 'LOGBOOK' },
+  horizon: { clock: '01 · MISSION CLOCK', weather: '02 · CONDITIONS', calendar: '04 · MISSION CALENDAR', notes: '07 · FIELD NOTES' }
 };
 function applyPanelNames(theme) {
   const names = PANEL_NAMES[theme] || {};
@@ -314,6 +315,12 @@ function renderClock(now = new Date()) {
   const h = h24 ? String(now.getHours()).padStart(2, '0') : String(now.getHours() % 12 || 12);
   $('#clkTime').textContent = `${h}:${String(now.getMinutes()).padStart(2, '0')}`;
   $('#clkSec').textContent = `:${String(now.getSeconds()).padStart(2, '0')}`;
+  // Horizon's black hole dial: the seconds sweep around the ring (hidden on other themes).
+  if (look.theme === 'horizon') {
+    const turn = now.getSeconds() / 60;
+    $('#clkHoleArc').setAttribute('stroke-dasharray', `${(turn * 615.8).toFixed(1)} 616`);
+    $('#clkHoleDot').setAttribute('transform', `rotate(${(turn * 360).toFixed(1)})`);
+  }
   $('#clkAmpm').textContent = h24 ? '24H' : (now.getHours() < 12 ? 'AM' : 'PM');
   $('#clkDay').textContent = U.DAY_FULL[now.getDay()].toUpperCase();
   $('#clkDate').textContent = `${now.getDate()} ${U.MONTHS[now.getMonth()].toUpperCase()} ${now.getFullYear()}`;

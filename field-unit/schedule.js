@@ -13,11 +13,11 @@ import { bootScreen } from './boot.js';
 import * as U from './lib/util.js';
 
 const { $, esc } = U;
-const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur' };
+const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura' };
 const LIGHT = new Set(['moonbase', 'cryo', 'skydock']);
 const STANDALONE = window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
 // Their own look for this page, kept on this phone.
-const LOOK_THEMES = [['dusk', 'DUSK', ['#F2A65A', '#A8B0D8']], ['moonbase', "MOONBASE '79", ['#F05A1A', '#E4E6E9']], ['blueprint', 'BLUEPRINT', ['#8EC5FF', '#0E2A47']], ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']]];
+const LOOK_THEMES = [['dusk', 'DUSK', ['#F2A65A', '#A8B0D8']], ['moonbase', "MOONBASE '79", ['#F05A1A', '#E4E6E9']], ['blueprint', 'BLUEPRINT', ['#8EC5FF', '#0E2A47']], ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']], ['horizon', 'HORIZON', ['#F2C38B', '#FFF4E3']]];
 const LOOK_FONTS = [['auto', 'THEME DEFAULT', ''], ['michroma', 'MICHROMA', "'Michroma Scaled'"], ['spacemono', 'SPACE MONO', "'Space Mono'"], ['vt323', 'VT323', "'VT323 Scaled'"], ['orbitron', 'ORBITRON', "'Orbitron Scaled'"]];
 const LOOK_FRAMES = [['dark', 'DARK', '#14151B'], ['bone', 'BONE', '#EEDDC3'], ['navy', 'MIDNIGHT NAVY', '#16264A']];
 const PERSON_IC = '<svg width="8" height="9" viewBox="0 0 9 10" aria-hidden="true"><circle cx="4.5" cy="3" r="2.2" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M0.8 9.5 a3.7 3.7 0 0 1 7.4 0" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>';

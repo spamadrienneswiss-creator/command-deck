@@ -47,6 +47,8 @@ for (const [fam, weights] of Object.entries(FONT_FILES)) {
   const dir = path.join(path.dirname(require.resolve(`@fontsource/${fam}/package.json`)), 'files');
   for (const w of weights) fs.copyFileSync(path.join(dir, `${fam}-latin-${w}-normal.woff2`), path.join(fontDir, `${fam}-${w}.woff2`));
 }
+// Jura (Horizon's typeface) ships in assets/fonts, since the deck loads it from there too.
+for (const w of [300, 400, 500, 600, 700]) fs.copyFileSync(path.join(root, 'assets', 'fonts', 'jura', `jura-${w}.woff2`), path.join(fontDir, `jura-${w}.woff2`));
 console.log('  typefaces → field-unit/fonts');
 const version = require(path.join(root, 'package.json')).version;
 fs.writeFileSync(path.join(root, 'field-unit', 'version.json'), JSON.stringify({ version, built: new Date().toISOString() }) + '\n');

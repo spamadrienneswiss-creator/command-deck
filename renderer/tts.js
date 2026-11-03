@@ -99,6 +99,16 @@ export function loadTts() {
   return loadPromise;
 }
 
+// Frees the voice's memory while you're away; speak() loads it again on demand.
+export function unloadTts() {
+  if (!worker || pending.size) return false;
+  worker.terminate();
+  worker = null;
+  loadPromise = null;
+  setStatus({ state: 'idle', progress: 0, error: null });
+  return true;
+}
+
 // ---------------------------------------------------------------- playback
 let ctx = null;
 let current = null;

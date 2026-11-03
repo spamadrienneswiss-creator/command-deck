@@ -1018,7 +1018,10 @@ export function openSettings(welcome = false) {
           <div class="f-hint">Page 1 always has every panel. Page 2 shows only the ones picked here, so they can be bigger: unlock the layout on page 2 and resize them. Flip pages with the <b>PAGE</b> chip at the top, <span class="kbd">Ctrl</span> + <span class="kbd">1</span> / <span class="kbd">2</span>, a sideways swipe on a touchscreen, or say "page two."</div></div>
         <div class="f"><span class="f-label">UPDATES</span>
           <div class="toggle-row"><span id="sUpd">${esc(app.updateInfo().text)}</span><button type="button" class="btn line" id="sUpdBtn">${app.updateInfo().state === 'ready' ? 'RESTART TO UPDATE' : 'CHECK NOW'}</button></div>
-          <div class="f-hint">New versions download in the background. When one is ready, UPDATE READY appears at the top; tap it to restart, or it installs the next time Command Deck closes.</div></div>`;
+          <div class="f-hint">New versions download in the background. When one is ready, UPDATE READY appears at the top; tap it to restart, or it installs the next time Command Deck closes.</div></div>
+        <div class="f"><span class="f-label">MEMORY</span>
+          <div class="toggle-row"><span id="sMem">Measuring…</span></div>
+          <div class="f-hint">How much memory Command Deck is using right now. The deck's share includes the listening model and the neural voice; both go to sleep a couple of minutes after you step away from the PC and wake when you're back. The recap engine only runs while a recording is being transcribed.</div></div>`;
     },
     lighting() {
       const L = { enabled: false, boot: true, alert: true, speaking: true, crew: true, brightness: 80, ...(draft.lighting || {}) };
@@ -1363,6 +1366,16 @@ export function openSettings(welcome = false) {
         b.disabled = u.state === 'dev' || u.state === 'checking' || u.state === 'downloading';
       };
       updLine();
+      const memLine = async () => {
+        const el = $('#sMem', body);
+        if (!el || !window.deck.memory) return;
+        try {
+          const m = await window.deck.memory();
+          el.textContent = `${m.total} MB in use · deck ${m.deck} · graphics ${m.graphics} · core ${m.core}${m.other ? ` · other ${m.other}` : ''}`;
+        } catch (e) { el.textContent = 'Not available'; }
+      };
+      memLine();
+      const memTimer = setInterval(() => { if (!document.body.contains(body) || tab !== 'system') clearInterval(memTimer); else memLine(); }, 3000);
       $('#sUpdBtn', body).addEventListener('click', async () => {
         const b = $('#sUpdBtn', body);
         if (app.updateInfo().state === 'ready') { b.textContent = 'INSTALLING…'; b.dataset.busy = '1'; await app.installUpdate(); return; }

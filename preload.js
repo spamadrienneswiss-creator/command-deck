@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('deck', {
   qr: (text) => ipcRenderer.invoke('qr:make', text),
   copy: (text) => ipcRenderer.invoke('clip:write', text),
   hostname: () => ipcRenderer.invoke('sys:hostname'),
+  memory: () => ipcRenderer.invoke('sys:memory'),
   recap: {
     save: (id, ext, bytes) => ipcRenderer.invoke('recap:save', id, ext, bytes),
     read: (id) => ipcRenderer.invoke('recap:read', id),

@@ -81,12 +81,28 @@ function worker() {
   };
   return R.worker;
 }
+// The engine holds its own copy of the speech model (a few hundred MB), so it
+// shuts down shortly after the last recording is transcribed. The next recap
+// starts it again from the computer's cache.
+const IDLE_MS = 90 * 1000;
+let idleTimer = null;
+function releaseLater() {
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    if (!R.worker || R.pending.size) return;
+    R.worker.terminate();
+    R.worker = null;
+  }, IDLE_MS);
+}
 function ask(msg, transfer) {
   const id = ++R.seq;
-  return new Promise((resolve, reject) => {
+  clearTimeout(idleTimer);
+  const p = new Promise((resolve, reject) => {
     R.pending.set(id, { resolve, reject });
     worker().postMessage({ id, ...msg }, transfer || []);
   });
+  p.then(releaseLater, releaseLater);
+  return p;
 }
 
 // Cuts between blocks land in the quietest moment near the five-minute mark, not mid-word.

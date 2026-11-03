@@ -2,8 +2,8 @@
 // COMMAND DECK — interface
 // ============================================================
 import sounds from './sound.js';
-import { loadModel, transcribe, record, onVoiceStatus, voiceStatus } from './voice.js';
-import { loadTts, speakNeural, stopNeural, onTtsStatus, ttsStatus } from './tts.js';
+import { loadModel, unloadModel, transcribe, record, onVoiceStatus, voiceStatus } from './voice.js';
+import { loadTts, unloadTts, speakNeural, stopNeural, onTtsStatus, ttsStatus } from './tts.js';
 import * as U from './util.js';
 import { initModals, openTaskEditor, openEventEditor, openNoteEditor, openRecap, openProject, openProjectEditor, openScheduleEditor, openScheduleShare, openSettings, closeModal, isModalOpen } from './modals.js';
 import * as FU from './fieldunit.js';
@@ -13,7 +13,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.17.1';
+const VERSION = 'v1.17.2';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -2915,7 +2915,7 @@ async function start() {
   document.body.dataset.voice = 'idle';
   buildWave();
   Motion.start();
-  if (deck.onAway) deck.onAway((away) => Motion.setAway(away));
+  if (deck.onAway) deck.onAway((away) => { Motion.setAway(away); voicesAway(away); });
   wireUpdates();
   wireLights();
   applySettings();
@@ -3075,6 +3075,27 @@ function warmUpVoices(delay) {
     const synth = s.voiceEnabled && s.voiceEngine === 'neural' ? loadTts() : Promise.resolve();
     synth.catch(() => {}).finally(() => loadModel().catch(() => {}));
   }, delay);
+}
+
+// While nobody's at the PC, the listening model and neural voice sleep to free
+// memory (a couple of minutes after going away, so a quick lock doesn't churn).
+// They wake as soon as you're back; anything spoken meanwhile (an alarm) waits
+// a few seconds for the voice to load.
+let sleepTimer = null;
+let voicesAsleep = false;
+function voicesAway(away) {
+  clearTimeout(sleepTimer);
+  if (away) {
+    sleepTimer = setTimeout(() => {
+      if (document.body.dataset.voice !== 'idle') return;
+      const a = unloadModel();
+      const b = unloadTts();
+      if (a || b) { voicesAsleep = true; renderFooter(); }
+    }, 2 * 60 * 1000);
+  } else if (voicesAsleep) {
+    voicesAsleep = false;
+    warmUpVoices(800);
+  }
 }
 
 function afterSetup() {

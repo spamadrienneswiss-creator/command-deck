@@ -327,6 +327,18 @@ function registerIpc() {
   ipcMain.handle('recap:testKey', (_e, key) => gemini.testKey(String(key || '').trim()));
 
   ipcMain.handle('sys:hostname', () => { try { return require('os').hostname(); } catch (e) { return ''; } });
+  // Memory in use, by part (MB). The deck's own process includes the on-device voice models.
+  ipcMain.handle('sys:memory', () => {
+    const out = { total: 0, deck: 0, graphics: 0, core: 0, other: 0 };
+    for (const m of app.getAppMetrics()) {
+      const mb = ((m.memory && (m.memory.privateBytes || m.memory.workingSetSize)) || 0) / 1024;
+      const key = m.type === 'Tab' ? 'deck' : m.type === 'GPU' ? 'graphics' : m.type === 'Browser' ? 'core' : 'other';
+      out[key] += mb;
+      out.total += mb;
+    }
+    for (const k of Object.keys(out)) out[k] = Math.round(out[k]);
+    return out;
+  });
   ipcMain.handle('clip:write', (_e, text) => {
     clipboard.writeText(String(text || '').slice(0, 2000));
     return true;

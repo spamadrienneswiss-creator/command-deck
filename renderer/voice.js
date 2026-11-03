@@ -67,6 +67,17 @@ export function loadModel() {
   return loadPromise;
 }
 
+// Frees the model's memory (the deck calls this while you're away). The next
+// hail loads it again from the computer's cache, which takes a few seconds.
+export function unloadModel() {
+  if (!worker || pending.size) return false;
+  worker.terminate();
+  worker = null;
+  loadPromise = null;
+  setStatus({ state: 'idle', progress: 0, error: null });
+  return true;
+}
+
 const JUNK = /^(?:\[.*\]|\(.*\)|you|thank you\.?|thanks for watching!?|bye\.?|\.+)$/i;
 
 export async function transcribe(audio) {

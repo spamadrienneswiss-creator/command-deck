@@ -84,6 +84,7 @@ Field Unit is keyboard-only: it doesn't listen or speak (the desktop console kee
 - **Callsign:** what the phone calls itself ("Field Unit online. Go ahead.").
 - **Phrases:** *Settings › Edit what Field Unit says* lets you rewrite every line, one option per line (it picks one at random). Use `{name}`, `{callsign}` and `{title}` as placeholders.
 - **Humor setting**, **color theme** (Dusk, Deep Space, Red Alert, Terminal, Retro, Moonbase '79, Blueprint, Cryo, Freighter, Skydock, Vector, Horizon, Hi-Vis) **typeface** (theme default, or Chakra, Michroma, Space Mono, Exo 2, B612 Mono, VT323, Orbitron, Oxanium, Rajdhani, Share Tech Mono, Major Mono, Quantico, Tektur, Jura, Anybody), **text color** (Theme, Amber CRT, Phosphor, Ice, Arctic, Rose), **frame** (Dark, Bone, Gunmetal, Olive Drab, Midnight Navy) and **panel trim** (Sunset, Mission, Arcade, Hazard, Aurora, Gulf, Dock Lights, Accretion, Label Tape).
+- **Share Command Deck** (Settings): **SEND THE DOWNLOAD PAGE** opens the iPhone share sheet with the Get Command Deck page, for friends who want their own copy (or copies the link where sharing isn't available).
 
 ---
 

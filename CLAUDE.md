@@ -58,4 +58,4 @@ Shipped recently:
 **Parked list.** The old backlog (Oct 31, 2026) was scrapped on purpose. Don't suggest or revive past ideas from it; older mockups on the design board are archive, not a to-do list. Only what Nick parks himself goes here. Show it to him right before a build so he can confirm (see Who and how); otherwise don't push it:
 (Nothing parked right now.)
 
-Done from the old parked list: the "Get Command Deck" page for friends is a published page on Nick's account: https://claude.ai/artifact/BbxmwCp9vU2NFYKEE8GYtB (private until he shares it; update it there if install steps change). Hi-Vis shipped in v1.18.
+Done from the old parked list: the "Get Command Deck" page for friends is a published page on Nick's account: https://claude.ai/artifact/BbxmwCp9vU2NFYKEE8GYtB (private until he shares it; update it there if install steps change). Hi-Vis shipped in v1.18. Field Unit › Settings › SHARE COMMAND DECK sends that page (`DECK_PAGE` / `shareDeckPage()` in field-unit/app.js, v1.18.1).

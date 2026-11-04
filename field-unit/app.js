@@ -9,7 +9,7 @@ import { RosterRelay, scheduleUrl, DEFAULT_TYPES, weekStart, addDays, weekLabel,
 import { bootScreen } from './boot.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.18.0';
+const VERSION = 'v1.18.1';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
@@ -1688,11 +1688,29 @@ function viewSettings() {
       <div class="set-row"><span>Reminders, timers and alarms</span><span class="v">${alertsState}</span></div>
       ${alertsSupported() && !(perm === 'granted' && S.settings.alertsOn) && perm !== 'denied' ? '<div class="f"><button type="button" class="btn primary block" id="sAlerts">ENABLE ALERTS</button></div>' : ''}
       <div class="hint">Command Deck sends alerts while it's running on the computer. When it's off, alerts still show here whenever ${esc(S.settings.callsign)} is open.</div></div>
+    <div class="set-group"><span class="label">SHARE COMMAND DECK</span>
+      <div class="f"><button type="button" class="btn primary block" id="sShareDeck">SEND THE DOWNLOAD PAGE</button></div>
+      <div class="hint">Opens your share sheet with the Get Command Deck page (download link and install steps) for friends who want their own copy.</div></div>
     <div class="set-group"><span class="label">COMMAND LINK</span>
       <div class="set-row"><span>Command</span><span class="v">${online ? '<span class="ok-t">ONLINE</span>' : '<span class="err-t">OFFLINE</span>'}</span></div>
       <div class="set-row"><span>Paired with</span><span class="v">${esc(shared().consoleName || 'Command Deck')}</span></div>
       <div class="f"><button type="button" class="btn danger block" id="sUnpair">UNPAIR THIS DEVICE</button></div></div>
     <div class="hint" style="margin-top:24px">Field Unit ${VERSION} · ${STANDALONE ? 'running from the Home Screen' : 'running in the browser'}</div>`;
+}
+
+// The "Get Command Deck" page for friends (published on Nick's Claude account).
+const DECK_PAGE = 'https://claude.ai/artifact/BbxmwCp9vU2NFYKEE8GYtB';
+async function shareDeckPage() {
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(DECK_PAGE); toast('Link copied. Paste it in a message.'); } catch (e) { toast(DECK_PAGE, 8000); }
+  };
+  if (!navigator.share) return copy();
+  try {
+    await navigator.share({ title: 'Get Command Deck', text: 'Here is Command Deck for your PC:', url: DECK_PAGE });
+  } catch (e) {
+    if (e && e.name === 'AbortError') return; // closed the share sheet
+    await copy();
+  }
 }
 
 // ---------------------------------------------------------------- sheets (editors)
@@ -3123,6 +3141,7 @@ function wire() {
     if (snd) { S.settings.commsSound = snd.dataset.soundPick; saveSettings(); render(); ac(); sfx.test(); return; }
     if (t.closest('#sTest')) { ac(); sfx.test(); return; }
     if (t.closest('#sPhrases')) return openPhrases();
+    if (t.closest('#sShareDeck')) { shareDeckPage(); return; }
     if (t.closest('#sAlerts')) { enableAlerts().catch((err) => toast(err.message || 'Could not enable alerts', 4000)); return; }
     const up = t.closest('#sUnpair');
     if (up) { if (up.dataset.armed !== '1') { up.dataset.armed = '1'; up.textContent = 'TAP AGAIN TO UNPAIR'; return; } unpairSelf(); }

@@ -66,7 +66,14 @@ const lsProjects = () => page.evaluate(() => JSON.parse(localStorage.getItem('fu
 await page.click('.tab[data-view="tasks"]');
 await page.click('[data-tkview="projects"]');
 await wait(150);
-await page.locator('.pj-card', { hasText: 'Garage cleanout' }).click();
+// v1.18: projects are collapsible groups; the header opens the group, OPEN PROJECT opens the sheet.
+const grp = page.locator('.pj-group', { hasText: 'Garage cleanout' });
+check(await grp.locator('.trow').count() === 0, 'project group starts folded');
+await grp.locator('[data-pj-toggle]').click();
+await page.waitForTimeout(150);
+const grp2 = page.locator('.pj-group', { hasText: 'Garage cleanout' });
+check(await grp2.locator('.trow').count() > 0, 'tapping the header shows its tasks');
+await grp2.locator('[data-project]').click();
 await wait(200);
 check(await page.locator('#pjShare').count() === 1, 'project sheet has SHARE');
 check(await page.locator('#pjLog').count() === 1, 'project sheet has the PROJECT LOG strip');

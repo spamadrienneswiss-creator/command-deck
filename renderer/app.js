@@ -13,7 +13,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.17.2';
+const VERSION = 'v1.18.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -153,12 +153,13 @@ function saveMeta() {
 
 // ---------------------------------------------------------------- settings
 // Each theme has its own typeface; the Typeface setting can override it.
-const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura' };
+const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody' };
 const LIGHT_THEMES = new Set(['moonbase', 'cryo', 'skydock']);
 // Some themes rename panels to fit their world. Only the label text changes.
 const PANEL_NAMES = {
   skydock: { computer: '03 · STATION COMPUTER' },
   vector: { clock: 'PRIMARY · CHRONO', weather: 'EXTERNAL', computer: 'CO-PILOT', calendar: 'FLIGHT PLAN', events: 'WAYPOINTS', notes: 'LOGBOOK' },
+  hivis: { clock: '01 / TIME', weather: '02 / ATMOS', computer: '03 / VOICE', calendar: '04 / CYCLE', events: '05 / NEXT', notes: '07 / MEMO' },
   horizon: { clock: '01 · MISSION CLOCK', weather: '02 · CONDITIONS', calendar: '04 · MISSION CALENDAR', notes: '07 · FIELD NOTES' }
 };
 function applyPanelNames(theme) {
@@ -571,17 +572,25 @@ function renderProjects() {
     el.innerHTML = '<div class="empty">No projects yet.<br>Tap <b>+ Project</b>, or say <b>"new project garage cleanout"</b>.<br>Then file tasks with <b>"…to the garage cleanout project"</b>.</div>';
     return;
   }
+  const open = (S.data.meta && S.data.meta.pjOpen) || {};
   el.innerHTML = list.map((p) => {
     const st = projectStats(p);
     const col = p.color || 'var(--amber)';
     const filled = st.total ? Math.round((st.done / st.total) * 10) : 0;
     const segs = Array.from({ length: 10 }, (_, i) => `<i style="${i < filled ? `background:${esc(col)}` : ''}"></i>`).join('');
     const due = projectDueLabel(p, now);
-    return `<button type="button" class="pj-card" data-project="${esc(p.id)}" style="--pc:${esc(col)}">
-      <span class="pj-top"><span class="pj-name">${esc(p.name)}</span><span class="pj-top-r">${crewBadge(p.id)}<span class="pj-pct">${st.pct}%</span></span></span>
-      <span class="pj-bar">${segs}</span>
-      <span class="pj-meta"><span>${st.done}/${st.total} TASKS${st.next ? ` · NEXT: <b>${esc(st.next.title)}</b>` : ''}</span><span class="${due.startsWith('OVERDUE') ? 'over' : ''}">${esc(due)}</span></span>
-    </button>`;
+    const isOpen = !!open[p.id];
+    const openN = st.total - st.done;
+    const rows = isOpen ? sortTasks(st.tasks.filter((t) => !t.done), now).concat(st.tasks.filter((t) => t.done)).map((t) => taskRow(t, now)).join('') : '';
+    return `<div class="pj-group${isOpen ? ' open' : ''}" style="--pc:${esc(col)}">
+      <button type="button" class="pj-card pj-head" data-act="pj-toggle" data-pj="${esc(p.id)}" aria-expanded="${isOpen}">
+        <span class="pj-top"><span class="pj-name"><span class="pj-chev" aria-hidden="true">${isOpen ? '▾' : '▸'}</span>${esc(p.name)}</span><span class="pj-top-r">${crewBadge(p.id)}<span class="pj-pct">${st.pct}%</span></span></span>
+        <span class="pj-bar">${segs}</span>
+        <span class="pj-meta"><span>${openN} OPEN · ${st.done}/${st.total} DONE${!isOpen && st.next ? ` · NEXT: <b>${esc(st.next.title)}</b>` : ''}</span><span class="${due.startsWith('OVERDUE') ? 'over' : ''}">${esc(due)}</span></span>
+      </button>
+      ${isOpen ? `<div class="pj-body">${rows || '<div class="empty" style="padding:10px 0">No tasks yet.</div>'}
+        <div class="pj-foot"><button type="button" class="mini-btn" data-act="pj-add" data-pj="${esc(p.id)}">+ ADD TASK</button><button type="button" class="mini-btn" data-project="${esc(p.id)}">OPEN PROJECT ›</button></div></div>` : ''}
+    </div>`;
   }).join('');
 }
 
@@ -1072,6 +1081,13 @@ function activeTasks() {
   return S.tasks.filter((t) => !t.done);
 }
 
+// The Queue keeps loose tasks. Tasks in a live project live under PROJECTS,
+// except ones due today or overdue, which stay in the Queue tagged with their project.
+function inQueue(t, now = new Date()) {
+  if (!projectActive(t.projectId)) return true;
+  return isOverdue(t, now) || !!(t.due && U.sameDay(new Date(t.due), now));
+}
+
 function isOverdue(t, now = new Date()) {
   if (!t.due || t.done) return false;
   const d = new Date(t.due);
@@ -1149,12 +1165,15 @@ function renderTasks() {
     .concat(cats.map((c) => `<button type="button" class="chip${S.filter === c.id ? ' on' : ''}" data-filter="${esc(c.id)}" style="${S.filter === c.id ? '' : `color:${esc(c.color)}`}">${esc(c.name.toUpperCase())}</button>`))
     .join('');
   const inFilter = (t) => S.filter === 'all' || t.category === S.filter;
-  const list = sortTasks(active.filter(inFilter), now);
-  const done = S.tasks.filter((t) => t.done && inFilter(t) && !t.queueCleared && t.doneAt && U.sameDay(new Date(t.doneAt), now)).sort((a, b) => new Date(b.doneAt) - new Date(a.doneAt));
+  const list = sortTasks(active.filter((t) => inFilter(t) && inQueue(t, now)), now);
+  const tucked = active.filter((t) => inFilter(t) && !inQueue(t, now)).length;
+  $('#tkCount').textContent = `${list.length} ACTIVE`;
+  const done = S.tasks.filter((t) => t.done && inFilter(t) && !t.queueCleared && !projectActive(t.projectId) && t.doneAt && U.sameDay(new Date(t.doneAt), now)).sort((a, b) => new Date(b.doneAt) - new Date(a.doneAt));
   let html = list.map((t) => taskRow(t, now)).join('');
   if (!list.length) {
     html = `<div class="empty">Queue clear${S.filter === 'all' ? '' : ' in this category'}.<br>Type below, tap <b>+ Add task</b>, or hail the computer.</div>`;
   }
+  if (tucked) html += `<button type="button" class="tk-tucked" data-act="go-projects"><span>+ ${tucked} PROJECT TASK${tucked === 1 ? '' : 'S'} LIVE UNDER PROJECTS</span><span>VIEW ›</span></button>`;
   if (done.length) {
     html += `<div class="tk-sep"><span>COMPLETED · ${done.length}</span><button type="button" class="mini-btn" data-act="clear-done">CLEAR</button></div>`;
     html += done.slice(0, 20).map((t) => taskRow(t, now)).join('');
@@ -2211,12 +2230,15 @@ function checkRedAlert(now = new Date()) {
   const on = list.length > 0;
   document.body.classList.toggle('red-alert', on);
   S.redAlertCount = list.length;
-  if (on && S.settings.motion !== 'still' && Date.now() - lastPulse > 3 * 60000) {
+  const tag = $('#raTag');
+  if (tag) tag.textContent = on ? `${list.length} OVERDUE · ${list.length === 1 ? list[0].title.toUpperCase() : 'SEE QUEUE'}` : '';
+  // A hard flash once a minute while anything is overdue (none on STILL).
+  if (on && S.settings.motion !== 'still' && Date.now() - lastPulse > 55 * 1000) {
     lastPulse = Date.now();
     document.body.classList.remove('red-pulse');
     void document.body.offsetWidth;
     document.body.classList.add('red-pulse');
-    setTimeout(() => document.body.classList.remove('red-pulse'), 3000);
+    setTimeout(() => document.body.classList.remove('red-pulse'), 1600);
   }
   if (!on) lastPulse = 0;
 }
@@ -2770,6 +2792,7 @@ function wire() {
     if (ev) openEventEditor(ev);
   });
 
+  $('#raTag').addEventListener('click', () => { sounds.click(); S.tkView = 'queue'; S.filter = 'all'; renderTasks(); });
   $('#btnAddTask').addEventListener('click', () => { sounds.click(); if (S.tkView === 'projects') openProjectEditor(null); else if (S.tkView === 'schedule') openScheduleEditor(null); else openTaskEditor(null); });
   $('#tkChips').addEventListener('click', (e) => {
     const c = e.target.closest('.chip');
@@ -2781,6 +2804,15 @@ function wire() {
   $('#tkList').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-act]');
     if (!btn) return;
+    if (btn.dataset.act === 'go-projects') { sounds.click(); S.tkView = 'projects'; renderTasks(); return; }
+    if (btn.dataset.act === 'pj-toggle') {
+      sounds.click();
+      S.data.meta.pjOpen = { ...(S.data.meta.pjOpen || {}), [btn.dataset.pj]: !(S.data.meta.pjOpen || {})[btn.dataset.pj] };
+      saveMeta();
+      renderTasks();
+      return;
+    }
+    if (btn.dataset.act === 'pj-add') { sounds.click(); openTaskEditor(null, { projectId: btn.dataset.pj }); return; }
     if (btn.dataset.act === 'clear-done') {
       // Finished tasks that belong to a live project stay (they count toward its progress), just out of the queue.
       S.tasks = S.tasks.filter((t) => !t.done || projectActive(t.projectId)).map((t) => (t.done ? { ...t, queueCleared: true } : t));

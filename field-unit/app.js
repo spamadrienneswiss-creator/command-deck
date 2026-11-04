@@ -9,7 +9,7 @@ import { RosterRelay, scheduleUrl, DEFAULT_TYPES, weekStart, addDays, weekLabel,
 import { bootScreen } from './boot.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.17.2';
+const VERSION = 'v1.18.0';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
@@ -121,27 +121,27 @@ function persist(kind) {
 }
 
 // ---------------------------------------------------------------- small UI helpers
-const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura' };
-const THEME_BG = { moonbase: '#DADDE1', blueprint: '#0E2A47', cryo: '#E6F0F7', freighter: '#0A0C07', skydock: '#EEF1F4', vector: '#03050A', horizon: '#050505' };
+const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody' };
+const THEME_BG = { moonbase: '#DADDE1', blueprint: '#0E2A47', cryo: '#E6F0F7', freighter: '#0A0C07', skydock: '#EEF1F4', vector: '#03050A', horizon: '#050505', hivis: '#0A0A0B' };
 const THEMES = [
   ['dusk', 'DUSK', ['#F2A65A', '#A8B0D8']], ['space', 'DEEP SPACE', ['#4FD1E8', '#9FB7FF']], ['red', 'RED ALERT', ['#FF4D4D', '#FFD27A']],
   ['terminal', 'TERMINAL', ['#39FF88', '#1F3328']], ['retro', 'RETRO', ['#5EE7FF', '#FF7BD5']],
   ['moonbase', "MOONBASE '79", ['#F05A1A', '#E4E6E9']], ['blueprint', 'BLUEPRINT', ['#8EC5FF', '#0E2A47']],
   ['cryo', 'CRYO', ['#2D8CFF', '#D6E7F3']], ['freighter', 'FREIGHTER', ['#9CF2A8', '#E8C547']],
-  ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']], ['horizon', 'HORIZON', ['#F2C38B', '#FFF4E3']]
+  ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']], ['horizon', 'HORIZON', ['#F2C38B', '#FFF4E3']], ['hivis', 'HI-VIS', ['#C6F432', '#FF3D6E']]
 ];
 const FONTS = [
   ['auto', 'THEME DEFAULT', ''], ['chakra', 'CHAKRA', "'Chakra Petch'"], ['michroma', 'MICHROMA', "'Michroma Scaled'"],
   ['spacemono', 'SPACE MONO', "'Space Mono'"], ['exo2', 'EXO 2', "'Exo 2'"], ['b612', 'B612 MONO', "'B612 Mono'"],
   ['vt323', 'VT323', "'VT323 Scaled'"], ['orbitron', 'ORBITRON', "'Orbitron Scaled'"], ['oxanium', 'OXANIUM', "'Oxanium'"],
   ['rajdhani', 'RAJDHANI', "'Rajdhani Scaled'"], ['sharetech', 'SHARE TECH MONO', "'Share Tech Mono'"], ['majormono', 'MAJOR MONO', "'Major Mono Scaled'"],
-  ['quantico', 'QUANTICO', "'Quantico'"], ['tektur', 'TEKTUR', "'Tektur'"], ['jura', 'JURA', "'Jura'"]
+  ['quantico', 'QUANTICO', "'Quantico'"], ['tektur', 'TEKTUR', "'Tektur'"], ['jura', 'JURA', "'Jura'"], ['anybody', 'ANYBODY', "'Anybody'"]
 ];
 const INKS = [['theme', 'THEME', null], ['amber', 'AMBER CRT', '#FFC27A'], ['phosphor', 'PHOSPHOR', '#A8F5B4'], ['ice', 'ICE', '#CFE6FF'], ['arctic', 'ARCTIC', '#FFFFFF'], ['rose', 'ROSE', '#F6C1CF']];
 const FRAMES = [['dark', 'DARK', '#14151B'], ['bone', 'BONE', '#EEDDC3'], ['gunmetal', 'GUNMETAL', '#3A3E44'], ['olive', 'OLIVE DRAB', '#4A5236'], ['navy', 'MIDNIGHT NAVY', '#16264A']];
 const TRIMS = [['none', 'NONE', []], ['sunset', 'SUNSET', ['#B5432A', '#E07A2E', '#E9B23B']], ['mission', 'MISSION', ['#E5532D', '#EADBC2', '#3F68A6']], ['arcade', 'ARCADE', ['#D6457E', '#F08A3C', '#F2C94C', '#3FB3A8']],
   ['hazard', 'HAZARD', ['#E8C547', '#1A1A1A', '#E8C547', '#1A1A1A']], ['aurora', 'AURORA', ['#2BB3A3', '#6FD08C', '#8E6CD8']], ['gulf', 'GULF', ['#8FC1E3', '#F28A2E', '#8FC1E3']],
-  ['dock', 'DOCK LIGHTS', ['#1FB8F0', '#F4B41A', '#FF4F86', '#EE8A2E']], ['accretion', 'ACCRETION', ['#D9894A', '#FFF4E3', '#F2C38B']]];
+  ['dock', 'DOCK LIGHTS', ['#1FB8F0', '#F4B41A', '#FF4F86', '#EE8A2E']], ['accretion', 'ACCRETION', ['#D9894A', '#FFF4E3', '#F2C38B']], ['tape', 'LABEL TAPE', ['#C6F432', '#0B0B0C', '#C6F432']]];
 function applyTheme() {
   const theme = S.settings.theme || 'dusk';
   const font = S.settings.font || 'auto';
@@ -654,6 +654,32 @@ function findProject(query) {
   const live = liveProjects();
   return live.find((p) => norm(p.name) === q) || live.find((p) => norm(p.name).includes(q) || q.includes(norm(p.name))) || null;
 }
+// The Queue keeps loose tasks; tasks in a live project live under PROJECTS,
+// except ones due today or overdue, which stay in the Queue tagged with their project.
+function inQueue(t, now = new Date()) {
+  const p = projectById(t.projectId);
+  if (!p || p.status === 'done') return true;
+  return isOverdue(t, now) || !!(t.due && U.sameDay(new Date(t.due), now));
+}
+function pjOpen() { return load('fu.pjOpen', {}); }
+function projectGroup(p, now) {
+  const st = projectStats(p);
+  const col = p.color || 'var(--amber)';
+  const filled = st.total ? Math.round((st.done / st.total) * 10) : 0;
+  const due = projectDueLabel(p, now);
+  const soon = p.due && (projectDue(p) - now) < 14 * 864e5;
+  const open = !!pjOpen()[p.id];
+  const tasks = S.tasks.filter((t) => t.projectId === p.id);
+  const rows = sortTasks(tasks.filter((t) => !t.done), now).map((t) => taskRow(t, now)).concat(tasks.filter((t) => t.done).map((t) => taskRow(t, now, { swipe: false }))).join('');
+  return `<div class="card pj-group${open ? ' open' : ''}" style="--pc:${esc(col)}">
+    <button type="button" class="pj-card pj-head" data-pj-toggle="${esc(p.id)}" aria-expanded="${open}">
+      <span class="pj-top"><span class="pj-name"><span class="pj-chev" aria-hidden="true">${open ? '▾' : '▸'}</span>${esc(p.name)}</span><span class="pj-pct">${st.pct}%</span></span>
+      <span class="pj-bar" aria-hidden="true">${Array.from({ length: 10 }, (_, i) => `<i class="${i < filled ? 'on' : ''}"></i>`).join('')}</span>
+      <span class="pj-meta"><span class="pj-next">${st.total - st.done} OPEN · ${st.done}/${st.total} DONE</span><span class="${due.startsWith('OVERDUE') ? 'over' : soon ? 'soon' : ''}">${esc(due)}</span></span>
+    </button>
+    ${open ? `<div class="pj-body">${rows || '<div class="empty" style="padding:8px 0">No tasks yet.</div>'}<div class="pj-foot"><button type="button" class="mini-line" data-pj-add="${esc(p.id)}">+ ADD TASK</button><button type="button" class="mini-line" data-project="${esc(p.id)}">OPEN PROJECT ›</button></div></div>` : ''}
+  </div>`;
+}
 function projectCard(p, now) {
   const st = projectStats(p);
   const col = p.color || 'var(--amber)';
@@ -758,7 +784,8 @@ function viewToday() {
     <div class="cmd-status ${online ? 'on' : 'off'}"><i></i>${online ? `COMMAND ONLINE · ${esc(shared().consoleName || 'Command Deck').toUpperCase()}` : `COMMAND OFFLINE · LAST CONTACT ${seen}`}</div>`;
 }
 
-function tasksHead(n) {
+function tasksHead() {
+  const n = active().filter((t) => inQueue(t)).length;
   const live = liveProjects().length;
   const v = S.tkView;
   const thisWeek = weekDays(S.schedule, weekStart(new Date())).reduce((k, d) => k + d.items.length, 0);
@@ -968,7 +995,7 @@ function viewProjects() {
   const list = liveProjects();
   const finished = S.projects.filter((p) => p.status === 'done').sort((a, b) => new Date(b.completedAt || 0) - new Date(a.completedAt || 0));
   return `${tasksHead(active().length)}
-    <div class="pj-list">${list.map((p) => projectCard(p, now)).join('')}</div>
+    <div class="pj-list">${list.map((p) => projectGroup(p, now)).join('')}</div>
     ${!list.length ? '<div class="empty">No projects yet. Tap <b>+</b> to start one, or open the terminal and type <b>new project garage cleanout</b>.</div>' : ''}
     ${finished.length ? `<div class="group-h"><span>FINISHED</span><span>${finished.length}</span></div>${finished.slice(0, 8).map((p) => `<button type="button" class="pj-done" data-project="${esc(p.id)}"><i style="background:${esc(p.color || 'var(--lav)')}"></i><span>${esc(p.name)}</span><span>${p.completedAt ? `${U.MONTHS[new Date(p.completedAt).getMonth()].slice(0, 3).toUpperCase()} ${new Date(p.completedAt).getDate()}` : ''}</span></button>`).join('')}` : ''}
     <div class="hint" style="margin-top:16px">Type <b>add buy string lights to the holiday party project</b> in the terminal to file a task straight into a project.</div>`;
@@ -981,7 +1008,8 @@ function viewTasks() {
   const cats = categories();
   if (S.filter !== 'all' && !cats.some((c) => c.id === S.filter)) S.filter = 'all';
   const inF = (t) => S.filter === 'all' || t.category === S.filter;
-  const list = sortTasks(active().filter(inF), now);
+  const list = sortTasks(active().filter((t) => inF(t) && inQueue(t, now)), now);
+  const tucked = active().filter((t) => inF(t) && !inQueue(t, now)).length;
   const weekEnd = U.addDays(U.startOfDay(now), 7);
   const groups = [
     ['OVERDUE', list.filter((t) => isOverdue(t, now)), true],
@@ -990,13 +1018,14 @@ function viewTasks() {
     ['LATER', list.filter((t) => t.due && new Date(t.due) >= weekEnd)],
     ['NO DATE', list.filter((t) => !t.due)]
   ];
-  const done = S.tasks.filter((t) => t.done && inF(t));
+  const done = S.tasks.filter((t) => t.done && inF(t) && inQueue(t, now));
   const chips = [['all', 'ALL', 'var(--text)']].concat(cats.map((c) => [c.id, c.name.toUpperCase(), c.color]))
     .map(([id, label, col]) => `<button type="button" class="chip${S.filter === id ? ' on' : ''}" data-filter="${esc(id)}" style="--pc:${esc(col)};${S.filter === id ? '' : `color:${esc(col)}`}">${esc(label)}</button>`).join('');
-  return `${tasksHead(active().length)}
+  return `${tasksHead()}
     <div class="chip-row" style="margin-top:12px">${chips}</div>
     ${groups.map(([label, items, red]) => (items.length ? `<div class="group-h${red ? ' red' : ''}"><span>${label}</span><span>${items.length}</span></div>${items.map((t) => taskRow(t, now)).join('')}` : '')).join('')}
     ${!list.length ? '<div class="empty">Nothing here. Tap <b>+</b>, or open the terminal and type a task.</div>' : ''}
+    ${tucked ? `<button type="button" class="tk-tucked" data-tkview="projects"><span>+ ${tucked} PROJECT TASK${tucked === 1 ? '' : 'S'}</span><span>PROJECTS ›</span></button>` : ''}
     ${done.length ? `<div class="group-h"><span>COMPLETED</span><span>${done.length}</span></div>${done.slice(0, 15).map((t) => taskRow(t, now, { swipe: false })).join('')}` : ''}
     <div class="hint" style="margin-top:16px">Swipe a task left for Snooze, Done and Delete.</div>`;
 }
@@ -1640,7 +1669,7 @@ function viewSettings() {
       <div class="pills">${THEMES.map(([v, l, cs]) => `<button type="button" class="chip${(S.settings.theme || 'dusk') === v ? ' on' : ''}" data-theme-pick="${v}" style="--pc:${cs[0] === '#FFFFFF' ? cs[1] : cs[0]}"><span class="theme-sw" aria-hidden="true">${cs.map((c) => `<i style="background:${c}"></i>`).join('')}</span>${l}</button>`).join('')}</div></div>
     <div class="set-group"><span class="label">TYPEFACE</span>
       <div class="pills">${FONTS.map(([v, l, fam]) => `<button type="button" class="chip font-chip${(S.settings.font || 'auto') === v ? ' on' : ''}" data-font-pick="${v}"${fam ? ` style="font-family:${fam}"` : ''}>${l}</button>`).join('')}</div>
-      <div class="hint">Theme default follows the color theme: Moonbase uses Michroma, Blueprint Space Mono, Cryo Exo 2, Freighter B612 Mono, Skydock Quantico, Vector Tektur, Horizon Jura.</div></div>
+      <div class="hint">Theme default follows the color theme: Moonbase uses Michroma, Blueprint Space Mono, Cryo Exo 2, Freighter B612 Mono, Skydock Quantico, Vector Tektur, Horizon Jura, Hi-Vis Anybody.</div></div>
     <div class="set-group"><span class="label">TEXT COLOR</span>
       <div class="pills">${INKS.map(([v, l, c]) => `<button type="button" class="chip${(S.settings.ink || 'theme') === v ? ' on' : ''}" data-ink-pick="${v}">${c ? `<span class="ink-sw" aria-hidden="true" style="background:${c}"></span>` : ''}${l}</button>`).join('')}</div>
       <div class="hint">Recolors the main text. Accents and warnings stay with the theme.</div></div>
@@ -3050,6 +3079,10 @@ function wire() {
     if (scr) { const it = S.schedule.find((x) => x.id === scr.dataset.sched); if (it) openScheduleEditor(it); return; }
     const tv = t.closest('[data-tkview]');
     if (tv) { S.tkView = tv.dataset.tkview; render(); return; }
+    const pt = t.closest('[data-pj-toggle]');
+    if (pt) { const o = pjOpen(); o[pt.dataset.pjToggle] = !o[pt.dataset.pjToggle]; store('fu.pjOpen', o); render(); return; }
+    const pa = t.closest('[data-pj-add]');
+    if (pa) return openTaskEditor(null, { projectId: pa.dataset.pjAdd });
     const pc = t.closest('[data-project]');
     if (pc) { const pr = projectById(pc.dataset.project); if (pr) openProject(pr); return; }
     if (t.closest('[data-new-note]')) return openNoteEditor(null);

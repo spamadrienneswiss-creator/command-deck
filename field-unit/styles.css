@@ -927,3 +927,53 @@ body[data-theme="horizon"] .btn.primary { clip-path: none; }
 body[data-trim="accretion"] { --t1: #D9894A; --t2: #FFF4E3; --t3: #F2C38B; --t4: transparent; --trim-h: 3px; }
 body[data-trim="accretion"] .card::before { background: linear-gradient(90deg, transparent, #D9894A 18%, #F2C38B 38%, #FFF4E3 50%, #F2C38B 62%, #D9894A 82%, transparent); box-shadow: 0 0 12px rgba(242, 195, 139, 0.5); }
 body[data-trim="accretion"] .tabbar::before { height: 2px; background: linear-gradient(90deg, transparent, #D9894A 18%, #FFF4E3 50%, #D9894A 82%, transparent); }
+
+/* ---------- v1.18 tidier Queue: project tasks grouped under PROJECTS ---------- */
+.tk-tucked { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; min-height: 44px; margin-top: 14px; padding: 0 12px; border: 0; cursor: pointer; background: rgba(168, 176, 216, 0.06); box-shadow: inset 0 0 0 1px var(--line-3); color: var(--lav); font: 500 10px/1 var(--mono); letter-spacing: 0.12em; text-align: left; }
+.pj-group { padding: 0; }
+.pj-group .pj-head { background: transparent; box-shadow: inset 3px 0 0 var(--pc); }
+.pj-group.open .pj-head { box-shadow: inset 3px 0 0 var(--pc), inset 0 -1px 0 var(--line-2); }
+.pj-chev { display: inline-block; width: 16px; color: var(--pc); font: 500 11px/1 var(--mono); }
+.pj-body { padding: 0 12px 10px 20px; }
+.pj-body .trow .pj-tag, .pj-body .trow [data-pj-name] { display: none; }
+.pj-foot { display: flex; justify-content: space-between; gap: 8px; padding-top: 10px; }
+
+/* ---------- v1.18 Hi-Vis: a printed spec sheet in negative (inspired by Marathon) ---------- */
+@font-face { font-family: 'Anybody'; font-style: normal; font-weight: 100 900; font-stretch: 50% 150%; font-display: swap; src: url(fonts/anybody-var.woff2) format('woff2'); }
+@font-face { font-family: 'Martian Mono'; font-style: normal; font-weight: 100 800; font-stretch: 75% 112.5%; font-display: swap; src: url(fonts/martian-mono-var.woff2) format('woff2'); }
+body[data-font="anybody"] { --display: 'Anybody', -apple-system, sans-serif; --mono: 'Martian Mono', ui-monospace, Menlo, monospace; }
+body[data-theme="hivis"] {
+  --bg: #0A0A0B;
+  --glow-bg: radial-gradient(rgba(242, 242, 236, 0.08) 1px, transparent 1.3px) 0 0 / 14px 14px, #0A0A0B;
+  --panel: #141415; --panel-solid: #141415;
+  --line: #3A3A38; --line-2: #262625; --line-3: #6B6B65;
+  --text: #F2F2EC; --text-hi: #FFFFFF; --text-2: #CFCFC8; --muted: #A3A39C; --muted-2: #A3A39C; --dim: #6B6B65;
+  --amber: #C6F432; --accent-rgb: 198, 244, 50; --accent-hi: #E6FF9A;
+  --peach: #FF3D6E; --lav: #8C8EFF; --coral: #FF3D6E; --coral-hi: #FF9AB3; --lime: #C6F432; --teal: #8C8EFF; --teal-rgb: 140, 142, 255;
+  --ink-rgb: 242, 242, 236;
+  --tab-bg: #F2F2EC; --oct-bg: #C6F432; --sheet-bg: #141415; --term-bg: #0A0A0B; --term-panel: #141415; --term-foot: rgba(10, 10, 11, 0.95);
+  --chamfer: none;
+  --oct: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+}
+body[data-theme="hivis"] .card { box-shadow: inset 0 0 0 1.5px #F2F2EC; }
+body[data-theme="hivis"] .card .br { display: none; }
+body[data-theme="hivis"] .eyebrow { display: inline-block; padding: 5px 8px; background: #F2F2EC; color: #0B0B0C; font-weight: 700; letter-spacing: 0.1em; }
+body[data-theme="hivis"] .h1 { font-family: 'Anybody', var(--display); font-weight: 900; font-stretch: 140%; letter-spacing: 0; }
+body[data-theme="hivis"] .label, body[data-theme="hivis"] .group-h { font-weight: 700; letter-spacing: 0.08em; }
+body[data-theme="hivis"] .seg button.on { background: #F2F2EC; color: #0B0B0C; box-shadow: none; }
+body[data-theme="hivis"] .chip.on { background: #C6F432; color: #0B0B0C; box-shadow: none; }
+body[data-theme="hivis"] .btn.primary, body[data-theme="hivis"] .ct-send { clip-path: none; color: #0B0B0C; }
+/* Chalk-white tab bar; the active tab lights acid green. */
+body[data-theme="hivis"] .tabbar { --text: #0B0B0C; --muted: #55554F; box-shadow: none; }
+body[data-theme="hivis"] .tab.on { color: #0B0B0C; background: #C6F432; }
+body[data-theme="hivis"] .hail-oct { color: #0B0B0C; background: #C6F432; box-shadow: inset 0 0 0 1.5px #0B0B0C; }
+
+/* ---------- Trim: Label Tape (crooked acid tape printed across each card's top) ---------- */
+body[data-trim="tape"] { --t1: #C6F432; --t2: #0B0B0C; --t3: #C6F432; --t4: transparent; --trim-h: 14px; }
+body[data-trim="tape"] .card { overflow: hidden; }
+body[data-trim="tape"] .card::before {
+  left: -8px; right: -8px; top: 2px; height: 14px; transform: rotate(-0.8deg);
+  background: #C6F432; color: #0B0B0C; content: 'FIELD UNIT // FIELD UNIT // FIELD UNIT // FIELD UNIT // FIELD UNIT';
+  font: 700 8px/14px 'Martian Mono', var(--mono); letter-spacing: 0.24em; white-space: nowrap; overflow: hidden; padding-left: 16px;
+}
+body[data-trim="tape"] .tabbar::before { height: 4px; background: #C6F432; }

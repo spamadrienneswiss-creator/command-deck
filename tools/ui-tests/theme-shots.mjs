@@ -69,7 +69,7 @@ for (const [theme, font, frame, trim, ink] of combos) {
   await page.waitForTimeout(400);
   const tag = `${theme}-${font || 'auto'}-${frame}-${trim}-${ink || 'theme'}`;
   await page.screenshot({ path: path.join(HERE, 'out', 'themes', `${tag}-today.png`) });
-  await page.click('.tab[data-view="tasks"]'); await page.click('[data-tkview="projects"]'); await page.waitForTimeout(200);
+  await page.click('.tab[data-view="tasks"]'); await page.waitForTimeout(150); await page.screenshot({ path: path.join(HERE, 'out', 'themes', `${tag}-queue.png`) }); await page.click('[data-tkview="projects"]'); await page.waitForTimeout(150); const pjt = await page.$('[data-pj-toggle]'); if (pjt) { await pjt.click(); await page.waitForTimeout(150); }
   await page.screenshot({ path: path.join(HERE, 'out', 'themes', `${tag}-projects.png`) });
   await page.click('#hailBtn'); await page.waitForTimeout(600);
   await page.screenshot({ path: path.join(HERE, 'out', 'themes', `${tag}-comms.png`) });

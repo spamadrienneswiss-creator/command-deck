@@ -56,6 +56,8 @@ Shipped recently:
 - v1.16: Data Recap (Voice Memos → Field Unit → transcribed on the PC → Gemini summary; RECAPS tab on both; per-recording audio keep / 30 days / delete now); deck pages (page 2 with picked panels); the "Signal" load-up on the deck, Field Unit and both shared links. The Signal *theme* was mocked and turned down.
 
 **Parked list.** The old backlog (Oct 31, 2026) was scrapped on purpose. Don't suggest or revive past ideas from it; older mockups on the design board are archive, not a to-do list. Only what Nick parks himself goes here. Show it to him right before a build so he can confirm (see Who and how); otherwise don't push it:
-(Nothing parked right now.)
+- Silvan theme (approved Nov 2026, not built): elven twilight from The Lord of the Rings. Board: "New theme · Silvan" (SilvanMain / SilvanKit / SilvanPhone). Cormorant Garamond + Cormorant SC, real moon phase in the clock, Moon Arch frame, Lantern alert, Vine trim, panel names The Hour / Sky & Wind / Counsel / The Days / The Road Ahead / Quests / Lore, times written in words. Deck + Field Unit + link look gear.
+
+Themes turned down (don't revive): Wayfarer, Habitat, Gateway (space station takes), Nightport (from another AI's reference).
 
 Done from the old parked list: the "Get Command Deck" page for friends is a published page on Nick's account: https://claude.ai/artifact/BbxmwCp9vU2NFYKEE8GYtB (private until he shares it; update it there if install steps change). Hi-Vis shipped in v1.18. Field Unit › Settings › SHARE COMMAND DECK sends that page (`DECK_PAGE` / `shareDeckPage()` in field-unit/app.js, v1.18.1).

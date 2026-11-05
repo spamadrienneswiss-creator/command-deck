@@ -15,7 +15,7 @@ Read this first in any new thread. It's the handoff from earlier work, so a fres
 - **Command Deck**: a Windows desktop widget (Electron) with a sci-fi HUD. Clock, weather, voice "Computer", calendar, upcoming events, notepad, tasks / projects / schedule, timers, themes, iCUE lighting, and a Xeneon Edge layout.
 - **Field Unit**: the iPhone web app (Firebase Hosting, project `command-deck-c3000`). It pairs with the deck and syncs both ways.
 - **Deck Relay**: the shared-link pages. `/s/<token>` is the shared schedule (`field-unit/schedule.js`); project links use `manifest.js`.
-- Design board (mockups), "Dusk Console Widget": https://claude.ai/artifact/1156ujhTHeoA1qiJz377wU. Read its `project/canvas.json` before adding boards.
+- Design board (mockups), "Dusk Console Widget": https://claude.ai/artifact/1156ujhTHeoA1qiJz377wU. Read its `project/canvas.json` before adding boards. It has two pages: **Current** (`page: "current"`, opens by default; new mockups go here) and **Archive** (`page: "archive"`; move boards there once shipped). Turned-down mockups get deleted, not archived.
   - Since Nov 1, 2026 the board and the Claude work live on Nick's own Claude account; he is the person you're working with. The board was rebuilt there from the v1.16.0 backup.
   - Moving Claude accounts again? The board belongs to the account that made it. Back it up (`project/canvas.json` + every `*.dc.html`) and rebuild it on the new account from the Design type, then update the link here.
 

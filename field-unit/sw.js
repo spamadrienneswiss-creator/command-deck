@@ -1,5 +1,5 @@
 // Field Unit service worker: offline shell + alerts relayed by Command.
-const CACHE = 'field-unit-v1.19.1';
+const CACHE = 'field-unit-v1.20.2';
 const SHELL = ['./', 'index.html', 'styles.css', 'boot.css', 'app.js', 'boot.js', 'presence.js', 'presence.css', 'presence-orb.jpg', 'manifest.webmanifest', 'lib/core.js', 'lib/sync.js', 'lib/util.js', 'lib/manifest.js', 'lib/roster.js', 'lib/scenes.js', 'lib/scenes.css', 'icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {

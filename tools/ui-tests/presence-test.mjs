@@ -1,3 +1,5 @@
+// PARKED with Presence (ENABLED = false in presence.js): skipped until it's switched back on.
+if (!process.env.PRESENCE) { console.log('presence-test skipped (Presence is parked; PRESENCE=1 to run)'); process.exit(0); }
 // Presence on Field Unit: home, tasks, week, settings, and the conversation (built-in
 // commands, Gemini fallback with a suggestion, listening, Gemini key). Gemini is faked.
 // Drives Field Unit in a phone-sized Chromium against an in-memory Firestore stand-in.

@@ -59,7 +59,10 @@ export function initPresence(api) {
   // iPhone only plays sound after a tap: a briefing that's due waits for the first touch.
   document.addEventListener('pointerdown', () => { if (P.pendingBrief && on() && !A.C.open) { P.pendingBrief = false; speakBriefing(); } }, true);
 }
-export const on = () => (A.S.settings.ui || 'presence') === 'presence';
+// Presence is parked (Nov 5, 2026): switched off for everyone until Nick picks it back up.
+// Set ENABLED to true to bring it back (classic Settings then shows the switch again).
+export const ENABLED = false;
+export const on = () => ENABLED && (A.S.settings.ui || 'presence') === 'presence';
 export const opts = () => ({ ...DEFAULTS, ...(A.S.settings.pres || {}) });
 function setOpt(k, v) { A.S.settings.pres = { ...opts(), [k]: v }; A.saveSettings(); }
 export const name = () => (opts().name || 'Computer').trim() || 'Computer';

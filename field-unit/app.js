@@ -11,7 +11,7 @@ import * as P from './presence.js';
 import { mountScene, isScene } from './lib/scenes.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.20.1';
+const VERSION = 'v1.20.2';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
@@ -221,7 +221,7 @@ function applyTheme() {
   if (isScene(theme)) document.body.dataset.scene = theme; else delete document.body.dataset.scene;
 }
 // Presence is on (and not peeking at a classic screen).
-function presenceLook() { return (S.settings.ui || 'presence') === 'presence' && !S.peek; }
+function presenceLook() { return P.on() && !S.peek; }
 // Opens a classic screen from Presence, with a way back.
 function classic(view) { S.peek = true; S.view = view; applyTheme(); render(); $('#view').scrollTop = 0; }
 
@@ -1738,9 +1738,9 @@ function viewSettings() {
       <button type="button" class="icon-btn" data-go="today" aria-label="Back to Today">${IC.left}</button>
       <h1 class="h1" style="margin:0;font-size:28px">Settings</h1>
     </header>
-    <div class="set-group"><span class="label">INTERFACE</span>
+    ${P.ENABLED ? `<div class="set-group"><span class="label">INTERFACE</span>
       <button type="button" class="btn primary" data-to-presence style="width:100%">${P.on() ? `BACK TO ${esc(P.name().toUpperCase())}` : 'SWITCH TO PRESENCE'}</button>
-      <div class="hint">Presence: the Computer as a glowing orb that talks, with calm Tasks and Week screens. Notes, recaps and this screen stay one tap away.</div></div>
+      <div class="hint">Presence: the Computer as a glowing orb that talks, with calm Tasks and Week screens. Notes, recaps and this screen stay one tap away.</div></div>` : ''}
     <div class="set-group"><span class="label">CALLSIGN</span>
       <input class="in" id="sCallsign" value="${esc(S.settings.callsign)}" maxlength="24" aria-label="Callsign">
       <div class="hint">What this device calls itself: “${esc(S.settings.callsign)} online. Go ahead.”</div></div>

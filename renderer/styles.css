@@ -929,7 +929,7 @@ body:not([data-trim="none"]) .seg button.on { color: var(--trim-accent); box-sha
 @keyframes rcSpin { to { transform: rotate(360deg); } }
 .danger-t { color: var(--coral) !important; }
 .nt-row {
-  display: block; width: 100%; text-align: left; padding: 9px 8px; border: 0; cursor: pointer;
+  display: block; width: 100%; height: auto; text-align: left; padding: 9px 8px; border: 0; cursor: pointer; /* height: the selected row also has .sel (the dropdown style, 38px) */
   background: transparent; color: inherit; font: inherit; box-shadow: inset 0 -1px 0 var(--line-2);
 }
 .nt-row:hover { background: rgba(var(--accent-rgb), 0.06); }

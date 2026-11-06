@@ -194,6 +194,17 @@ check(await page.evaluate(() => document.body.dataset.theme === 'hivis' && !docu
 await page.click('[data-to-presence]'); await page.waitForTimeout(200);
 check(await page.evaluate(() => document.body.classList.contains('presence')), 'classic Settings switches back to Presence');
 await page.close();
+
+// An old cached start page (no Presence stylesheet link) must still draw Presence properly.
+const old = await ctx.newPage();
+old.on('pageerror', (e) => { console.log('pageerror', e.message); fails++; });
+await old.route(BASE + '/', async (r) => { const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').replace(/<link[^>]*presence\.css[^>]*>/, ''); r.fulfill({ status: 200, contentType: 'text/html', body: html }); });
+await old.goto(BASE + '/');
+await old.waitForFunction(() => !document.querySelector('#boot'), null, { timeout: 15000 }).catch(() => {});
+await old.waitForTimeout(600);
+check(await old.evaluate(() => getComputedStyle(document.querySelector('#app')).display === 'none' && document.querySelector('.pz-orbbtn').getBoundingClientRect().width <= 340), 'old cached start page: Presence still styled');
+await old.screenshot({ path: path.join(OUT, 'old-cache.png') });
+await old.close();
 await browser.close();
 server.close();
 console.log(fails ? `${fails} FAILED` : 'ALL PASS');

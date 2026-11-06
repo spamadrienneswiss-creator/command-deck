@@ -101,7 +101,23 @@ function saveCfg(patch) {
 }
 
 // ---------------------------------------------------------------- shell
+// A start page cached from before Presence existed has no link to its styles or font:
+// add them here so Presence never draws unstyled.
+function ensureStyles() {
+  if (document.querySelector('link[href$="presence.css"]')) return;
+  const css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = 'presence.css';
+  document.head.appendChild(css);
+  if (!document.querySelector('link[href*="family=Outfit"]')) {
+    const f = document.createElement('link');
+    f.rel = 'stylesheet';
+    f.href = 'https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500&display=swap';
+    document.head.appendChild(f);
+  }
+}
 export function mount() {
+  ensureStyles();
   const live = on() && !A.S.peek;
   document.body.classList.toggle('presence', live);
   if (!live) { const r = A.$('#pres'); if (r) r.innerHTML = ''; return; }

@@ -5,16 +5,38 @@
       "**/.*"
     ],
     "redirects": [
-      { "regex": "^/wine$", "destination": "/wine/", "type": 302 }
+      {
+        "regex": "^/wine$",
+        "destination": "/wine/",
+        "type": 302
+      }
     ],
     "rewrites": [
-      { "source": "/m", "destination": "/manifest.html" },
-      { "source": "/s", "destination": "/schedule.html" },
-      { "source": "/s/**", "destination": "/schedule.html" }
+      {
+        "source": "/m",
+        "destination": "/manifest.html"
+      },
+      {
+        "source": "/s",
+        "destination": "/schedule.html"
+      },
+      {
+        "source": "/s/**",
+        "destination": "/schedule.html"
+      }
     ],
     "headers": [
       {
         "source": "**/*.@(js|css|json|html)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "/",
         "headers": [
           {
             "key": "Cache-Control",

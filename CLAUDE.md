@@ -43,7 +43,7 @@ Read this first in any new thread. It's the handoff from earlier work, so a fres
   4. Watch it with `tools/watch-release.sh Release <sha>`.
 - Commit as `Claude <noreply@anthropic.com>`. Keep the README and FIELD-UNIT-SETUP.md in step with features.
 
-## Where things stand (v1.23.0, Nov 2026)
+## Where things stand (v1.23.1, Nov 2026)
 Shipped recently:
 - v1.23: **painted themes removed** (Concourse, Spire, Skyline, Silvan, plus Open Window, Glass and Scene view from v1.22): Nick found panels and paintings fought each other in practice. `shared/scenes.*`, the paintings and their fonts are gone. **Page 1 is always every panel again** (v1.21's page 1 picker removed); page 2 keeps its picker, now with a preview (`pagePreview()`, `pg-` classes). `retirePainted()` in app.js runs at start: painted theme → Dusk, drops `paintLayout` / `glass` / `sceneIdle` / `pages.tiles1`, and restores `layoutMine` (store key kept only for that). Phone and links fall back to Dusk for unknown themes. Kept from 1.21–1.22: red-alert tag truncation, `applyLayout()` placing with floating on then settling (`grid.float(false)`). v1.23.1: the selected note row no longer shrinks to 38 px (it also carries `.sel`, the dropdown class; `.nt-row` sets `height: auto`).
 - v1.20.2: `test/packaging-test.js` checks every `../shared/` file the deck loads is in `build.files` (1.20.0 shipped without one and the deck didn't start). Presence parked (see the parked list).

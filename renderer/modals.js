@@ -111,7 +111,8 @@ export function wireThemeBox(box, draft) {
       box.innerHTML = `<div class="th-head"><span class="f-label">COLOR THEME</span>${Array.isArray(draft.themeFavs) ? '<span class="f-label th-yours">★ YOUR THEMES</span>' : ''}</div>
         <div class="pills">${THEMES.filter(([v]) => favs.includes(v)).map(([v, l, cs]) => `<button type="button" class="pill theme-pill${cur === v ? ' on' : ''}" data-pick="${v}" style="--pc:${pc(cs)}">${sw(cs)}${l}</button>`).join('')}
         <button type="button" class="pill th-more" data-edit>${hidden ? `+ ${hidden} MORE · EDIT LIST` : '★ PICK YOUR THEMES'}</button></div>
-        <div class="f-hint" style="margin-top:8px">${Array.isArray(draft.themeFavs) ? 'Only your starred themes show here and on Field Unit. The rest stay installed.' : 'Star the themes you use to tidy this list. Nothing gets removed.'}</div>`;
+        <div class="f-hint" style="margin-top:8px">${Array.isArray(draft.themeFavs) ? 'Only your starred themes show here and on Field Unit. The rest stay installed.' : 'Star the themes you use to tidy this list. Nothing gets removed.'}</div>
+        ${PAINTED.has(cur) && (draft.paintLayout || 'mine') !== 'open' ? '<div class="th-paint"><span>Painted theme: let the painting show with the Open Window layout.</span><button type="button" class="pill th-more" data-openwin>USE OPEN WINDOW</button></div>' : ''}`;
       return;
     }
     const starred = Array.isArray(draft.themeFavs) ? draft.themeFavs : THEMES.map((t) => t[0]);
@@ -134,6 +135,10 @@ export function wireThemeBox(box, draft) {
       const list = Array.isArray(draft.themeFavs) ? [...draft.themeFavs] : THEMES.map((t) => t[0]);
       draft.themeFavs = list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
       draft.themeFavsAt = Date.now();
+    } else if (e.target.closest('[data-openwin]')) {
+      draft.paintLayout = 'open';
+      const pl = document.querySelector('.pills[data-key="paintLayout"]');
+      if (pl) pl.querySelectorAll('[data-v]').forEach((b) => b.classList.toggle('on', b.dataset.v === 'open'));
     } else if (e.target.closest('[data-edit]')) editing = true;
     else if (e.target.closest('[data-done]')) editing = false;
     else return;
@@ -911,6 +916,7 @@ export function openSettings(welcome = false) {
     if (saved) return;
     app.previewOpacity(app.S.settings.opacity ?? 1);
     app.previewDarkness(app.S.settings.frameDarkness ?? 0.8);
+    app.previewGlass(Number(app.S.settings.glass) || 0);
     app.previewTheme(app.S.settings.theme || 'dusk');
     app.previewFont(app.S.settings.font || 'auto');
     app.previewInk(app.S.settings.ink || 'theme');
@@ -1032,6 +1038,15 @@ export function openSettings(welcome = false) {
         <div class="f"><label class="f-label" for="sDark" style="display:flex;justify-content:space-between"><span>BACKGROUND DARKNESS</span><span id="sDarkVal" class="amber-t">${Math.round((draft.frameDarkness ?? 0.8) * 100)}%</span></label>
           <input id="sDark" class="range" type="range" min="20" max="97" step="1" value="${Math.round((draft.frameDarkness ?? 0.8) * 100)}">
           <div class="f-hint">Darkens only the space between and behind the panels.</div></div>
+        <div class="f"><span class="f-label">PAINTED THEMES · CONCOURSE, SPIRE, SKYLINE, SILVAN</span>
+          <span class="f-label" style="margin-top:4px">LAYOUT</span>
+          <div class="pills" data-key="paintLayout">${pills([['open', 'OPEN WINDOW'], ['mine', 'MY LAYOUT']], draft.paintLayout || 'mine')}</div>
+          <div class="f-hint">OPEN WINDOW sets page 1 so the clock floats on the sky, a slim column runs down the right and the rest sits along the floor, leaving the middle of the painting open. Your own arrangement is kept: MY LAYOUT brings it back.</div>
+          <label class="f-label" for="sGlass" style="display:flex;justify-content:space-between;margin-top:8px"><span>GLASS · FROSTED ↔ CLEAR</span><span id="sGlassVal" class="amber-t">${Math.round(Number(draft.glass) || 0)}%</span></label>
+          <input id="sGlass" class="range" type="range" min="0" max="100" step="5" value="${Math.round(Number(draft.glass) || 0)}">
+          <span class="f-label" style="margin-top:8px">SCENE VIEW</span>
+          <div class="pills" data-key="sceneIdle">${pills([['0', 'BUTTON ONLY'], ['2', 'AFTER 2 MIN'], ['5', 'AFTER 5 MIN'], ['10', 'AFTER 10 MIN']], String(draft.sceneIdle || 0))}</div>
+          <div class="f-hint">The <b>SCENE</b> button at the top fades the panels away so the painting has the deck to itself, with a quiet clock line. It can also start on its own after a few untouched minutes. Any tap, key, alert or the Computer waking brings the panels back.</div></div>
         <div class="f"><span class="f-label">COMPUTER VOICE</span>
           <div class="toggle-row"><span>Spoken greetings, answers and reminders</span>${switchHtml('swVoice', draft.voiceEnabled, 'Computer voice')}</div>
           <div class="f-row" style="margin-top:6px">
@@ -1478,6 +1493,7 @@ export function openSettings(welcome = false) {
         });
       };
       slider('#sDark', 'frameDarkness', (v) => v / 100, (v) => app.previewDarkness(v));
+      slider('#sGlass', 'glass', (v) => v, (v) => app.previewGlass(v));
       slider('#sDepth', 'voiceDepth', (v) => v);
       slider('#sStrength', 'voiceFxStrength', (v) => v);
       slider('#sHumor', 'humor', (v) => v);

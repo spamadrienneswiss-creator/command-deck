@@ -38,6 +38,9 @@ const DEFAULTS = {
     humor: 40, // 0–100: strictly professional → dry and deadpan
     micPatience: 'normal', // how long the mic waits after you stop talking: short | normal | long
     theme: 'dusk', // dusk | space | red | terminal | retro | moonbase | blueprint | cryo | freighter | skydock | vector | horizon | hivis | concourse | spire | skyline | silvan
+    paintLayout: 'mine', // painted themes: 'open' (Open Window layout) or 'mine'
+    glass: 0, // painted themes: 0 = frosted panels … 100 = clear glass
+    sceneIdle: 0, // painted themes: fade the panels after this many idle minutes (0 = never)
     themeFavs: null, // starred themes shown in Settings (null = all); shared with Field Unit
     themeFavsAt: 0,
     ink: 'theme', // theme | amber | phosphor | ice | arctic | rose (main text color)
@@ -80,6 +83,7 @@ const DEFAULTS = {
   layoutEdge: null, // panel positions for the Xeneon Edge layout (24 columns)
   layoutP2: null, // page 2 panel positions, standard layout
   layoutEdgeP2: null, // page 2 panel positions, Edge layout
+  layoutMine: null, // the page 1 arrangement saved while the Open Window layout is on (painted themes)
   window: { bounds: null },
   meta: { lastBriefingDate: null, lastLaunch: null, page: 1 },
   push: { publicKey: null, privateKey: null }

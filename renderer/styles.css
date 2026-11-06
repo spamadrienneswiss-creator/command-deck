@@ -2006,3 +2006,31 @@ body[data-theme="silvan"] .alert-strip:is([data-type="alarm"], [data-type="pastd
 body[data-theme="silvan"] .al-dot { width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle, #FFE7A0, #E5B07A 45%, rgba(229, 176, 122, 0) 72%); box-shadow: 0 0 14px rgba(255, 210, 120, 0.8); }
 .motion-full[data-theme="silvan"] .al-dot, .motion-subtle[data-theme="silvan"] .al-dot { animation: svLantern 2.4s ease-in-out infinite; }
 @keyframes svLantern { 0%, 100% { opacity: 1; transform: scale(1); } 45% { opacity: 0.7; transform: scale(0.88); } 60% { opacity: 0.95; } }
+
+/* ---------- v1.22 Painted themes: let the painting show ---------- */
+/* Glass (Settings › System › PAINTED THEMES): 0 = frosted panels, 1 = clear glass. */
+body[data-scene] { --solid: calc(1 - var(--glass, 0)); }
+body[data-scene] .panel { text-shadow: 0 1px 10px rgba(0, 0, 0, calc(0.9 * var(--glass, 0))), 0 0 2px rgba(0, 0, 0, calc(0.6 * var(--glass, 0))); }
+body[data-theme="concourse"] .panel { background: linear-gradient(180deg, rgba(40, 30, 64, calc(0.26 * var(--solid))), rgba(14, 11, 28, calc(0.44 * var(--solid) + 0.06 * var(--glass, 0)))); backdrop-filter: blur(calc(22px * var(--solid) + 2px)) saturate(1.3); }
+body[data-theme="spire"] .panel { background: linear-gradient(180deg, rgba(40, 24, 44, calc(0.42 * var(--solid))), rgba(18, 10, 22, calc(0.6 * var(--solid) + 0.06 * var(--glass, 0)))); backdrop-filter: blur(calc(16px * var(--solid) + 2px)) saturate(1.3); }
+body[data-theme="skyline"] .panel { background: linear-gradient(180deg, rgba(20, 90, 100, calc(0.22 * var(--solid))), rgba(6, 24, 36, calc(0.5 * var(--solid) + 0.06 * var(--glass, 0)))); backdrop-filter: blur(calc(10px * var(--solid) + 2px)) saturate(1.3); }
+body[data-theme="silvan"] .panel { background: linear-gradient(180deg, rgba(14, 32, 32, calc(0.5 * var(--solid))), rgba(6, 16, 18, calc(0.7 * var(--solid) + 0.06 * var(--glass, 0)))); backdrop-filter: blur(calc(14px * var(--solid) + 2px)) saturate(1.2); }
+
+/* Open Window layout: on page 1 the clock floats on the sky, no panel around it. */
+body.open-window[data-scene][data-page="1"][data-layout="standard"] .panel[aria-label="Chronometer"] { background: none; backdrop-filter: none; box-shadow: none; text-shadow: 0 2px 30px rgba(0, 0, 0, 0.6), 0 0 3px rgba(0, 0, 0, 0.5); }
+body.open-window[data-scene][data-page="1"][data-layout="standard"] .panel[aria-label="Chronometer"]::before { display: none; }
+
+/* Scene view: the panels fade away; a quiet clock line stays. */
+.scene-chip { display: none; }
+body[data-scene] .scene-chip { display: inline-flex; }
+.scene-chip[aria-pressed="true"] { color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); background: rgba(var(--accent-rgb), 0.14); }
+.grid-wrap { transition: opacity 0.9s ease; }
+body.scene-view .grid-wrap { opacity: 0; pointer-events: none; }
+body.scene-view .deck-footer { opacity: 0.35; transition: opacity 0.9s; }
+.scene-clock { position: absolute; left: 44px; bottom: 64px; z-index: 5; pointer-events: none; opacity: 0; transition: opacity 0.9s ease; color: var(--text-hi); text-shadow: 0 2px 24px rgba(0, 0, 0, 0.75), 0 0 3px rgba(0, 0, 0, 0.6); }
+body.scene-view .scene-clock { opacity: 1; }
+.scene-clock .sc-t { font: 200 96px/1 var(--display); letter-spacing: -0.02em; }
+.scene-clock .sc-l { margin-top: 10px; font: 300 18px/1.4 var(--display); color: var(--text); }
+body[data-theme="silvan"] .scene-clock .sc-l { font-style: italic; font-size: 21px; }
+.motion-still .grid-wrap, .motion-still .scene-clock { transition: none; }
+.th-paint { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; padding: 10px 12px; box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.35); background: rgba(var(--accent-rgb), 0.06); font: 400 11px/1.5 var(--mono); color: var(--text-2); }

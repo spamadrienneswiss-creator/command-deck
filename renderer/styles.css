@@ -1763,3 +1763,232 @@ body[data-trim="tape"] .grid-stack-item[gs-id="events"] .panel::before { content
 body[data-trim="tape"] .grid-stack-item[gs-id="tasks"] .panel::before { content: 'JOBS // 06 // JOBS // 06 // JOBS // 06 // JOBS // 06 // JOBS // 06'; }
 body[data-trim="tape"] .grid-stack-item[gs-id="notes"] .panel::before { content: 'MEMO // 07 // MEMO // 07 // MEMO // 07 // MEMO // 07'; }
 body[data-theme="hivis"] .trim-badge { display: none !important; }
+
+/* ---------- v1.20 Painted themes (shared/scenes.js + scenes.css): the painting sits behind the panels ---------- */
+@font-face { font-family: 'Outfit'; font-style: normal; font-weight: 100 900; font-display: swap; src: url(../assets/fonts/painted/outfit-var.woff2) format('woff2'); }
+@font-face { font-family: 'Antonio'; font-style: normal; font-weight: 100 700; font-display: swap; src: url(../assets/fonts/painted/antonio-var.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 100 900; font-display: swap; src: url(../assets/fonts/painted/inter-var.woff2) format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 100 800; font-display: swap; src: url(../assets/fonts/painted/jetbrains-mono-var.woff2) format('woff2'); }
+@font-face { font-family: 'Cormorant Garamond'; font-style: normal; font-weight: 300 700; font-display: swap; src: url(../assets/fonts/painted/cormorant-garamond-var.woff2) format('woff2'); }
+@font-face { font-family: 'Cormorant Garamond'; font-style: italic; font-weight: 300 700; font-display: swap; src: url(../assets/fonts/painted/cormorant-garamond-italic-var.woff2) format('woff2'); }
+@font-face { font-family: 'Cormorant SC'; font-style: normal; font-weight: 400; font-display: swap; src: url(../assets/fonts/painted/cormorant-sc-400.woff2) format('woff2'); }
+@font-face { font-family: 'Cormorant SC'; font-style: normal; font-weight: 500; font-display: swap; src: url(../assets/fonts/painted/cormorant-sc-500.woff2) format('woff2'); }
+@font-face { font-family: 'Cormorant SC'; font-style: normal; font-weight: 600; font-display: swap; src: url(../assets/fonts/painted/cormorant-sc-600.woff2) format('woff2'); }
+body[data-font="outfit"] { --display: 'Outfit', 'Segoe UI', sans-serif; --mono: 'Outfit', 'Segoe UI', sans-serif; }
+body[data-font="antonio"] { --display: 'Antonio', 'Segoe UI', sans-serif; --mono: 'Inter', 'Segoe UI', sans-serif; }
+body[data-font="rajmono"] { --display: 'Rajdhani', 'Segoe UI', sans-serif; --mono: 'JetBrains Mono', Consolas, monospace; }
+body[data-font="cormorant"] { --display: 'Cormorant Garamond', Georgia, serif; --mono: 'Cormorant Garamond', Georgia, serif; }
+
+body[data-scene] .console { isolation: isolate; }
+/* Frame darkness sets how strongly the painting shows. */
+body[data-scene] .scene { opacity: calc(0.4 + var(--frame-alpha) * 0.6); }
+body[data-scene] .scanline { display: none; }
+/* Moving layers step with the rest of the deck's motion; SUBTLE keeps only the slow ones. */
+.motion-subtle .scene .cc-ship, .motion-subtle .scene .cc-mote { animation: none; opacity: 0; }
+
+/* ---------- Concourse: a starport observation lounge at dusk ---------- */
+body[data-theme="concourse"] {
+  --frame: rgba(12, 10, 24, var(--frame-alpha));
+  --panel: linear-gradient(180deg, rgba(40, 30, 64, 0.26), rgba(14, 11, 28, 0.44)); --panel-solid: #16112A; --bone-panel: rgba(22, 17, 40, 0.96);
+  --line: rgba(255, 222, 184, 0.16); --line-2: rgba(255, 222, 184, 0.09); --line-3: rgba(255, 222, 184, 0.28); --ctl-line: rgba(255, 222, 184, 0.24);
+  --text: #F5EFE7; --text-hi: #FFFFFF; --text-2: #E2D9E8; --muted: #BDB3CC; --muted-2: #A79EB8; --dim: #857C97;
+  --amber: #E8B877; --accent-rgb: 232, 184, 119; --accent-hi: #FFE3BE;
+  --peach: #F6A86B; --peach-rgb: 246, 168, 107;
+  --lav: #9FB8FF; --lav-rgb: 159, 184, 255;
+  --coral: #F6A86B; --coral-rgb: 246, 168, 107; --coral-hi: #FFD2B0;
+  --lime: #BFE8C8; --lime-rgb: 191, 232, 200;
+  --pink: #E6A9D8; --teal: #9FD8E8; --teal-rgb: 159, 216, 232;
+  --ink-rgb: 245, 239, 231;
+  --modal-bg: rgba(20, 15, 34, 0.97); --sel-bg: #16112A; --alert-bg: rgba(20, 15, 34, 0.97);
+  --chamfer: inset(0 round 18px); --chamfer-lg: inset(0 round 18px); --oct: circle(50%);
+  --cc-label: 'Michroma', 'Segoe UI', sans-serif;
+}
+body[data-theme="concourse"] .deck-header { margin: 0 -16px; padding: 0 22px; height: 46px; }
+body[data-theme="concourse"] .brand > svg { display: none; }
+body[data-theme="concourse"] .brand::before {
+  content: ''; width: 26px; height: 26px; flex-shrink: 0;
+  background: radial-gradient(circle, #F5EFE7 0 3px, transparent 3.5px), radial-gradient(circle, transparent 0 10.2px, #E8B877 10.4px 11.4px, transparent 11.8px);
+}
+body[data-theme="concourse"] .brand-name { font: 400 12px/1 var(--cc-label); letter-spacing: 0.26em; }
+body[data-scene] .ctl-label { display: none; }
+body[data-theme="concourse"] .brand-op, body[data-theme="concourse"] .ctl-label { font-family: var(--cc-label); font-size: 9px; letter-spacing: 0.24em; color: var(--muted); }
+body[data-theme="concourse"] .seg { border-radius: 20px; padding: 3px; background: rgba(20, 14, 36, 0.45); backdrop-filter: blur(14px); box-shadow: inset 0 0 0 1px rgba(255, 222, 184, 0.2); }
+body[data-theme="concourse"] .seg button { border-radius: 16px; font-family: var(--cc-label); font-size: 9px; letter-spacing: 0.18em; }
+body[data-theme="concourse"]:not([data-frame="bone"]) .seg button.on { background: rgba(232, 184, 119, 0.92); color: #1A1226; box-shadow: none; }
+body[data-theme="concourse"] :is(.layout-chip, .upd-chip, .accent-btn, .ghost-btn, .mini-btn, .al-btn, .icon-btn) { border-radius: 14px; }
+/* Frosted glass panels with a lit top edge. */
+body[data-theme="concourse"] .panel {
+  background: var(--panel); clip-path: none; border-radius: 18px;
+  backdrop-filter: blur(22px) saturate(1.4);
+  box-shadow: inset 0 0 0 1px rgba(255, 222, 184, 0.16), inset 0 1px 0 rgba(255, 236, 214, 0.38), 0 24px 50px rgba(0, 0, 0, 0.4);
+}
+body[data-theme="concourse"] .panel .br { display: none; }
+body[data-theme="concourse"] .p-head { font: 400 9.5px/1 var(--cc-label); letter-spacing: 0.26em; color: #E8B877; }
+body[data-theme="concourse"] .p-head :is(.live, .p-meta, .p-sub) { color: var(--muted); }
+body[data-theme="concourse"] .dot { border-radius: 50%; }
+body[data-theme="concourse"] .panel[aria-label="Task queue"] { container-type: inline-size; }
+@container (min-width: 520px) { body[data-theme="concourse"] .tk-head > span:first-child::after { content: ' MANIFEST'; } }
+body[data-theme="concourse"] .clk-time { font-weight: 200; letter-spacing: -0.03em; text-shadow: 0 0 40px rgba(255, 190, 130, 0.35), 0 2px 30px rgba(0, 0, 0, 0.5); }
+body[data-theme="concourse"] .clk-sec { color: #F6C68E; font-weight: 300; }
+body[data-theme="concourse"] .clk-ampm, body[data-theme="concourse"] .clk-day { font-family: var(--cc-label); letter-spacing: 0.2em; }
+body[data-theme="concourse"] .clk-date { color: var(--muted); }
+body[data-theme="concourse"] .cycle-bar { gap: 0; height: 1px; margin-top: 12px; background: linear-gradient(90deg, rgba(232, 184, 119, 0.5), rgba(232, 184, 119, 0)); }
+body[data-theme="concourse"] .cycle-bar i { height: 1px; background: transparent; }
+body[data-theme="concourse"] .cycle-bar i.on { background: #E8B877; }
+/* The concierge button: a warm glowing pearl. */
+body[data-theme="concourse"] .hail {
+  border-radius: 50%; clip-path: none; color: #1A1226;
+  background: radial-gradient(circle at 40% 35%, rgba(255, 224, 180, 0.95), rgba(232, 160, 90, 0.9) 55%, rgba(160, 90, 60, 0.9));
+  box-shadow: 0 0 0 6px rgba(232, 184, 119, 0.14), 0 0 34px rgba(246, 168, 107, 0.55);
+}
+body[data-theme="concourse"] .hail-ring { border-radius: 50%; clip-path: none; box-shadow: inset 0 0 0 1px rgba(232, 184, 119, 0.5); }
+body[data-theme="concourse"] .btn.primary { clip-path: inset(0 round 14px); background: #E8B877; color: #1A1226; }
+body[data-theme="concourse"] .modal { clip-path: inset(0 round 18px); backdrop-filter: blur(26px) saturate(1.3); }
+/* Alert: a gate announcement. */
+body[data-theme="concourse"] .alert-strip { clip-path: inset(0 round 18px); backdrop-filter: blur(20px); box-shadow: inset 0 0 0 1px rgba(232, 184, 119, 0.5), 0 10px 40px rgba(0, 0, 0, 0.6); }
+body[data-theme="concourse"] .alert-strip:is([data-type="alarm"], [data-type="pastdue"]) { background: linear-gradient(180deg, rgba(90, 40, 30, 0.85), rgba(30, 16, 30, 0.95)); box-shadow: inset 0 0 0 1.5px #F6A86B, 0 0 40px rgba(246, 168, 107, 0.35); }
+body[data-theme="concourse"] .al-dot { border-radius: 50%; }
+
+/* ---------- Spire: a canyon of rust-orange megastructures at dusk ---------- */
+body[data-theme="spire"] {
+  --frame: rgba(26, 18, 32, var(--frame-alpha));
+  --panel: linear-gradient(180deg, rgba(40, 24, 44, 0.42), rgba(18, 10, 22, 0.6)); --panel-solid: #1E1226; --bone-panel: rgba(30, 18, 36, 0.96);
+  --line: rgba(255, 190, 150, 0.16); --line-2: rgba(255, 190, 150, 0.1); --line-3: rgba(255, 190, 150, 0.3); --ctl-line: rgba(255, 190, 150, 0.26);
+  --text: #F6ECEF; --text-hi: #FFFFFF; --text-2: #E4D6DE; --muted: #C3AFC6; --muted-2: #A893AE; --dim: #7A6680;
+  --amber: #FFB25C; --accent-rgb: 255, 178, 92; --accent-hi: #FFE0B0;
+  --peach: #E2733A; --peach-rgb: 226, 115, 58;
+  --lav: #C9D6FF; --lav-rgb: 201, 214, 255;
+  --coral: #FF6A55; --coral-rgb: 255, 106, 85; --coral-hi: #FFB8AA;
+  --lime: #9FE0B0; --lime-rgb: 159, 224, 176; --pink: #E6A9D8; --teal: #9FD8E8; --teal-rgb: 159, 216, 232;
+  --ink-rgb: 246, 236, 239;
+  --modal-bg: rgba(24, 14, 28, 0.97); --sel-bg: #1E1226; --alert-bg: rgba(24, 14, 28, 0.97);
+  --chamfer: inset(0 round 4px); --chamfer-lg: inset(0 round 6px); --oct: circle(50%);
+}
+body[data-theme="spire"] .deck-header { margin: 0 -16px; padding: 0 22px; height: 46px; }
+body[data-theme="spire"] .brand > svg { color: #E2733A; }
+body[data-theme="spire"] .brand-name { font: 600 18px/1 'Antonio', sans-serif; letter-spacing: 0.24em; }
+body[data-theme="spire"] .brand-op { font: 400 14px/1 'Antonio', sans-serif; letter-spacing: 0.2em; color: #FFB25C; }
+body[data-theme="spire"] .seg { border-radius: 4px; background: rgba(18, 10, 22, 0.6); backdrop-filter: blur(12px); box-shadow: inset 0 0 0 1px rgba(255, 190, 150, 0.16); }
+body[data-theme="spire"] .seg button { font: 400 13px/1 'Antonio', sans-serif; letter-spacing: 0.16em; }
+body[data-theme="spire"]:not([data-frame="bone"]) .seg button.on { background: #E2733A; color: #1A0A06; box-shadow: none; }
+body[data-theme="spire"] .panel {
+  clip-path: none; border-radius: 4px; background: var(--panel);
+  backdrop-filter: blur(16px) saturate(1.3);
+  box-shadow: inset 0 0 0 1px rgba(255, 190, 150, 0.16), inset 3px 0 0 #E2733A, 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+body[data-theme="spire"] .panel .br { display: none; }
+body[data-theme="spire"] .p-head { font: 400 14px/1 'Antonio', sans-serif; letter-spacing: 0.18em; color: #FFB25C; text-transform: uppercase; }
+body[data-theme="spire"] .p-head :is(.live, .p-meta, .p-sub) { color: var(--muted); }
+body[data-theme="spire"] .panel[aria-label="Task queue"] { container-type: inline-size; }
+@container (min-width: 520px) { body[data-theme="spire"] .tk-head > span:first-child::after { content: ' WORK ORDERS'; } }
+body[data-theme="spire"] .clk-time { font-weight: 200; letter-spacing: -0.01em; text-shadow: 0 4px 40px rgba(30, 10, 40, 0.6); }
+body[data-theme="spire"] .clk-day { color: #FFB25C; letter-spacing: 0.16em; font-family: 'Antonio', sans-serif; }
+body[data-theme="spire"] .clk-date { font-family: 'Antonio', sans-serif; letter-spacing: 0.16em; color: var(--text); }
+body[data-theme="spire"] .hail { border-radius: 50%; clip-path: none; color: #FFE0C8; background: radial-gradient(circle, rgba(226, 115, 58, 0.35), rgba(18, 10, 22, 0.7) 70%); box-shadow: inset 0 0 0 2px #E2733A, 0 0 18px rgba(226, 115, 58, 0.5); }
+body[data-theme="spire"] .hail-ring { border-radius: 50%; clip-path: none; box-shadow: inset 0 0 0 1px rgba(226, 115, 58, 0.5); }
+body[data-theme="spire"] .btn.primary { clip-path: inset(0 round 3px); background: #E2733A; color: #1A0A06; }
+body[data-theme="spire"] .modal { clip-path: inset(0 round 6px); }
+body[data-theme="spire"] .alert-strip { clip-path: inset(0 round 4px); box-shadow: inset 0 0 0 1px rgba(255, 190, 150, 0.3), inset 4px 0 0 #E2733A, 0 10px 40px rgba(0, 0, 0, 0.6); }
+body[data-theme="spire"] .alert-strip:is([data-type="alarm"], [data-type="pastdue"]) { background: linear-gradient(90deg, rgba(120, 30, 24, 0.9), rgba(30, 14, 24, 0.95)); box-shadow: inset 0 0 0 1px #FF6A55, inset 6px 0 0 #FF4A3A, 0 0 40px rgba(255, 74, 58, 0.35); }
+
+/* ---------- Skyline: a penthouse office at night over a teal neon megacity ---------- */
+body[data-theme="skyline"] {
+  --frame: rgba(3, 8, 18, var(--frame-alpha));
+  --panel: linear-gradient(180deg, rgba(20, 90, 100, 0.22), rgba(6, 24, 36, 0.5)); --panel-solid: #06202A; --bone-panel: rgba(6, 28, 36, 0.96);
+  --line: rgba(120, 255, 240, 0.3); --line-2: rgba(120, 255, 240, 0.14); --line-3: rgba(120, 255, 240, 0.42); --ctl-line: rgba(120, 255, 240, 0.36);
+  --text: #DFFDF8; --text-hi: #F2FFFD; --text-2: #BEE9E4; --muted: #8CC8D0; --muted-2: #7AB3BB; --dim: #4F7A80;
+  --amber: #7FF5E3; --accent-rgb: 127, 245, 227; --accent-hi: #D8FFF9;
+  --peach: #FFB45C; --peach-rgb: 255, 180, 92;
+  --lav: #9FB8FF; --lav-rgb: 159, 184, 255;
+  --coral: #FF8AC0; --coral-rgb: 255, 138, 192; --coral-hi: #FFC4DF;
+  --lime: #5CFF9A; --lime-rgb: 92, 255, 154; --pink: #FF8AC0; --teal: #7FF5E3; --teal-rgb: 127, 245, 227;
+  --ink-rgb: 223, 253, 248;
+  --modal-bg: rgba(4, 18, 26, 0.97); --sel-bg: #06202A; --alert-bg: rgba(4, 18, 26, 0.97);
+  --chamfer: inset(0 round 3px); --chamfer-lg: inset(0 round 4px); --oct: circle(50%);
+}
+body[data-theme="skyline"] .deck-header { margin: 0 -16px; padding: 0 22px; height: 46px; }
+body[data-theme="skyline"] .brand-name { font: 600 17px/1 'Rajdhani', sans-serif; letter-spacing: 0.3em; text-shadow: 0 0 10px rgba(127, 245, 227, 0.5); }
+body[data-theme="skyline"] .brand-op { font-family: 'JetBrains Mono', monospace; color: var(--muted); }
+body[data-theme="skyline"] .seg { border-radius: 3px; background: rgba(4, 22, 30, 0.6); backdrop-filter: blur(10px); box-shadow: inset 0 0 0 1px rgba(120, 255, 240, 0.3); }
+body[data-theme="skyline"]:not([data-frame="bone"]) .seg button.on { background: rgba(127, 245, 227, 0.2); color: #DFFDF8; box-shadow: inset 0 0 0 1px #7FF5E3; text-shadow: 0 0 8px rgba(127, 245, 227, 0.6); }
+/* Panels drawn as holograms: teal glass, scan lines, a soft glow. */
+body[data-theme="skyline"] .panel {
+  clip-path: none; border-radius: 3px; background: var(--panel); text-shadow: 0 0 8px rgba(120, 255, 240, 0.25);
+  backdrop-filter: blur(10px) saturate(1.3);
+  box-shadow: inset 0 0 0 1px rgba(120, 255, 240, 0.35), 0 0 24px rgba(80, 230, 220, 0.18);
+}
+body[data-theme="skyline"] .panel::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(120, 255, 240, 0.05) 0 1px, transparent 1px 3px); }
+body[data-theme="skyline"] .panel .br { border-color: #7FF5E3; }
+body[data-theme="skyline"] .p-head { font: 600 13px/1 'Rajdhani', sans-serif; letter-spacing: 0.22em; color: #7FF5E3; }
+body[data-theme="skyline"] .p-head :is(.live, .p-meta, .p-sub) { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
+body[data-theme="skyline"] .clk-time { font-weight: 300; color: #E9FFFC; text-shadow: 0 0 24px rgba(127, 245, 227, 0.45); }
+body[data-theme="skyline"] .clk-sec { font-family: 'JetBrains Mono', monospace; color: #7FF5E3; }
+body[data-theme="skyline"] .clk-day { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.2em; color: #7FF5E3; }
+/* The assistant: a glowing teal orb. */
+body[data-theme="skyline"] .hail { border-radius: 50%; clip-path: none; color: #04242A; background: radial-gradient(circle at 45% 40%, rgba(220, 255, 250, 0.95), rgba(127, 245, 227, 0.7) 40%, rgba(40, 160, 170, 0.2) 72%); box-shadow: 0 0 30px rgba(127, 245, 227, 0.7), 0 22px 30px -10px rgba(127, 245, 227, 0.5); }
+body[data-theme="skyline"] .hail-ring { border-radius: 50%; clip-path: none; box-shadow: inset 0 0 0 1px rgba(127, 245, 227, 0.5); }
+body[data-theme="skyline"] .btn.primary { clip-path: inset(0 round 3px); background: #7FF5E3; color: #04242A; }
+body[data-theme="skyline"] .alert-strip { clip-path: inset(0 round 3px); box-shadow: inset 0 0 0 1px rgba(127, 245, 227, 0.5), 0 0 30px rgba(80, 230, 220, 0.25); }
+body[data-theme="skyline"] .alert-strip:is([data-type="alarm"], [data-type="pastdue"]) { background: linear-gradient(180deg, rgba(90, 20, 60, 0.85), rgba(10, 16, 30, 0.95)); box-shadow: inset 0 0 0 1px #FF8AC0, 0 0 40px rgba(255, 138, 192, 0.4); }
+body[data-theme="skyline"] .al-dot { border-radius: 50%; }
+
+/* ---------- Silvan: elven twilight; panels are Moon Arches with a leaf at the crown ---------- */
+body[data-theme="silvan"] {
+  --frame: rgba(11, 21, 23, var(--frame-alpha));
+  --panel: linear-gradient(180deg, rgba(14, 32, 32, 0.5), rgba(6, 16, 18, 0.7)); --panel-solid: #0E2020; --bone-panel: rgba(14, 32, 32, 0.96);
+  --line: rgba(217, 194, 126, 0.3); --line-2: rgba(217, 194, 126, 0.15); --line-3: rgba(217, 194, 126, 0.45); --ctl-line: rgba(217, 194, 126, 0.4);
+  --text: #E3EAE4; --text-hi: #F6F2E2; --text-2: #C8D4CC; --muted: #A9BDB0; --muted-2: #93A99B; --dim: #5E7468;
+  --amber: #D9C27E; --accent-rgb: 217, 194, 126; --accent-hi: #F6F2E2;
+  --peach: #E5B07A; --peach-rgb: 229, 176, 122;
+  --lav: #8FB0C4; --lav-rgb: 143, 176, 196;
+  --coral: #E58A6B; --coral-rgb: 229, 138, 107; --coral-hi: #F4C2B0;
+  --lime: #9FC2A0; --lime-rgb: 159, 194, 160; --pink: #D9A9C6; --teal: #9FC2A0; --teal-rgb: 159, 194, 160;
+  --ink-rgb: 227, 234, 228;
+  --modal-bg: rgba(10, 22, 24, 0.97); --sel-bg: #0E2020; --alert-bg: rgba(10, 22, 24, 0.97);
+  --chamfer: inset(0 round 30px 30px 8px 8px); --chamfer-lg: inset(0 round 18px); --oct: circle(50%);
+  --sv-sc: 'Cormorant SC', Georgia, serif;
+}
+body[data-theme="silvan"] { font-variant-numeric: lining-nums; }
+body[data-theme="silvan"] .deck-header { margin: 0 -16px; padding: 0 24px; height: 48px; }
+body[data-theme="silvan"] .brand > svg { display: none; }
+body[data-theme="silvan"] .brand::before { content: ''; width: 26px; height: 26px; flex-shrink: 0; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-13 -13 26 26'%3E%3Cpath d='M0 -11 C 8 -6 8 6 0 11 C -8 6 -8 -6 0 -11 Z' fill='none' stroke='%23D9C27E' stroke-width='1.2'/%3E%3Cpath d='M0 -11 V11' stroke='%23D9C27E' stroke-width='0.8'/%3E%3C/svg%3E") center / contain no-repeat; }
+body[data-theme="silvan"] .brand-name { font: 600 17px/1 var(--sv-sc); letter-spacing: 0.3em; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.7); }
+body[data-theme="silvan"] .brand-op { font: italic 400 15px/1 'Cormorant Garamond', serif; letter-spacing: 0; text-transform: none; color: var(--muted); }
+body[data-theme="silvan"] .seg { border-radius: 22px; padding: 3px; background: rgba(6, 16, 18, 0.6); backdrop-filter: blur(10px); box-shadow: inset 0 0 0 1px rgba(217, 194, 126, 0.4); }
+body[data-theme="silvan"] .seg button { border-radius: 18px; font: 600 13px/1 var(--sv-sc); letter-spacing: 0.12em; }
+body[data-theme="silvan"]:not([data-frame="bone"]) .seg button.on { background: #D9C27E; color: #0B1517; box-shadow: none; }
+body[data-theme="silvan"] :is(.layout-chip, .upd-chip, .accent-btn, .ghost-btn, .mini-btn, .al-btn, .icon-btn) { border-radius: 16px; }
+body[data-theme="silvan"] .panel {
+  clip-path: none; overflow: visible; border-radius: 30px 30px 8px 8px; background: var(--panel); padding-top: 22px;
+  backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow: inset 0 0 0 1px rgba(217, 194, 126, 0.55), inset 0 0 0 5px rgba(6, 16, 18, 0), inset 0 0 0 6px rgba(217, 194, 126, 0.2), 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+body[data-theme="silvan"] .panel .br { display: none; }
+/* The leaf at the crown of each arch. */
+body[data-theme="silvan"] .panel::before {
+  content: ''; position: absolute; left: 50%; top: -9px; width: 30px; height: 18px; margin-left: -15px; z-index: 2; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-15 -9 30 18'%3E%3Cpath d='M-14 0 C -6 -8 6 -8 14 0 C 6 8 -6 8 -14 0 Z' fill='%230B1517' stroke='%23D9C27E' stroke-width='1.2'/%3E%3Cpath d='M-10 0 H10' stroke='%23D9C27E' stroke-width='0.8'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+body[data-theme="silvan"] .p-head {  font: 600 15px/1 var(--sv-sc); letter-spacing: 0.14em; color: #D9C27E; text-transform: none; }
+body[data-theme="silvan"] .p-head :is(.live, .p-meta, .p-sub) { font: italic 400 14px/1 'Cormorant Garamond', serif; letter-spacing: 0; color: var(--muted); }
+body[data-theme="silvan"] .panel:not([aria-label="Task queue"]) .p-head { justify-content: center; }
+body[data-theme="silvan"] .panel:not([aria-label="Task queue"]) .p-head > :not(.p-label) { position: absolute; right: 20px; }
+body[data-theme="silvan"] .panel[aria-label="Task queue"] { container-type: inline-size; }
+@container (min-width: 520px) { body[data-theme="silvan"] .tk-head > span:first-child::after { content: ' Quests'; } }
+body[data-theme="silvan"] .clk-time { font-weight: 500; color: #F6F2E2; text-shadow: 0 0 20px rgba(220, 230, 255, 0.25); }
+body[data-theme="silvan"] .clk-ampm { font-family: var(--sv-sc); text-transform: lowercase; letter-spacing: 0.1em; }
+body[data-theme="silvan"] .clk-day { font: italic 400 20px/1.25 'Cormorant Garamond', serif; letter-spacing: 0; text-transform: none; color: var(--text); }
+body[data-theme="silvan"] .clk-date { font: italic 400 15px/1.3 'Cormorant Garamond', serif; letter-spacing: 0; text-transform: none; color: var(--muted); }
+body[data-theme="silvan"] .cycle-bar { gap: 0; height: 1px; margin-top: 12px; background: rgba(217, 194, 126, 0.25); }
+body[data-theme="silvan"] .cycle-bar i { height: 1px; background: transparent; }
+body[data-theme="silvan"] .cycle-bar i.on { background: #D9C27E; }
+body[data-theme="silvan"] .hail { border-radius: 50%; clip-path: none; color: #F6F2E2; background: radial-gradient(circle, rgba(255, 214, 130, 0.35), rgba(6, 16, 18, 0.7) 70%); box-shadow: inset 0 0 0 1.5px #D9C27E, 0 0 18px rgba(255, 200, 110, 0.45); }
+body[data-theme="silvan"] .hail-ring { border-radius: 50%; clip-path: none; box-shadow: inset 0 0 0 1px rgba(217, 194, 126, 0.5); }
+body[data-theme="silvan"] .btn.primary { clip-path: inset(0 round 16px); background: #D9C27E; color: #0B1517; }
+body[data-theme="silvan"] .modal { clip-path: inset(0 round 18px); backdrop-filter: blur(18px); }
+/* Lantern alert: a warm lantern glow that breathes until answered. */
+body[data-theme="silvan"] .alert-strip { clip-path: inset(0 round 18px); box-shadow: inset 0 0 0 1px rgba(217, 194, 126, 0.55), 0 10px 40px rgba(0, 0, 0, 0.6); }
+body[data-theme="silvan"] .alert-strip:is([data-type="alarm"], [data-type="pastdue"]) { background: radial-gradient(ellipse 60% 140% at 10% 50%, rgba(255, 190, 90, 0.3), transparent 70%), rgba(10, 22, 24, 0.97); box-shadow: inset 0 0 0 1px #E5B07A, 0 0 40px rgba(255, 190, 90, 0.35); }
+body[data-theme="silvan"] .al-dot { width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle, #FFE7A0, #E5B07A 45%, rgba(229, 176, 122, 0) 72%); box-shadow: 0 0 14px rgba(255, 210, 120, 0.8); }
+.motion-full[data-theme="silvan"] .al-dot, .motion-subtle[data-theme="silvan"] .al-dot { animation: svLantern 2.4s ease-in-out infinite; }
+@keyframes svLantern { 0%, 100% { opacity: 1; transform: scale(1); } 45% { opacity: 0.7; transform: scale(0.88); } 60% { opacity: 0.95; } }

@@ -37,7 +37,7 @@ const DEFAULTS = {
     voiceFxStrength: 60, // 0–100: dry voice → full effect
     humor: 40, // 0–100: strictly professional → dry and deadpan
     micPatience: 'normal', // how long the mic waits after you stop talking: short | normal | long
-    theme: 'dusk', // dusk | space | red | terminal | retro | moonbase | blueprint | cryo | freighter | skydock | vector | horizon
+    theme: 'dusk', // dusk | space | red | terminal | retro | moonbase | blueprint | cryo | freighter | skydock | vector | horizon | hivis | concourse | spire | skyline | silvan
     themeFavs: null, // starred themes shown in Settings (null = all); shared with Field Unit
     themeFavsAt: 0,
     ink: 'theme', // theme | amber | phosphor | ice | arctic | rose (main text color)

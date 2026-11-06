@@ -1,0 +1,42 @@
+# Deck screenshots for design checks (cloud sessions can't install Electron).
+# Push work in progress to the "shots" branch with tools/shots.json listing the combos
+# (see tools/deck-shots.js); the pictures land on the "shots-out" branch.
+name: Deck shots
+
+on:
+  push:
+    branches: [shots]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deck-shots
+  cancel-in-progress: true
+
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TZ: America/Los_Angeles
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: sudo apt-get update -q && sudo apt-get install -y -q xvfb
+      - name: Screenshots
+        run: |
+          export COMBOS="$(node -p "JSON.stringify(require('./tools/shots.json').combos)")"
+          export SEED="$(node -p "require('./tools/shots.json').seed || ''")"
+          export SIZE="$(node -p "require('./tools/shots.json').size || '1440x900'")"
+          xvfb-run -a -s "-screen 0 2600x1500x24" npx electron --no-sandbox --disable-gpu-sandbox tools/deck-shots.js 2>&1 | grep -v -i "dbus\|libva" | tail -40
+      - name: Publish to shots-out
+        run: |
+          mkdir -p /tmp/out && cp tools/out/deck/*.png /tmp/out/ && echo "$GITHUB_SHA" > /tmp/out/SHA
+          cd /tmp/out && git init -q && git checkout -q -b shots-out && git add -A
+          git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m "Deck shots for $GITHUB_SHA"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" shots-out

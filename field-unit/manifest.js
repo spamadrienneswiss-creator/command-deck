@@ -3,6 +3,7 @@
 // Opened from a link like https://…/m#<token>. No app or account:
 // the long token in the link is the key to this one project.
 // ============================================================
+import { mountScene, isScene } from './lib/scenes.js';
 import * as fb from './lib/core.js';
 import { startFirebase, signIn, makeId } from './lib/sync.js';
 import { LEVELS } from './lib/manifest.js';
@@ -12,7 +13,7 @@ import { bootScreen } from './boot.js';
 const boot = bootScreen();
 
 const { $, esc } = U;
-const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody' };
+const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody', concourse: 'outfit', spire: 'antonio', skyline: 'rajmono', silvan: 'cormorant' };
 
 const P = {
   token: (location.hash || '').replace(/^#/, '').replace(/[^A-Za-z0-9]/g, ''),
@@ -68,6 +69,8 @@ function applyLook() {
   b.dataset.ink = lk.ink || 'theme';
   b.dataset.trim = lk.trim || 'none';
   if (theme === 'moonbase' || theme === 'cryo' || theme === 'skydock') b.dataset.light = '1'; else delete b.dataset.light;
+  mountScene(document.body, theme, { base: '/scenes/', phone: true });
+  if (isScene(theme)) b.dataset.scene = theme; else delete b.dataset.scene;
 }
 
 function sortTasks(list) {

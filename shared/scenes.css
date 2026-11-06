@@ -1,0 +1,91 @@
+/* ============================================================
+   Painted themes: the backdrop and its live layers (shared/scenes.js).
+   Used by the deck, Field Unit and the shared-link pages.
+   Motion: layers only move with motion on (deck: .motion-full / .motion-subtle;
+   phone and links: always, unless the device asks for reduced motion).
+   ============================================================ */
+.scene { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: -1; container-type: size; background: #0B0A12; }
+.scene-stage { position: absolute; top: 50%; width: max(100cqw, 177.78cqh); aspect-ratio: 16 / 9; left: calc((100cqw - max(100cqw, 177.78cqh)) * var(--fx, 0.5)); transform: translateY(-50%); container-type: size; }
+.scene-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 62% 40%; }
+.scene-stage > i { position: absolute; display: block; font-style: normal; }
+.scene-shade { position: absolute; inset: 0; }
+.scene-stage > i, .scene-img { animation-delay: var(--d, 0s); animation-duration: var(--s, 4s); }
+
+/* ---------- Concourse: starport lounge at dusk ---------- */
+.sc-concourse .scene-img { animation: scDrift 60s ease-in-out infinite alternate; }
+@keyframes scDrift { from { transform: scale(1) translateX(0); } to { transform: scale(1.045) translateX(-0.9%); } }
+.sc-concourse .cc-sun { aspect-ratio: 1; margin: -13% 0 0 -13%; border-radius: 50%; background: radial-gradient(circle, rgba(255, 214, 150, 0.55), rgba(255, 150, 80, 0.18) 35%, rgba(255, 120, 60, 0) 70%); mix-blend-mode: screen; animation: ccSun 9s ease-in-out infinite; }
+@keyframes ccSun { 0%, 100% { opacity: 0.75; } 50% { opacity: 1; } }
+.sc-concourse .cc-eng { aspect-ratio: 1; margin: -1.375% 0 0 -1.375%; border-radius: 50%; background: radial-gradient(circle, #FFFFFF 0, rgba(150, 200, 255, 0.9) 18%, rgba(90, 140, 255, 0) 70%); mix-blend-mode: screen; animation: ccEng 2.4s ease-in-out infinite; animation-delay: var(--d, 0s); }
+@keyframes ccEng { 0%, 100% { opacity: 0.7; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.15); } }
+.sc-concourse .cc-ship { height: 2px; border-radius: 2px; background: linear-gradient(90deg, #FFFFFF, rgba(150, 200, 255, 0.9) 8%, rgba(120, 170, 255, 0) 100%); box-shadow: 0 0 6px rgba(170, 210, 255, 0.9); animation: ccFlyL var(--s, 34s) linear infinite var(--d, 0s); }
+.sc-concourse .cc-ship::before { content: ""; position: absolute; left: -3px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 0 10px 3px rgba(190, 220, 255, 0.9); }
+.sc-concourse .cc-ship.cc-r { animation-name: ccFlyR; }
+@keyframes ccFlyL { from { transform: translate(102cqw, 0); } to { transform: translate(-16cqw, -7.8cqh); } }
+@keyframes ccFlyR { from { transform: translate(-16cqw, 0) scaleX(-1); } to { transform: translate(102cqw, 4.4cqh) scaleX(-1); } }
+.sc-concourse .cc-tw { width: 3px; height: 3px; border-radius: 50%; background: #FFD9A0; box-shadow: 0 0 6px 1px rgba(255, 200, 120, 0.9); animation: ccTw var(--s, 3.2s) ease-in-out infinite var(--d, 0s); }
+@keyframes ccTw { 0%, 100% { opacity: 0.15; } 50% { opacity: 1; } }
+.sc-concourse .cc-mote { width: 4px; height: 4px; border-radius: 50%; background: rgba(255, 230, 200, 0.5); filter: blur(1px); animation: ccMote var(--s, 22s) linear infinite var(--d, 0s); }
+@keyframes ccMote { from { transform: translateY(0); opacity: 0; } 15% { opacity: 0.8; } to { transform: translateY(-29cqh); opacity: 0; } }
+.scene[data-scene="concourse"] .scene-shade { background: linear-gradient(180deg, rgba(8, 6, 18, 0.25), rgba(8, 6, 18, 0) 30%, rgba(8, 6, 18, 0) 55%, rgba(8, 6, 18, 0.5)); }
+
+/* ---------- Spire: a canyon of rust-orange megastructures at dusk ---------- */
+.sc-spire .scene-img { transform-origin: 70% 40%; animation: spDrift 60s ease-in-out infinite alternate; }
+@keyframes spDrift { from { transform: scale(1); } to { transform: scale(1.045) translate(-0.6%, 0.4%); } }
+.sc-spire .sp-steam { aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(255, 240, 240, 0.55), rgba(255, 240, 240, 0) 70%); filter: blur(4px); animation: spSteam var(--s, 5s) ease-out infinite var(--d, 0s); }
+@keyframes spSteam { from { transform: translate(0, 0) scale(0.5); opacity: 0; } 25% { opacity: 0.9; } to { transform: translate(1.1cqw, -10cqh) scale(2.2); opacity: 0; } }
+.sc-spire .sp-red { width: 5px; height: 5px; margin: -2px; border-radius: 50%; background: #FF4A3A; box-shadow: 0 0 10px 3px rgba(255, 70, 50, 0.8); animation: spBlink 1.4s steps(1) infinite var(--d, 0s); }
+@keyframes spBlink { 50% { opacity: 0.1; } }
+.sc-spire .sp-craft { width: 12px; height: 3px; border-radius: 2px; background: #C9D6FF; box-shadow: 0 0 8px rgba(150, 180, 255, 0.9); animation: spK1 var(--s, 30s) linear infinite var(--d, 0s); }
+.sc-spire .sp-craft.sm { width: 8px; }
+.sc-spire .sp-k2 { animation-name: spK2; }
+@keyframes spK1 { from { transform: translate(0, 0); } to { transform: translate(-43.75cqw, 28.9cqh); } }
+@keyframes spK2 { from { transform: translate(0, 0); } to { transform: translate(32.5cqw, -20cqh); } }
+.sc-spire .sp-fog { border-radius: 50%; background: radial-gradient(ellipse, rgba(200, 170, 220, 0.6), rgba(200, 170, 220, 0) 70%); filter: blur(10px); animation: spFog var(--s, 80s) linear infinite var(--d, 0s); }
+@keyframes spFog { from { transform: translateX(-30cqw); } to { transform: translateX(112cqw); } }
+.scene[data-scene="spire"] .scene-shade { background: linear-gradient(180deg, rgba(30, 18, 36, 0.2), rgba(30, 18, 36, 0) 30%, rgba(30, 18, 36, 0) 60%, rgba(30, 18, 36, 0.55)); }
+
+/* ---------- Skyline: a penthouse office over a teal neon megacity ---------- */
+.sc-skyline .scene-img { transform-origin: 45% 35%; animation: skDrift 60s ease-in-out infinite alternate; }
+@keyframes skDrift { from { transform: scale(1); } to { transform: scale(1.035) translateX(-0.5%); } }
+.sc-skyline .sk-aur { background: linear-gradient(100deg, transparent 30%, rgba(120, 255, 200, 0.12) 40%, rgba(180, 120, 255, 0.12) 48%, rgba(255, 140, 200, 0.08) 54%, transparent 64%); mix-blend-mode: screen; filter: blur(18px); animation: skAur var(--s, 22s) ease-in-out infinite alternate; }
+@keyframes skAur { from { transform: translateX(-12.5cqw) skewY(-4deg); } to { transform: translateX(12.5cqw) skewY(3deg); } }
+.sc-skyline .sk-holo { mix-blend-mode: screen; background: repeating-linear-gradient(0deg, rgba(120, 255, 240, 0.08) 0 1px, transparent 1px 4px), linear-gradient(180deg, transparent 0, rgba(140, 255, 240, 0.25) 48%, transparent 52%) 0 0 / 100% 300% no-repeat; animation: skScan 4s linear infinite, skFl 3s steps(1) infinite; animation-delay: var(--d, 0s), calc(var(--d, 0s) / 2); }
+@keyframes skScan { from { background-position: 0 0, 0 0; } to { background-position: 0 0, 0 100%; } }
+@keyframes skFl { 0%, 92%, 100% { opacity: 1; } 93% { opacity: 0.4; } 95% { opacity: 0.9; } 96% { opacity: 0.5; } }
+.sc-skyline .sk-car { width: 3px; height: 3px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 0 8px 2px rgba(120, 240, 255, 0.9); animation: skCar var(--s, 18s) linear infinite var(--d, 0s); }
+.sc-skyline .sk-car::after { content: ""; position: absolute; left: 3px; top: 1px; width: 26px; height: 1px; background: linear-gradient(90deg, rgba(120, 240, 255, 0.8), transparent); }
+@keyframes skCar { from { transform: translateX(92cqw); } to { transform: translateX(-12cqw); } }
+.sc-skyline .sk-led { width: 3px; height: 3px; border-radius: 1px; background: #5CFF9A; box-shadow: 0 0 4px #5CFF9A; animation: skLed var(--s, 1.2s) steps(1) infinite var(--d, 0s); }
+.sc-skyline .sk-led.k2 { background: #6FD8FF; box-shadow: 0 0 4px #6FD8FF; }
+.sc-skyline .sk-led.k3 { background: #FFB45C; box-shadow: 0 0 4px #FFB45C; }
+@keyframes skLed { 50% { opacity: 0.15; } }
+.scene[data-scene="skyline"] .scene-shade { background: linear-gradient(180deg, rgba(3, 8, 18, 0.15), rgba(3, 8, 18, 0) 40%, rgba(3, 8, 18, 0.5)); }
+
+/* ---------- Silvan: elven twilight through carved arches ---------- */
+.sc-silvan .scene-img { transform-origin: 62% 30%; animation: svDrift 80s ease-in-out infinite alternate; }
+@keyframes svDrift { from { transform: scale(1); } to { transform: scale(1.035) translateX(-0.4%); } }
+.sc-silvan .sc-moon { position: absolute; aspect-ratio: 1; transform: translate(-50%, -50%); overflow: visible; filter: blur(0.12cqw); }
+.sc-silvan .sc-moon path { fill: #33496F; opacity: 0.94; }
+.sc-silvan .sv-halo { aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, rgba(240, 236, 210, 0.32), rgba(200, 210, 240, 0.08) 45%, transparent 70%); mix-blend-mode: screen; animation: svHalo 9s ease-in-out infinite; }
+@keyframes svHalo { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+.sc-silvan .sv-fly { width: 4px; height: 4px; border-radius: 50%; background: #FFE7A0; box-shadow: 0 0 8px 3px rgba(255, 220, 130, 0.75); animation: svFly var(--s, 14s) ease-in-out infinite var(--d, 0s), svGlow 2.8s ease-in-out infinite var(--d, 0s); }
+@keyframes svFly { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(1.1cqw, -1.6cqh); } 50% { transform: translate(-0.5cqw, -2.9cqh); } 75% { transform: translate(-1.25cqw, -0.7cqh); } }
+@keyframes svGlow { 0%, 100% { opacity: 0.15; } 50% { opacity: 1; } }
+.sc-silvan .sv-lamp { aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, rgba(255, 210, 120, 0.5), rgba(255, 190, 90, 0) 65%); mix-blend-mode: screen; animation: svLamp 3.4s ease-in-out infinite var(--d, 0s); }
+@keyframes svLamp { 0%, 100% { opacity: 0.75; } 40% { opacity: 1; } 60% { opacity: 0.85; } }
+.sc-silvan .sv-fall { mix-blend-mode: screen; background: linear-gradient(180deg, transparent 0, rgba(235, 244, 255, 0.34) 45%, rgba(235, 244, 255, 0.1) 62%, transparent 100%) 0 0 / 100% 70px; filter: blur(2px); opacity: 0.8;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 28%, #000 72%, transparent), linear-gradient(180deg, transparent, #000 12%, #000 82%, transparent); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent, #000 28%, #000 72%, transparent), linear-gradient(180deg, transparent, #000 12%, #000 82%, transparent); mask-composite: intersect;
+  animation: svFall var(--s, 2.6s) linear infinite var(--d, 0s); }
+.sc-silvan .sv-fall.b { background-size: 100% 46px; opacity: 0.55; }
+@keyframes svFall { to { background-position: 0 140px; } }
+.sc-silvan .sv-spray { border-radius: 50%; background: radial-gradient(ellipse, rgba(230, 240, 255, 0.5), rgba(230, 240, 255, 0) 70%); filter: blur(6px); mix-blend-mode: screen; animation: svSpray var(--s, 3.2s) ease-in-out infinite var(--d, 0s); }
+@keyframes svSpray { 0%, 100% { opacity: 0.45; transform: scale(0.92); } 50% { opacity: 0.9; transform: scale(1.15); } }
+.sc-silvan .sv-mist { border-radius: 50%; background: radial-gradient(ellipse, rgba(200, 215, 240, 0.4), rgba(200, 215, 240, 0) 70%); filter: blur(10px); animation: svMist var(--s, 70s) linear infinite var(--d, 0s); }
+@keyframes svMist { from { transform: translateX(-12.5cqw); } to { transform: translateX(31cqw); } }
+.scene[data-scene="silvan"] .scene-shade { background: linear-gradient(180deg, rgba(6, 14, 16, 0.2), rgba(6, 14, 16, 0) 30%, rgba(6, 14, 16, 0) 60%, rgba(6, 14, 16, 0.55)); }
+
+/* Motion off: everything holds still (deck STILL, or the device asks for less motion). */
+.motion-still .scene *, .scene.still * { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .scene * { animation: none !important; } }

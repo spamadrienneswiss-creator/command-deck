@@ -16,7 +16,11 @@ const THEMES = [
   ['terminal', 'TERMINAL', ['#39FF88', '#1F3328']], ['retro', 'RETRO', ['#5EE7FF', '#FF7BD5']],
   ['moonbase', "MOONBASE '79", ['#F05A1A', '#E4E6E9']], ['blueprint', 'BLUEPRINT', ['#8EC5FF', '#0E2A47']],
   ['cryo', 'CRYO', ['#2D8CFF', '#D6E7F3']], ['freighter', 'FREIGHTER', ['#9CF2A8', '#E8C547']],
-  ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']], ['horizon', 'HORIZON', ['#F2C38B', '#FFF4E3']], ['hivis', 'HI-VIS', ['#C6F432', '#FF3D6E']]
+  ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']], ['horizon', 'HORIZON', ['#F2C38B', '#FFF4E3']], ['hivis', 'HI-VIS', ['#C6F432', '#FF3D6E']],
+  ['concourse', 'CONCOURSE', ['#E8B877', '#9FB8FF']],
+  ['spire', 'SPIRE', ['#E2733A', '#C3AFC6']],
+  ['skyline', 'SKYLINE', ['#7FF5E3', '#FF8AC0']],
+  ['silvan', 'SILVAN', ['#D9C27E', '#9FC2A0']]
 ];
 const FONTS = [
   ['auto', 'THEME DEFAULT', ''], ['chakra', 'CHAKRA', "'Chakra Petch'"], ['michroma', 'MICHROMA', "'Michroma'"],
@@ -87,7 +91,8 @@ function wirePills(container, onPick) {
 // Only starred themes show in Settings; ALL THEMES lists every one with a star to
 // keep it. Nothing is removed: unstarred themes stay installed. The list is shared
 // with Field Unit (meta/themes). null = never edited, so every theme shows.
-const THEME_BG = { dusk: '#14121A', space: '#070B14', red: '#140708', terminal: '#050A07', retro: '#0E0716', moonbase: '#E4E6E9', blueprint: '#0E2A47', cryo: '#D6E7F3', freighter: '#0B0F0A', skydock: '#F2F4F7', vector: '#0A0D12', horizon: '#0A0806', hivis: '#0B0B0B' };
+const PAINTED = new Set(['concourse', 'spire', 'skyline', 'silvan']);
+const THEME_BG = { dusk: '#14121A', space: '#070B14', red: '#140708', terminal: '#050A07', retro: '#0E0716', moonbase: '#E4E6E9', blueprint: '#0E2A47', cryo: '#D6E7F3', freighter: '#0B0F0A', skydock: '#F2F4F7', vector: '#0A0D12', horizon: '#0A0806', hivis: '#0B0B0B', concourse: '#241A33', spire: '#3A1E22', skyline: '#06202A', silvan: '#12282A' };
 export function themeFavs(s) {
   const all = THEMES.map((t) => t[0]);
   const favs = Array.isArray(s.themeFavs) ? s.themeFavs.filter((v) => all.includes(v)) : all;
@@ -115,7 +120,7 @@ export function wireThemeBox(box, draft) {
       <div class="th-grid">${THEMES.map(([v, l, cs]) => {
         const on = starred.includes(v) || v === cur;
         return `<div class="th-card${on ? ' fav' : ''}${cur === v ? ' cur' : ''}" style="--pc:${pc(cs)}">
-          <button type="button" class="th-try" data-pick="${v}" aria-label="Try ${l}"><span class="th-prev" style="background:${THEME_BG[v] || '#111'}"><b style="background:${cs[0]}"></b><u style="background:${cs[1]}"></u><u style="background:${cs[1]};width:34%"></u></span>
+          <button type="button" class="th-try" data-pick="${v}" aria-label="Try ${l}"><span class="th-prev" style="background:${PAINTED.has(v) ? `url(../assets/scenes/${v}.jpg) center / cover` : THEME_BG[v] || '#111'}"><b style="background:${cs[0]}"></b><u style="background:${cs[1]}"></u><u style="background:${cs[1]};width:34%"></u></span>
           <span class="th-name">${l}${cur === v ? '<em>IN USE</em>' : ''}</span></button>
           <button type="button" class="th-star" data-star="${v}" aria-pressed="${on}" aria-label="${on ? 'Unstar' : 'Star'} ${l}"${cur === v ? ' disabled' : ''}>${on ? '★' : '☆'}</button></div>`;
       }).join('')}</div>`;

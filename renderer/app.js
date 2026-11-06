@@ -9,11 +9,15 @@ import { initModals, openTaskEditor, openEventEditor, openNoteEditor, openRecap,
 import * as FU from './fieldunit.js';
 import * as Recap from './recap.js';
 import * as Motion from './motion.js';
+import { mountScene, isScene, moonWords } from '../shared/scenes.js';
+// "fourth", "twenty-first": Silvan's dates in words.
+const ORD = ['', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth', 'fourteenth', 'fifteenth', 'sixteenth', 'seventeenth', 'eighteenth', 'nineteenth', 'twentieth'];
+function dayWords(n) { return n <= 20 ? ORD[n] : n === 30 ? 'thirtieth' : n === 31 ? 'thirty-first' : `${n < 30 ? 'twenty' : 'thirty'}-${ORD[n % 10]}`; }
 import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ymd, parseYmd, typeOf, shortName, timeRange, parseTime, chipName } from '../shared/roster.js';
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.19.1';
+const VERSION = 'v1.20.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -153,14 +157,18 @@ function saveMeta() {
 
 // ---------------------------------------------------------------- settings
 // Each theme has its own typeface; the Typeface setting can override it.
-const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody' };
+const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody', concourse: 'outfit', spire: 'antonio', skyline: 'rajmono', silvan: 'cormorant' };
 const LIGHT_THEMES = new Set(['moonbase', 'cryo', 'skydock']);
 // Some themes rename panels to fit their world. Only the label text changes.
 const PANEL_NAMES = {
   skydock: { computer: '03 · STATION COMPUTER' },
   vector: { clock: 'PRIMARY · CHRONO', weather: 'EXTERNAL', computer: 'CO-PILOT', calendar: 'FLIGHT PLAN', events: 'WAYPOINTS', notes: 'LOGBOOK' },
   hivis: { clock: '01 / TIME', weather: '02 / ATMOS', computer: '03 / VOICE', calendar: '04 / CYCLE', events: '05 / NEXT', notes: '07 / MEMO' },
-  horizon: { clock: '01 · MISSION CLOCK', weather: '02 · CONDITIONS', calendar: '04 · MISSION CALENDAR', notes: '07 · FIELD NOTES' }
+  horizon: { clock: '01 · MISSION CLOCK', weather: '02 · CONDITIONS', calendar: '04 · MISSION CALENDAR', notes: '07 · FIELD NOTES' },
+  concourse: { clock: 'LOCAL TIME', weather: 'SURFACE CONDITIONS', computer: 'CONCIERGE', calendar: 'THE CALENDAR', events: 'DEPARTURES', notes: 'LOG' },
+  spire: { clock: 'LEVEL 1,180', weather: 'GROUND LEVEL', computer: 'SPIRE COMPUTER', calendar: 'ARRIVALS', events: 'NEXT ARRIVALS', notes: 'NOTES' },
+  skyline: { clock: 'LOCAL', weather: 'STREET LEVEL', computer: 'ASSISTANT', calendar: 'CALENDAR', events: 'UPCOMING', notes: 'NOTES' },
+  silvan: { clock: 'The Hour', weather: 'Sky & Wind', computer: 'Counsel', calendar: 'The Days', events: 'The Road Ahead', notes: 'Lore' }
 };
 function applyPanelNames(theme) {
   const names = PANEL_NAMES[theme] || {};
@@ -182,6 +190,9 @@ function applyLook(theme = look.theme, font = look.font, ink = look.ink) {
   b.dataset.theme = look.theme;
   b.dataset.font = look.font === 'auto' ? (THEME_FONT[look.theme] || 'chakra') : look.font;
   if (LIGHT_THEMES.has(look.theme)) b.dataset.light = '1'; else delete b.dataset.light;
+  // Painted themes: the backdrop painting and its live layers sit behind the panels.
+  mountScene($('#console'), look.theme, { base: '../assets/scenes/' });
+  if (isScene(look.theme)) b.dataset.scene = look.theme; else delete b.dataset.scene;
   applyPanelNames(look.theme);
 }
 
@@ -325,8 +336,14 @@ function renderClock(now = new Date()) {
     $('#clkHoleDot').setAttribute('transform', `rotate(${(turn * 360).toFixed(1)})`);
   }
   $('#clkAmpm').textContent = h24 ? '24H' : (now.getHours() < 12 ? 'AM' : 'PM');
-  $('#clkDay').textContent = U.DAY_FULL[now.getDay()].toUpperCase();
-  $('#clkDate').textContent = `${now.getDate()} ${U.MONTHS[now.getMonth()].toUpperCase()} ${now.getFullYear()}`;
+  if (look.theme === 'silvan') {
+    // Silvan writes the day out, and reads the real moon.
+    $('#clkDay').textContent = `${U.DAY_FULL[now.getDay()]}, the ${dayWords(now.getDate())} of ${U.MONTHS[now.getMonth()]}`;
+    $('#clkDate').textContent = moonWords(now);
+  } else {
+    $('#clkDay').textContent = U.DAY_FULL[now.getDay()].toUpperCase();
+    $('#clkDate').textContent = `${now.getDate()} ${U.MONTHS[now.getMonth()].toUpperCase()} ${now.getFullYear()}`;
+  }
   const mins = now.getHours() * 60 + now.getMinutes();
   const pct = Math.round(mins / 14.4);
   $('#cycPct').textContent = `${pct}%`;

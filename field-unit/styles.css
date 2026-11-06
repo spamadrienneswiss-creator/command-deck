@@ -1097,7 +1097,7 @@ body[data-theme="silvan"] {
   --chamfer: inset(0 round 26px 26px 8px 8px); --oct: circle(50%);
   --sv-sc: 'Cormorant SC', Georgia, serif;
 }
-body[data-theme="silvan"] { font-variant-numeric: lining-nums; }
+body[data-theme="silvan"], body[data-theme="silvan"] * { font-feature-settings: "lnum" 1; }
 body[data-theme="silvan"] .card { clip-path: none; overflow: visible; border-radius: 26px 26px 8px 8px; padding-top: 18px; -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: inset 0 0 0 1px rgba(217, 194, 126, 0.55), inset 0 0 0 6px rgba(217, 194, 126, 0.15), 0 16px 30px rgba(0, 0, 0, 0.45); }
 body[data-theme="silvan"] .card .br { display: none; }
 body[data-theme="silvan"] .card::before { content: ''; position: absolute; left: 50%; top: -8px; width: 26px; height: 16px; margin-left: -13px; z-index: 2; pointer-events: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-15 -9 30 18'%3E%3Cpath d='M-14 0 C -6 -8 6 -8 14 0 C 6 8 -6 8 -14 0 Z' fill='%230B1517' stroke='%23D9C27E' stroke-width='1.2'/%3E%3Cpath d='M-10 0 H10' stroke='%23D9C27E' stroke-width='0.8'/%3E%3C/svg%3E") center / contain no-repeat; }

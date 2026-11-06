@@ -17,7 +17,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.20.2';
+const VERSION = 'v1.21.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -2504,11 +2504,23 @@ let applyingLayout = false;
 function pageSettings() {
   const p = (S.settings && S.settings.pages) || {};
   const names = Array.isArray(p.names) ? p.names : [];
-  const tiles2 = Array.isArray(p.tiles2) && p.tiles2.length ? p.tiles2.filter((id) => PANEL_IDS.includes(id)) : ['clock', 'tasks', 'notes'];
-  return { names: [String(names[0] || 'MAIN').toUpperCase(), String(names[1] || 'WORK').toUpperCase()], tiles2 };
+  const pick = (list, dflt) => { const v = Array.isArray(list) ? list.filter((id) => PANEL_IDS.includes(id)) : []; return v.length ? v : dflt; };
+  // Page 1 shows every panel until its own list is picked (v1.21).
+  const tiles1 = pick(p.tiles1, PANEL_IDS.slice());
+  const tiles2 = pick(p.tiles2, ['clock', 'tasks', 'notes']);
+  return { names: [String(names[0] || 'MAIN').toUpperCase(), String(names[1] || 'WORK').toUpperCase()], tiles1, tiles2 };
 }
 function onPage(id, page = pageNow) {
-  return page === 1 || pageSettings().tiles2.includes(id);
+  const ps = pageSettings();
+  return (page === 2 ? ps.tiles2 : ps.tiles1).includes(id);
+}
+// Where each panel sits on a page in the standard layout (for the Settings preview).
+function pagePreview(page, tiles) {
+  const L = LAYOUTS.standard;
+  const key = page === 2 ? L.key2 : L.key;
+  const saved = Array.isArray(S.data[key]) && S.data[key].length ? Object.fromEntries(S.data[key].map((it) => [it.id, [it.x, it.y, it.w, it.h]])) : {};
+  const dflt = page === 2 ? L.defaults2 : L.defaults;
+  return { columns: L.columns, tiles: tiles.filter((id) => PANEL_IDS.includes(id)).map((id) => { const [x, y, w, h] = saved[id] || dflt[id]; return { id, x, y, w, h }; }) };
 }
 function layoutKey(mode = layoutNow || 'standard', page = pageNow) {
   return page === 2 ? LAYOUTS[mode].key2 : LAYOUTS[mode].key;
@@ -2588,7 +2600,7 @@ function applyLayout(force = false) {
   fitGrid();
 }
 
-/** Pages: page 1 is the whole deck, page 2 the panels picked in Settings › System › PAGES. */
+/** Pages: each page shows the panels picked for it in Settings › System › PAGES (page 1: all, until picked). */
 function setPage(n, { announce = false } = {}) {
   const page = n === 2 ? 2 : 1;
   if (page === pageNow) return false;
@@ -3029,6 +3041,7 @@ async function start() {
     previewOpacity: (v) => deck.setOpacity(v),
     previewDarkness: (v) => document.documentElement.style.setProperty('--frame-alpha', String(v)),
     previewTheme: (t) => applyLook(t, look.font),
+    pagePreview,
     previewFont: (f) => applyLook(look.theme, f),
     previewInk: (k) => applyLook(look.theme, look.font, k),
     THEME_FONT,

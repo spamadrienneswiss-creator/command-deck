@@ -200,11 +200,11 @@ Command Deck has two arrangements of the same panels. The **standard** layout su
 
 ### Pages
 
-The deck has two pages. **Page 1 (MAIN)** is the whole deck, as always. **Page 2 (WORK)** holds just the panels you pick, so they can be much bigger: by default a slim clock strip across the top with **Tasks** and **Notepad** filling the rest. Every tab still works on page 2 (QUEUE, PROJECTS and SCHEDULE on Tasks; NOTES and RECAPS on Notepad).
+The deck has two pages, and you pick the panels on each. **Page 1 (MAIN)** starts with the whole deck. **Page 2 (WORK)** starts with just a few, so they can be much bigger: by default a slim clock strip across the top with **Tasks** and **Notepad** filling the rest. Every tab still works on page 2 (QUEUE, PROJECTS and SCHEDULE on Tasks; NOTES and RECAPS on Notepad).
 
 - **Flip pages** with the **PAGE · 1 / 2** chip at the top, `Ctrl` + `1` / `Ctrl` + `2`, a quick sideways swipe on a touchscreen like the Xeneon Edge, or say *"page two"*, *"go to the work page"*, *"main page"*, *"next page"*.
-- **Settings › System › PAGES:** rename the pages and pick which panels are on page 2 (at least one).
-- Page 2 has its own arrangement, in both the standard and the Edge layout: unlock the layout there to drag and resize without touching page 1. The clock can shrink to a one-line strip on page 2.
+- **Settings › System › PAGES:** side by side for page 1 and page 2: rename each page, tap panels on or off (a panel can be on both; each page keeps at least one), with a small preview of how the page is laid out. Taking panels off page 1 leaves room: unlock the layout and stretch the rest to fill it.
+- Each page has its own arrangement, in both the standard and the Edge layout: unlock the layout there to drag and resize without touching page 1. The clock can shrink to a one-line strip on page 2.
 - The deck remembers which page you were on.
 
 ### Rig lighting (Corsair iCUE)

@@ -11,7 +11,7 @@ import * as P from './presence.js';
 import { mountScene, isScene } from './lib/scenes.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.20.2';
+const VERSION = 'v1.21.0';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;

@@ -1068,13 +1068,8 @@ export function openSettings(welcome = false) {
           <div class="pills" data-key="layoutMode">${pills([['auto', 'AUTO'], ['standard', 'STANDARD'], ['edge', 'XENEON EDGE']], draft.layoutMode || 'auto')}</div>
           <div class="f-hint">AUTO uses the Edge layout on a wide, short screen like the Xeneon Edge and the standard layout anywhere else, switching as you move the window. The <b>LAYOUT</b> chip at the top of the deck flips between the two on the spot. Each layout remembers its own panel arrangement.</div></div>
         <div class="f"><span class="f-label">PAGES</span>
-          <div class="f-row">
-            <div class="f"><label class="f-label" for="sPage1">PAGE 1 NAME</label><input id="sPage1" class="in" maxlength="12" value="${esc(((draft.pages || {}).names || [])[0] || 'MAIN')}"></div>
-            <div class="f"><label class="f-label" for="sPage2">PAGE 2 NAME</label><input id="sPage2" class="in" maxlength="12" value="${esc(((draft.pages || {}).names || [])[1] || 'WORK')}"></div>
-          </div>
-          <span class="f-label" style="margin-top:6px">PANELS ON PAGE 2</span>
-          <div class="pills" id="sTiles2">${PAGE_PANELS.map(([v, l]) => `<button type="button" class="pill${(((draft.pages || {}).tiles2) || ['clock', 'tasks', 'notes']).includes(v) ? ' on' : ''}" data-v="${v}" aria-pressed="${(((draft.pages || {}).tiles2) || ['clock', 'tasks', 'notes']).includes(v)}">${l}</button>`).join('')}</div>
-          <div class="f-hint">Page 1 always has every panel. Page 2 shows only the ones picked here, so they can be bigger: unlock the layout on page 2 and resize them. Flip pages with the <b>PAGE</b> chip at the top, <span class="kbd">Ctrl</span> + <span class="kbd">1</span> / <span class="kbd">2</span>, a sideways swipe on a touchscreen, or say "page two."</div></div>
+          <div class="pg-cols" id="pgCols"></div>
+          <div class="f-hint">Pick any panels for each page; a panel can sit on both, and each page keeps at least one. Each page remembers its own arrangement: unlock the layout on that page to move and resize. Flip pages with the <b>PAGE</b> chip at the top, <span class="kbd">Ctrl</span> + <span class="kbd">1</span> / <span class="kbd">2</span>, a sideways swipe on a touchscreen, or say "page two."</div></div>
         <div class="f"><span class="f-label">UPDATES</span>
           <div class="toggle-row"><span id="sUpd">${esc(app.updateInfo().text)}</span><button type="button" class="btn line" id="sUpdBtn">${app.updateInfo().state === 'ready' ? 'RESTART TO UPDATE' : 'CHECK NOW'}</button></div>
           <div class="f-hint">New versions download in the background. When one is ready, UPDATE READY appears at the top; tap it to restart, or it installs the next time Command Deck closes.</div></div>
@@ -1386,18 +1381,41 @@ export function openSettings(welcome = false) {
         });
       });
       draft.pages = { names: ['MAIN', 'WORK'], tiles2: ['clock', 'tasks', 'notes'], ...(draft.pages || {}) };
-      $('#sPage1', body).addEventListener('input', (e) => { draft.pages = { ...draft.pages, names: [e.target.value.trim().toUpperCase() || 'MAIN', draft.pages.names[1]] }; });
-      $('#sPage2', body).addEventListener('input', (e) => { draft.pages = { ...draft.pages, names: [draft.pages.names[0], e.target.value.trim().toUpperCase() || 'WORK'] }; });
-      $('#sTiles2', body).addEventListener('click', (e) => {
-        const b = e.target.closest('.pill');
-        if (!b) return;
-        app.sounds.click();
-        const set = new Set(draft.pages.tiles2);
-        if (set.has(b.dataset.v)) { if (set.size === 1) { app.toast('Page 2 needs at least one panel'); return; } set.delete(b.dataset.v); } else set.add(b.dataset.v);
-        draft.pages = { ...draft.pages, tiles2: PAGE_PANELS.map(([v]) => v).filter((v) => set.has(v)) };
-        b.classList.toggle('on', set.has(b.dataset.v));
-        b.setAttribute('aria-pressed', String(set.has(b.dataset.v)));
+      if (!Array.isArray(draft.pages.tiles1) || !draft.pages.tiles1.length) draft.pages = { ...draft.pages, tiles1: PAGE_PANELS.map(([v]) => v) };
+      const pgBox = $('#pgCols', body);
+      const label = Object.fromEntries(PAGE_PANELS);
+      const drawPages = () => {
+        pgBox.innerHTML = [1, 2].map((n) => {
+          const tiles = draft.pages[`tiles${n}`];
+          const pv = app.pagePreview(n, tiles);
+          const rows = Math.max(1, ...pv.tiles.map((t) => t.y + t.h));
+          return `<div class="pg-col">
+            <div class="pg-top"><span class="f-label pg-n">PAGE ${n}</span><input class="in" data-pg-name="${n}" maxlength="12" aria-label="Page ${n} name" value="${esc(draft.pages.names[n - 1] || (n === 1 ? 'MAIN' : 'WORK'))}"></div>
+            <span class="f-label">PANELS ON THIS PAGE</span>
+            <div class="pills">${PAGE_PANELS.map(([v, l]) => `<button type="button" class="pill pg-pill${tiles.includes(v) ? ' on' : ''}" data-pg="${n}" data-v="${v}" aria-pressed="${tiles.includes(v)}"><i aria-hidden="true"></i>${l}</button>`).join('')}</div>
+            <span class="f-label">PREVIEW</span>
+            <div class="pg-mini" aria-hidden="true" style="grid-template-columns:repeat(${pv.columns},1fr);grid-template-rows:repeat(${rows},minmax(0,1fr))">${pv.tiles.map((t) => `<b style="grid-column:${t.x + 1} / span ${t.w};grid-row:${t.y + 1} / span ${t.h}">${label[t.id] || t.id}</b>`).join('')}</div>
+          </div>`;
+        }).join('');
+      };
+      pgBox.addEventListener('input', (e) => {
+        const n = Number(e.target.dataset.pgName);
+        if (!n) return;
+        const names = [...draft.pages.names];
+        names[n - 1] = e.target.value.trim().toUpperCase() || (n === 1 ? 'MAIN' : 'WORK');
+        draft.pages = { ...draft.pages, names };
       });
+      pgBox.addEventListener('click', (e) => {
+        const b = e.target.closest('.pg-pill');
+        if (!b) return;
+        const key = `tiles${b.dataset.pg}`;
+        const set = new Set(draft.pages[key]);
+        if (set.has(b.dataset.v)) { if (set.size === 1) { app.toast(`Page ${b.dataset.pg} needs at least one panel`); return; } set.delete(b.dataset.v); } else set.add(b.dataset.v);
+        app.sounds.click();
+        draft.pages = { ...draft.pages, [key]: PAGE_PANELS.map(([v]) => v).filter((v) => set.has(v)) };
+        drawPages();
+      });
+      drawPages();
       const op = $('#sOpacity', body);
       const fill = () => op.style.setProperty('--fill', `${((Number(op.value) - 30) / 70) * 100}%`);
       fill();

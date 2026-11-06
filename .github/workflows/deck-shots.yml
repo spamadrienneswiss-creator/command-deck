@@ -33,10 +33,10 @@ jobs:
           export COMBOS="$(node -p "JSON.stringify(require('./tools/shots.json').combos)")"
           export SEED="$(node -p "require('./tools/shots.json').seed || ''")"
           export SIZE="$(node -p "require('./tools/shots.json').size || '1440x900'")"
-          xvfb-run -a -s "-screen 0 2600x1500x24" npx electron --no-sandbox --disable-gpu-sandbox tools/deck-shots.js 2>&1 | grep -v -i "dbus\|libva" | tail -40
+          xvfb-run -a -s "-screen 0 2600x1500x24" npx electron --no-sandbox --disable-gpu-sandbox tools/deck-shots.js 2>&1 | grep -v -i "dbus\|libva" | tee /tmp/shots-log.txt | tail -40
       - name: Publish to shots-out
         run: |
-          mkdir -p /tmp/out && cp tools/out/deck/*.png /tmp/out/ && echo "$GITHUB_SHA" > /tmp/out/SHA
+          mkdir -p /tmp/out && cp tools/out/deck/*.png /tmp/out/ || true; cp /tmp/shots-log.txt /tmp/out/log.txt || true && echo "$GITHUB_SHA" > /tmp/out/SHA
           cd /tmp/out && git init -q && git checkout -q -b shots-out && git add -A
           git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m "Deck shots for $GITHUB_SHA"
           git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" shots-out

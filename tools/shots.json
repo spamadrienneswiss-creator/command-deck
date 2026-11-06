@@ -2,9 +2,77 @@
   "size": "1440x900",
   "combos": [
     {
-      "name": "dusk",
+      "name": "f-concourse",
+      "theme": "concourse",
+      "wait": 11000,
+      "js": [
+        "document.querySelector('#btnSettings').click()",
+        "[...document.querySelectorAll('.modal button')].find(t=>/^\\s*SYSTEM/.test(t.textContent)).click()",
+        "document.querySelector('#pgCols [data-pg=\"1\"][data-v=\"tasks\"]').click()",
+        "document.querySelector('#pgCols [data-pg=\"1\"][data-v=\"notes\"]').click()",
+        "document.querySelector('#pgCols [data-pg=\"1\"][data-v=\"computer\"]').click()",
+        "[...document.querySelectorAll('.modal button')].find(b=>/^\\s*SAVE\\s*$/.test(b.textContent)).click()",
+        "new Promise(r=>setTimeout(()=>r('alive after save'),2000))"
+      ]
+    },
+    {
+      "name": "f-unlocked",
       "theme": "dusk",
-      "wait": 11000
+      "wait": 11000,
+      "js": [
+        "document.querySelector('#btnLock').click()",
+        "'unlocked'",
+        "document.querySelector('#btnSettings').click()",
+        "[...document.querySelectorAll('.modal button')].find(t=>/^\\s*SYSTEM/.test(t.textContent)).click()",
+        "document.querySelector('#pgCols [data-pg=\"1\"][data-v=\"calendar\"]').click()",
+        "document.querySelector('#pgCols [data-pg=\"2\"][data-v=\"weather\"]').click()",
+        "[...document.querySelectorAll('.modal button')].find(b=>/^\\s*SAVE\\s*$/.test(b.textContent)).click()",
+        "new Promise(r=>setTimeout(()=>r('alive after save'),2000))",
+        "document.querySelector('#segPage [data-page=\"2\"]').click()",
+        "new Promise(r=>setTimeout(()=>r('alive p2'),1500))"
+      ]
+    },
+    {
+      "name": "f-addback",
+      "theme": "silvan",
+      "wait": 11000,
+      "js": [
+        "document.querySelector('#btnSettings').click()",
+        "[...document.querySelectorAll('.modal button')].find(t=>/^\\s*SYSTEM/.test(t.textContent)).click()",
+        "document.querySelector('#pgCols [data-pg=\"1\"][data-v=\"tasks\"]').click()",
+        "document.querySelector('#pgCols [data-pg=\"1\"][data-v=\"notes\"]').click()",
+        "document.querySelector('#pgCols [data-pg=\"1\"][data-v=\"calendar\"]').click()",
+        "document.querySelector('#pgCols [data-pg=\"1\"][data-v=\"events\"]').click()",
+        "document.querySelector('#pgCols [data-pg=\"1\"][data-v=\"weather\"]').click()",
+        "document.querySelector('#pgCols [data-pg=\"1\"][data-v=\"computer\"]').click()",
+        "[...document.querySelectorAll('.modal button')].find(b=>/^\\s*SAVE\\s*$/.test(b.textContent)).click()",
+        "new Promise(r=>setTimeout(()=>r('alive after save'),2000))",
+        "document.querySelector('#btnSettings').click()",
+        "[...document.querySelectorAll('.modal button')].find(t=>/^\\s*SYSTEM/.test(t.textContent)).click()",
+        "document.querySelector('#pgCols [data-pg=\"1\"][data-v=\"tasks\"]').click()",
+        "document.querySelector('#pgCols [data-pg=\"1\"][data-v=\"notes\"]').click()",
+        "document.querySelector('#pgCols [data-pg=\"1\"][data-v=\"calendar\"]').click()",
+        "[...document.querySelectorAll('.modal button')].find(b=>/^\\s*SAVE\\s*$/.test(b.textContent)).click()",
+        "new Promise(r=>setTimeout(()=>r('alive after save'),2000))"
+      ]
+    },
+    {
+      "name": "f-edge",
+      "theme": "dusk",
+      "wait": 11000,
+      "seed": "(async()=>{const d=await deck.load(); await deck.save('settings',{...d.settings,layoutMode:'edge'});})()",
+      "js": [
+        "document.querySelector('#btnSettings').click()",
+        "[...document.querySelectorAll('.modal button')].find(t=>/^\\s*SYSTEM/.test(t.textContent)).click()",
+        "document.querySelector('#pgCols [data-pg=\"1\"][data-v=\"tasks\"]').click()",
+        "document.querySelector('#pgCols [data-pg=\"1\"][data-v=\"events\"]').click()",
+        "document.querySelector('#pgCols [data-pg=\"2\"][data-v=\"calendar\"]').click()",
+        "document.querySelector('#pgCols [data-pg=\"2\"][data-v=\"computer\"]').click()",
+        "[...document.querySelectorAll('.modal button')].find(b=>/^\\s*SAVE\\s*$/.test(b.textContent)).click()",
+        "new Promise(r=>setTimeout(()=>r('alive after save'),2000))",
+        "document.querySelector('#segPage [data-page=\"2\"]').click()",
+        "new Promise(r=>setTimeout(()=>r('alive p2'),1500))"
+      ]
     }
   ],
   "seed": "(async()=>{const d=await deck.load();const now=Date.now();const iso=(h)=>new Date(now+h*3600e3).toISOString();\nawait deck.save('settings',{...d.settings,setupComplete:true,operatorName:'Nick',consoleName:'Command Deck'});\nawait deck.save('tasks',[{id:'t1',title:'Pay electric bill',due:iso(-3),dueHasTime:true,priority:'high',category:'home',done:false,repeat:{type:'none'},subtasks:[]},{id:'t2',title:'Order bin labels',due:iso(30),dueHasTime:false,priority:'medium',category:'home',done:false,repeat:{type:'none'},subtasks:[]},{id:'t3',title:'Renew car registration',due:iso(54),dueHasTime:false,priority:'medium',category:'personal',done:false,repeat:{type:'none'},subtasks:[]},{id:'t4',title:'Book flights',due:null,priority:'low',done:true,doneAt:iso(-5),repeat:{type:'none'},subtasks:[]}]);\nawait deck.save('localEvents',[{id:'e1',title:'Work shift',start:iso(14),end:iso(19),allDay:false,notes:''},{id:'e2',title:'Dentist',start:iso(60),end:iso(61),allDay:false,notes:''},{id:'e3',title:'Dinner with the Parks',start:iso(140),end:iso(142),allDay:false,notes:''}]);\nawait deck.save('notes',[{id:'n1',title:'Guest Wi-Fi',body:'DECK-7 \u00b7 pass on the fridge',pinned:true},{id:'n2',title:'Paint colors',body:'Sea Salt \u00b7 Agreeable Gray',pinned:false}]);})()"

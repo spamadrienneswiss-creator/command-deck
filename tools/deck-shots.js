@@ -14,7 +14,8 @@ const [W, H] = (process.env.SIZE || '1280x800').split('x').map(Number);
 app.on('browser-window-created', (_e, win) => {
   win.webContents.on('console-message', (ev) => { if (ev.level === 'error' || ev.level === 3) console.log('[renderer err]', ev.message); });
   setTimeout(async () => {
-    const js = (c) => win.webContents.executeJavaScript(c);
+    // Gives up after 10 s, so a frozen page shows up as HUNG instead of stalling the run.
+    const js = (c) => Promise.race([win.webContents.executeJavaScript(c), new Promise((_, no) => setTimeout(() => no(new Error('HUNG (no answer in 10 s)')), 10000))]);
     const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     try {
       win.setSize(W, H); await wait(4000);
@@ -27,7 +28,7 @@ app.on('browser-window-created', (_e, win) => {
         console.log('THEME', c.name, await js(`deck.load().then(d=>JSON.stringify({t:d.settings&&d.settings.theme, body:document.body.dataset.theme, keys:Object.keys(d)}))`));
         if (c.alert) await js(`(()=>{const el=document.querySelector('#alertStrip'); el.dataset.type='${c.alert}'; el.innerHTML='<span class="al-dot"></span><div class="al-text"><div class="al-title">PAST DUE · PAY ELECTRIC BILL</div><div class="al-sub">Was due at 4:30 PM</div></div><div class="al-btns"><button type="button" class="al-btn">SNOOZE 10 MIN</button><button type="button" class="al-btn">MARK DONE</button><button type="button" class="al-btn ghost">DISMISS</button></div>'; el.hidden=false;})()`);
         if (c.extra === 'settings') { await js(`document.querySelector('#btnSettings').click()`); await wait(400); await js(`[...document.querySelectorAll('.modal [role=tab], .modal .tab, .modal button')].find(t=>/^\\s*LOOK|APPEARANCE|THEME/i.test(t.textContent))?.click()`); }
-        if (c.js) { for (const step of [].concat(c.js)) { await js(step).catch((e) => console.log('js err', e.message)); await wait(500); } }
+        if (c.js) { for (const step of [].concat(c.js)) { console.log('STEP', c.name, String(await js(step).catch((e) => 'js err ' + e.message)).slice(0, 300)); await wait(500); } }
         await wait(600);
         fs.writeFileSync(`${SP}/deck/${c.name}.png`, (await win.webContents.capturePage()).toPNG());
       }

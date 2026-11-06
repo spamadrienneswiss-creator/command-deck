@@ -171,6 +171,8 @@ function startSync(deckId) {
   F.sync.track('notes', () => h.getList('notes'), (list) => h.applyRemote('notes', list), onErr);
   F.sync.track('projects', () => h.getList('projects'), (list) => h.applyRemote('projects', list), onErr);
   F.sync.track('schedule', () => h.getList('schedule'), (list) => h.applyRemote('schedule', list), onErr);
+  // Your themes: the starred list is shared both ways with Field Unit; newest edit wins.
+  F.sync.watchMeta('themes', (d) => { if (h.adoptThemes) h.adoptThemes(d && Array.isArray(d.favs) ? d : null); });
 
   F.unsubs.push(fb.onSnapshot(fb.collection(F.fire.db, 'decks', deckId, 'members'), (snap) => {
     const before = new Set(F.members.map((m) => m.id));
@@ -443,6 +445,12 @@ export function relayShared(s) {
     recapAudio: (s.recap && s.recap.audio) || 'd30', recapSummaries: !!(s.recap && s.recap.geminiKey),
     updatedAt: Date.now()
   }).catch(() => {});
+}
+
+export function relayThemes(favs, at) {
+  if (!F.sync || !Array.isArray(favs)) return false;
+  F.sync.setMeta('themes', { favs: [...favs], at }).catch(() => {});
+  return true;
 }
 
 let lastCalJson = '';

@@ -13,7 +13,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.18.1';
+const VERSION = 'v1.18.2';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -204,6 +204,7 @@ function applySettings() {
   if (grid) grid.setStatic(!!s.layoutLocked);
 }
 
+let themesHeardAt = 0; // newest starred-theme list already shared or received
 async function saveSettings(next, { refetch = true } = {}) {
   next = FU.overlay(next); // a joined console keeps following the main console's shared settings
   const prev = S.settings;
@@ -217,6 +218,7 @@ async function saveSettings(next, { refetch = true } = {}) {
   renderAll();
   checkRedAlert();
   FU.relayShared(next);
+  if (Array.isArray(next.themeFavs) && (next.themeFavsAt || 0) > themesHeardAt && FU.relayThemes(next.themeFavs, next.themeFavsAt)) themesHeardAt = next.themeFavsAt;
   if (deck.lights && JSON.stringify((prev || {}).lighting) !== JSON.stringify(next.lighting)) deck.lights.configure(next.lighting).catch(() => {});
   if (!prev || prev.layoutMode !== next.layoutMode) applyLayout();
   if (prev && JSON.stringify(prev.pages) !== JSON.stringify(next.pages)) applyLayout(true);
@@ -2929,6 +2931,7 @@ function startTimers() {
 async function start() {
   S.data = await deck.load();
   S.settings = S.data.settings;
+  themesHeardAt = S.settings.themeFavsAt || 0;
   S.tasks = S.data.tasks || [];
   S.localEvents = S.data.localEvents || [];
   S.timers = S.data.timers || [];
@@ -3056,6 +3059,15 @@ async function start() {
     addLog: addProjectLog,
     onActivity: guestActivity,
     getLook: () => ({ theme: S.settings.theme || 'dusk', font: S.settings.font || 'auto', ink: S.settings.ink || 'theme', trim: S.settings.trim || 'none', clock24: !!S.settings.clock24 }),
+    adoptThemes: (d) => {
+      const at = d ? Number(d.at) || 0 : 0;
+      const mine = S.settings.themeFavsAt || 0;
+      // Ours is newer (edited while offline, or first share): send it out.
+      if (mine > at) { if (Array.isArray(S.settings.themeFavs) && FU.relayThemes(S.settings.themeFavs, mine)) themesHeardAt = mine; return; }
+      if (!d || at === mine) return;
+      themesHeardAt = Math.max(themesHeardAt, at);
+      saveSettings({ ...S.settings, themeFavs: d.favs, themeFavsAt: at }, { refetch: false });
+    },
     adoptShared: (shared) => {
       const keys = Object.keys(shared);
       if (keys.every((k) => JSON.stringify(S.settings[k]) === JSON.stringify(shared[k]))) return;

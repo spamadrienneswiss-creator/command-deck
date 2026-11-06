@@ -977,3 +977,22 @@ body[data-trim="tape"] .card::before {
   font: 700 8px/14px 'Martian Mono', var(--mono); letter-spacing: 0.24em; white-space: nowrap; overflow: hidden; padding-left: 16px;
 }
 body[data-trim="tape"] .tabbar::before { height: 4px; background: #C6F432; }
+
+/* ---------- Your themes (starred list + ALL THEMES sheet) ---------- */
+.th-head { display: flex; align-items: center; justify-content: space-between; }
+.th-yours { color: var(--amber, var(--accent)); letter-spacing: 0.14em; }
+.chip.th-more { color: var(--text); box-shadow: inset 0 0 0 1px var(--line-3, rgba(var(--ink-rgb), 0.3)); }
+.th-done { min-height: 36px; padding: 0 16px; }
+.th-list { display: flex; flex-direction: column; }
+.th-row { display: flex; align-items: center; gap: 6px; min-height: 52px; border-bottom: 1px solid rgba(var(--ink-rgb), 0.08); }
+.th-row:last-child { border-bottom: 0; }
+.th-try { all: unset; box-sizing: border-box; flex: 1; display: flex; align-items: center; gap: 12px; min-height: 48px; cursor: pointer; }
+.th-try:focus-visible { outline: 2px solid var(--amber, currentColor); outline-offset: 2px; }
+.th-prev { width: 34px; height: 24px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; box-shadow: inset 0 0 0 1px rgba(var(--ink-rgb), 0.18); }
+.th-prev i { width: 8px; height: 8px; }
+.th-name { display: flex; align-items: center; gap: 8px; font: 500 12.5px/1 var(--mono); letter-spacing: 0.12em; color: var(--muted); }
+.th-row.fav .th-name { color: var(--text); }
+.th-name em { font-style: normal; font-size: 9px; letter-spacing: 0.14em; color: var(--amber, var(--accent)); }
+.th-star { width: 44px; height: 44px; border: 0; background: transparent; font-size: 19px; line-height: 1; cursor: pointer; color: var(--muted); }
+.th-row.fav .th-star { color: var(--amber, var(--accent)); }
+.th-star:disabled { cursor: default; opacity: 0.85; }

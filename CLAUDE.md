@@ -34,7 +34,7 @@ Read this first in any new thread. It's the handoff from earlier work, so a fres
 
 ## Test, build, release
 - `npm test` runs the unit tests. `npm run test:rules` needs the Firestore emulator; it runs in CI, since the emulator download is blocked in cloud sessions.
-- Phone and link UI tests run in headless Chromium against a fake Firestore: `node tools/ui-tests/<name>.mjs`. Current ones: guest-test, sched-guest-test, phone-sched-test, phone-share-test, signal-test (load-ups + Data Recap send), theme-shots, wine-test (Wine Log). Screenshots go to `tools/ui-tests/out/`.
+- Phone and link UI tests run in headless Chromium against a fake Firestore: `node tools/ui-tests/<name>.mjs`. Current ones: guest-test, sched-guest-test, phone-sched-test, phone-share-test, signal-test (load-ups + Data Recap send), theme-shots, theme-favs-test (Your themes), wine-test (Wine Log). Screenshots go to `tools/ui-tests/out/`.
 - Deck screenshots: `tools/deck-shots.js` (usage at the top of the file).
 - **Release:**
   1. `node scripts/bump.js X.Y.Z`
@@ -43,8 +43,9 @@ Read this first in any new thread. It's the handoff from earlier work, so a fres
   4. Watch it with `tools/watch-release.sh Release <sha>`.
 - Commit as `Claude <noreply@anthropic.com>`. Keep the README and FIELD-UNIT-SETUP.md in step with features.
 
-## Where things stand (v1.18.0, Nov 2026)
+## Where things stand (v1.18.2, Nov 2026)
 Shipped recently:
+- v1.18.2: Your themes. Settings shows only starred themes (`settings.themeFavs`, null = all; `themeFavsAt`) plus + MORE · EDIT LIST, which opens ALL THEMES with a star per theme (deck: `wireThemeBox()` in modals.js; phone: `openThemeSheet()`, list in `fu.settings`). Shared both ways through `decks/{id}/meta/themes` `{ favs, at }`, newest `at` wins (`adoptThemes` on both). The theme in use always shows. Nothing is removed. Nick's list: Dusk, Moonbase '79, Skydock, Horizon. Board: "Your themes".
 - v1.18: tidier Queue (`inQueue()` on deck and phone: live-project tasks leave the Queue unless due today / overdue; `.tk-tucked` line jumps to PROJECTS; PROJECTS are foldable `.pj-group`s, open state in `meta.pjOpen` on the deck and `fu.pjOpen` on the phone; OPEN PROJECT opens the sheet). Brighter red alert (thick breathing edge, `.alert-edge::after` flash once a minute, `#raTag` header tag, lit `.tk.overdue`; steady on STILL). Hi-Vis theme (`hivis`, inspired by Marathon; dark version) on deck, Field Unit and link look gear, with Anybody + Martian Mono as variable fonts in `assets/fonts/` (copied to the phone by `build-field.js`) and the Label Tape trim (`tape`, any theme). Board: "Tidier Queue", "Brighter overdue red alert", "New theme · Hi-Vis".
 - v1.17.2: memory. The listening model (`voice.js` `unloadModel`) and neural voice (`tts.js` `unloadTts`) terminate their workers 2 min after `deck:away` (`voicesAway()` in app.js) and warm up again on return; the recap worker terminates 90 s after its last job (`releaseLater()` in recap.js). Settings › System › MEMORY reads `sys:memory` (app.getAppMetrics; workers live in the deck's renderer, so they count under "deck").
 - v1.17.1: Wine Log aroma finder (The Nose and the palate's Flavors).

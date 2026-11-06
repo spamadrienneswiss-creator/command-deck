@@ -998,6 +998,28 @@ body[data-theme="freighter"][data-frame="bone"] .brand-name { text-shadow: none;
 .theme-sw { display: inline-flex; margin-right: 8px; vertical-align: middle; box-shadow: 0 0 0 1px rgba(var(--ink-rgb), 0.25); }
 .theme-sw i { width: 7px; height: 12px; }
 
+/* ---------- Your themes (starred list + ALL THEMES editor) ---------- */
+.th-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 18px; margin-bottom: 8px; }
+.th-yours { color: var(--amber); letter-spacing: 0.14em; }
+.pill.th-more { color: var(--text); box-shadow: inset 0 0 0 1px var(--line-3); border: 0; }
+.pill.th-more:hover { box-shadow: inset 0 0 0 1px var(--amber); }
+.th-done { height: 28px; }
+.th-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.th-card { position: relative; box-shadow: inset 0 0 0 1px var(--ctl-line); background: rgba(var(--ink-rgb), 0.02); }
+.th-card.fav { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pc) 60%, transparent); background: linear-gradient(180deg, color-mix(in srgb, var(--pc) 9%, transparent), transparent); }
+.th-card.cur { box-shadow: inset 0 0 0 2px var(--pc); }
+.th-try { all: unset; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 8px; cursor: pointer; }
+.th-try:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
+.th-prev { position: relative; display: block; height: 46px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(var(--ink-rgb), 0.12); }
+.th-prev b { position: absolute; left: 8px; top: 9px; width: 52%; height: 3px; }
+.th-prev u { position: absolute; left: 8px; top: 22px; width: 44%; height: 2px; opacity: 0.5; text-decoration: none; }
+.th-prev u + u { top: 30px; }
+.th-name { display: flex; align-items: center; gap: 6px; font: 500 10.5px/1 var(--mono); letter-spacing: 0.12em; color: var(--text); padding-right: 28px; }
+.th-name em { font-style: normal; font-size: 8.5px; color: var(--pc); letter-spacing: 0.14em; }
+.th-star { position: absolute; top: 4px; right: 4px; width: 30px; height: 30px; border: 0; border-radius: 50%; cursor: pointer; font-size: 15px; line-height: 1; color: var(--muted-2); background: rgba(0, 0, 0, 0.45); }
+.th-card.fav .th-star { color: var(--pc); }
+.th-star:disabled { cursor: default; opacity: 0.8; }
+
 /* ---------- Light themes share a few fixes ---------- */
 body[data-light] { color-scheme: light; }
 body[data-light] .scroll { scrollbar-color: var(--line-3) transparent; }

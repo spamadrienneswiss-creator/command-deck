@@ -83,6 +83,61 @@ function wirePills(container, onPick) {
   });
 }
 
+// ---------------------------------------------------------------- your themes
+// Only starred themes show in Settings; ALL THEMES lists every one with a star to
+// keep it. Nothing is removed: unstarred themes stay installed. The list is shared
+// with Field Unit (meta/themes). null = never edited, so every theme shows.
+const THEME_BG = { dusk: '#14121A', space: '#070B14', red: '#140708', terminal: '#050A07', retro: '#0E0716', moonbase: '#E4E6E9', blueprint: '#0E2A47', cryo: '#D6E7F3', freighter: '#0B0F0A', skydock: '#F2F4F7', vector: '#0A0D12', horizon: '#0A0806', hivis: '#0B0B0B' };
+export function themeFavs(s) {
+  const all = THEMES.map((t) => t[0]);
+  const favs = Array.isArray(s.themeFavs) ? s.themeFavs.filter((v) => all.includes(v)) : all;
+  const cur = s.theme || 'dusk';
+  return favs.includes(cur) ? favs : [...favs, cur];
+}
+export function wireThemeBox(box, draft) {
+  let editing = false;
+  const pc = (cs) => (cs[0] === '#FFFFFF' ? cs[1] : cs[0]);
+  const sw = (cs) => `<span class="theme-sw">${cs.map((c) => `<i style="background:${c}"></i>`).join('')}</span>`;
+  const render = () => {
+    const cur = draft.theme || 'dusk';
+    const favs = themeFavs(draft);
+    const hidden = THEMES.length - favs.length;
+    if (!editing) {
+      box.innerHTML = `<div class="th-head"><span class="f-label">COLOR THEME</span>${Array.isArray(draft.themeFavs) ? '<span class="f-label th-yours">★ YOUR THEMES</span>' : ''}</div>
+        <div class="pills">${THEMES.filter(([v]) => favs.includes(v)).map(([v, l, cs]) => `<button type="button" class="pill theme-pill${cur === v ? ' on' : ''}" data-pick="${v}" style="--pc:${pc(cs)}">${sw(cs)}${l}</button>`).join('')}
+        <button type="button" class="pill th-more" data-edit>${hidden ? `+ ${hidden} MORE · EDIT LIST` : '★ PICK YOUR THEMES'}</button></div>
+        <div class="f-hint" style="margin-top:8px">${Array.isArray(draft.themeFavs) ? 'Only your starred themes show here and on Field Unit. The rest stay installed.' : 'Star the themes you use to tidy this list. Nothing gets removed.'}</div>`;
+      return;
+    }
+    const starred = Array.isArray(draft.themeFavs) ? draft.themeFavs : THEMES.map((t) => t[0]);
+    box.innerHTML = `<div class="th-head"><span class="f-label">ALL THEMES · ${favs.length} STARRED</span><button type="button" class="pill on th-done" data-done>DONE</button></div>
+      <div class="f-hint" style="margin:2px 0 10px">Tap a card to try it. Tap ★ to keep it in your list. The theme in use always stays.</div>
+      <div class="th-grid">${THEMES.map(([v, l, cs]) => {
+        const on = starred.includes(v) || v === cur;
+        return `<div class="th-card${on ? ' fav' : ''}${cur === v ? ' cur' : ''}" style="--pc:${pc(cs)}">
+          <button type="button" class="th-try" data-pick="${v}" aria-label="Try ${l}"><span class="th-prev" style="background:${THEME_BG[v] || '#111'}"><b style="background:${cs[0]}"></b><u style="background:${cs[1]}"></u><u style="background:${cs[1]};width:34%"></u></span>
+          <span class="th-name">${l}${cur === v ? '<em>IN USE</em>' : ''}</span></button>
+          <button type="button" class="th-star" data-star="${v}" aria-pressed="${on}" aria-label="${on ? 'Unstar' : 'Star'} ${l}"${cur === v ? ' disabled' : ''}>${on ? '★' : '☆'}</button></div>`;
+      }).join('')}</div>`;
+  };
+  box.addEventListener('click', (e) => {
+    const pick = e.target.closest('[data-pick]');
+    const star = e.target.closest('[data-star]');
+    if (pick) { draft.theme = pick.dataset.pick; app.previewTheme(draft.theme); }
+    else if (star) {
+      const v = star.dataset.star;
+      const list = Array.isArray(draft.themeFavs) ? [...draft.themeFavs] : THEMES.map((t) => t[0]);
+      draft.themeFavs = list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
+      draft.themeFavsAt = Date.now();
+    } else if (e.target.closest('[data-edit]')) editing = true;
+    else if (e.target.closest('[data-done]')) editing = false;
+    else return;
+    app.sounds.click();
+    render();
+  });
+  render();
+}
+
 function switchHtml(id, on, label) {
   return `<button type="button" class="switch" id="${id}" role="switch" aria-checked="${on ? 'true' : 'false'}" aria-label="${esc(label)}"><i></i></button>`;
 }
@@ -946,8 +1001,7 @@ export function openSettings(welcome = false) {
     system() {
       const voices = app.englishVoices();
       return `
-        <div class="f"><span class="f-label">COLOR THEME</span>
-          <div class="pills" data-key="theme">${THEMES.map(([v, l, cs]) => `<button type="button" class="pill theme-pill${(draft.theme || 'dusk') === v ? ' on' : ''}" data-v="${v}" style="--pc:${cs[0] === '#FFFFFF' ? cs[1] : cs[0]}"><span class="theme-sw">${cs.map((c) => `<i style="background:${c}"></i>`).join('')}</span>${l}</button>`).join('')}</div></div>
+        <div class="f" id="themeBox"></div>
         <div class="f"><span class="f-label">TYPEFACE</span>
           <div class="pills" data-key="font">${FONTS.map(([v, l, fam]) => `<button type="button" class="pill font-pill${(draft.font || 'auto') === v ? ' on' : ''}" data-v="${v}"${fam ? ` style="font-family:${fam}"` : ''}>${l}</button>`).join('')}</div>
           <div class="f-hint" style="margin-top:8px">Theme default follows the color theme: Moonbase uses Michroma, Blueprint Space Mono, Cryo Exo 2, Freighter B612 Mono, Skydock Quantico, Vector Tektur, Horizon Jura, Hi-Vis Anybody.</div></div>
@@ -1309,6 +1363,7 @@ export function openSettings(welcome = false) {
       $('#defRem', body).addEventListener('change', (e) => { draft.defaultReminder = Number(e.target.value); });
     },
     system() {
+      wireThemeBox($('#themeBox', body), draft);
       $$('.pills[data-key]', body).forEach((group) => {
         wirePills(group, (v) => {
           const key = group.dataset.key;

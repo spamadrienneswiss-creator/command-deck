@@ -9,7 +9,7 @@ import { RosterRelay, scheduleUrl, DEFAULT_TYPES, weekStart, addDays, weekLabel,
 import { bootScreen } from './boot.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.18.1';
+const VERSION = 'v1.18.2';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
@@ -138,6 +138,59 @@ const FONTS = [
   ['quantico', 'QUANTICO', "'Quantico'"], ['tektur', 'TEKTUR', "'Tektur'"], ['jura', 'JURA', "'Jura'"], ['anybody', 'ANYBODY', "'Anybody'"]
 ];
 const INKS = [['theme', 'THEME', null], ['amber', 'AMBER CRT', '#FFC27A'], ['phosphor', 'PHOSPHOR', '#A8F5B4'], ['ice', 'ICE', '#CFE6FF'], ['arctic', 'ARCTIC', '#FFFFFF'], ['rose', 'ROSE', '#F6C1CF']];
+// Your themes: only starred themes show in Settings (null = never edited, so all).
+// The list is shared with the deck through meta/themes; the newest edit wins.
+const THEME_PREV = { dusk: '#14121A', space: '#070B14', red: '#140708', terminal: '#050A07', retro: '#0E0716', moonbase: '#E4E6E9', blueprint: '#0E2A47', cryo: '#D6E7F3', freighter: '#0B0F0A', skydock: '#F2F4F7', vector: '#0A0D12', horizon: '#0A0806', hivis: '#0B0B0B' };
+function themeFavs() {
+  const all = THEMES.map((t) => t[0]);
+  const favs = Array.isArray(S.settings.themeFavs) ? S.settings.themeFavs.filter((v) => all.includes(v)) : all;
+  const cur = S.settings.theme || 'dusk';
+  return favs.includes(cur) ? favs : [...favs, cur];
+}
+function shareThemes() {
+  if (S.sync && Array.isArray(S.settings.themeFavs)) S.sync.setMeta('themes', { favs: [...S.settings.themeFavs], at: S.settings.themeFavsAt || Date.now() }).catch(() => {});
+}
+function adoptThemes(d) {
+  const at = d ? Number(d.at) || 0 : 0;
+  const mine = S.settings.themeFavsAt || 0;
+  if (mine > at) { shareThemes(); return; }
+  if (!d || at === mine) return;
+  S.settings.themeFavs = d.favs;
+  S.settings.themeFavsAt = at;
+  saveSettings();
+  if (S.view === 'settings') render();
+}
+function openThemeSheet() {
+  const sh = openSheet('<div id="thSheet"></div>');
+  const draw = () => {
+    const cur = S.settings.theme || 'dusk';
+    const starred = Array.isArray(S.settings.themeFavs) ? S.settings.themeFavs : THEMES.map((t) => t[0]);
+    $('#thSheet', sh).innerHTML = `
+      <div class="sheet-head"><span class="label">ALL THEMES</span><button type="button" class="btn primary th-done" data-close>DONE</button></div>
+      <div class="hint" style="margin:0 0 6px">Tap a name to try it. ★ keeps it in your list. Synced with the deck.</div>
+      <div class="th-list">${THEMES.map(([v, l, cs]) => {
+        const on = starred.includes(v) || v === cur;
+        return `<div class="th-row${on ? ' fav' : ''}"><button type="button" class="th-try" data-try="${v}"><span class="th-prev" aria-hidden="true" style="background:${THEME_PREV[v] || '#111'}"><i style="background:${cs[0]}"></i><i style="background:${cs[1]}"></i></span><span class="th-name">${l}${v === cur ? '<em>IN USE</em>' : ''}</span></button>
+          <button type="button" class="th-star" data-star="${v}" aria-pressed="${on}" aria-label="${on ? 'Unstar' : 'Star'} ${l}"${v === cur ? ' disabled' : ''}>${on ? '★' : '☆'}</button></div>`;
+      }).join('')}</div>`;
+  };
+  sh.addEventListener('click', (e) => {
+    if (e.target.closest('[data-close]')) { closeSheet(); render(); return; }
+    const tr = e.target.closest('[data-try]');
+    const st = e.target.closest('[data-star]');
+    if (tr) { S.settings.theme = tr.dataset.try; saveSettings(); }
+    else if (st) {
+      const v = st.dataset.star;
+      const list = Array.isArray(S.settings.themeFavs) ? [...S.settings.themeFavs] : THEMES.map((t) => t[0]);
+      S.settings.themeFavs = list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
+      S.settings.themeFavsAt = Date.now();
+      saveSettings();
+      shareThemes();
+    } else return;
+    draw();
+  });
+  draw();
+}
 const FRAMES = [['dark', 'DARK', '#14151B'], ['bone', 'BONE', '#EEDDC3'], ['gunmetal', 'GUNMETAL', '#3A3E44'], ['olive', 'OLIVE DRAB', '#4A5236'], ['navy', 'MIDNIGHT NAVY', '#16264A']];
 const TRIMS = [['none', 'NONE', []], ['sunset', 'SUNSET', ['#B5432A', '#E07A2E', '#E9B23B']], ['mission', 'MISSION', ['#E5532D', '#EADBC2', '#3F68A6']], ['arcade', 'ARCADE', ['#D6457E', '#F08A3C', '#F2C94C', '#3FB3A8']],
   ['hazard', 'HAZARD', ['#E8C547', '#1A1A1A', '#E8C547', '#1A1A1A']], ['aurora', 'AURORA', ['#2BB3A3', '#6FD08C', '#8E6CD8']], ['gulf', 'GULF', ['#8FC1E3', '#F28A2E', '#8FC1E3']],
@@ -342,6 +395,7 @@ function startSync() {
   S.roster.start();
   S.sync.watchMeta('shared', (d) => { if (d) { S.shared = d; store('fu.shared', d); fetchWeather(); render(); } });
   S.sync.watchMeta('calendar', (d) => { if (d) { S.calendar = d; store('fu.calendar', d); render(); } });
+  S.sync.watchMeta('themes', (d) => adoptThemes(d && Array.isArray(d.favs) ? d : null));
   S.sync.watchMeta('command', (d) => { if (d) { S.command = d; store('fu.command', d); render(); } });
 
   // If Command unpairs this phone, go back to the pairing screen.
@@ -1665,8 +1719,9 @@ function viewSettings() {
     <div class="set-group"><span class="label">CALLSIGN</span>
       <input class="in" id="sCallsign" value="${esc(S.settings.callsign)}" maxlength="24" aria-label="Callsign">
       <div class="hint">What this device calls itself: “${esc(S.settings.callsign)} online. Go ahead.”</div></div>
-    <div class="set-group"><span class="label">COLOR THEME</span>
-      <div class="pills">${THEMES.map(([v, l, cs]) => `<button type="button" class="chip${(S.settings.theme || 'dusk') === v ? ' on' : ''}" data-theme-pick="${v}" style="--pc:${cs[0] === '#FFFFFF' ? cs[1] : cs[0]}"><span class="theme-sw" aria-hidden="true">${cs.map((c) => `<i style="background:${c}"></i>`).join('')}</span>${l}</button>`).join('')}</div></div>
+    <div class="set-group"><div class="th-head"><span class="label">COLOR THEME</span>${Array.isArray(S.settings.themeFavs) ? '<span class="label th-yours">★ YOURS</span>' : ''}</div>
+      <div class="pills">${THEMES.filter(([v]) => themeFavs().includes(v)).map(([v, l, cs]) => `<button type="button" class="chip${(S.settings.theme || 'dusk') === v ? ' on' : ''}" data-theme-pick="${v}" style="--pc:${cs[0] === '#FFFFFF' ? cs[1] : cs[0]}"><span class="theme-sw" aria-hidden="true">${cs.map((c) => `<i style="background:${c}"></i>`).join('')}</span>${l}</button>`).join('')}<button type="button" class="chip th-more" data-theme-all>${THEMES.length - themeFavs().length ? `+ ${THEMES.length - themeFavs().length} MORE` : '★ PICK YOURS'}</button></div>
+      <div class="hint">${Array.isArray(S.settings.themeFavs) ? 'Only your starred themes show here. Synced with the deck; nothing is removed.' : 'Star the themes you use to tidy this list. Nothing gets removed.'}</div></div>
     <div class="set-group"><span class="label">TYPEFACE</span>
       <div class="pills">${FONTS.map(([v, l, fam]) => `<button type="button" class="chip font-chip${(S.settings.font || 'auto') === v ? ' on' : ''}" data-font-pick="${v}"${fam ? ` style="font-family:${fam}"` : ''}>${l}</button>`).join('')}</div>
       <div class="hint">Theme default follows the color theme: Moonbase uses Michroma, Blueprint Space Mono, Cryo Exo 2, Freighter B612 Mono, Skydock Quantico, Vector Tektur, Horizon Jura, Hi-Vis Anybody.</div></div>
@@ -3127,6 +3182,7 @@ function wire() {
     if (evr) { const ev = S.events.find((x) => x.id === evr.dataset.ev); if (ev) openEventEditor(ev); return; }
     const tr = t.closest('[data-task]');
     if (tr) { const task = S.tasks.find((x) => x.id === tr.dataset.task); if (task) openTaskEditor(task); return; }
+    if (t.closest('[data-theme-all]')) { openThemeSheet(); return; }
     const th = t.closest('[data-theme-pick]');
     if (th) { S.settings.theme = th.dataset.themePick; saveSettings(); render(); return; }
     const fp = t.closest('[data-font-pick]');

@@ -67,7 +67,7 @@ let fails = 0;
 const check = (ok, msg) => { console.log(`${ok ? 'PASS' : 'FAIL'} ${msg}`); if (!ok) fails++; };
 const page = await ctx.newPage();
 page.on('pageerror', (e) => { console.log('pageerror', e.message); fails++; });
-await page.addInitScript(({ seed }) => { if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', '1'); localStorage.clear(); for (const [k, v] of Object.entries(seed)) (k === 'fu.comms' ? sessionStorage : localStorage).setItem(k, JSON.stringify(v)); localStorage.setItem('fu.settings', JSON.stringify({ theme: 'dusk', installDismissed: true })); }, { seed });
+await page.addInitScript(({ seed }) => { if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', '1'); localStorage.clear(); for (const [k, v] of Object.entries(seed)) (k === 'fu.comms' ? sessionStorage : localStorage).setItem(k, JSON.stringify(v)); localStorage.setItem('fu.settings', JSON.stringify({ theme: 'dusk', ui: 'classic', installDismissed: true })); }, { seed });
 await page.goto(BASE);
 await page.waitForFunction(() => !document.querySelector('#boot'), null, { timeout: 15000 }).catch(() => {});
 await page.click('.gear-btn'); await page.waitForTimeout(200);

@@ -38,7 +38,7 @@ const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0
 const iso = (h) => new Date(now + h * 3600000).toISOString();
 const local = {
   'fu.deckId': 'deck_1',
-  'fu.settings': { theme: 'dusk', installDismissed: true, commsSound: 'off' },
+  'fu.settings': { theme: 'dusk', ui: 'classic', installDismissed: true, commsSound: 'off' },
   'fu.shared': { operatorName: 'Sam', consoleName: 'Command Deck', categories: [], people: ['Me'], scheduleTypes: [{ id: 'appt', name: 'Appointment', short: 'APPT', color: '#A8B0D8' }, { id: 'ldc', name: 'LDC', short: 'LDC', color: '#F2A65A' }, { id: 'metro', name: 'Metro', short: 'METRO', color: '#7FD1C7' }, { id: 'other', name: 'Other', short: 'OTHER', color: '#B5B0BC' }, { id: 'tr', name: 'Training', short: 'TRAINING', color: '#B8E27A' }] },
   'fu.schedule': [
     { id: 's1', type: 'ldc', title: 'Work shift', date: ymd(new Date()), note: '', replies: {}, createdAt: 1 },

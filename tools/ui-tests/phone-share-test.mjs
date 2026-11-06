@@ -37,7 +37,7 @@ const now = Date.now();
 const iso = (h) => new Date(now + h * 3600000).toISOString();
 const local = {
   'fu.deckId': 'deck_1',
-  'fu.settings': { theme: 'dusk', installDismissed: true, commsSound: 'off' },
+  'fu.settings': { theme: 'dusk', ui: 'classic', installDismissed: true, commsSound: 'off' },
   'fu.shared': { operatorName: 'Sam', consoleName: 'Command Deck', categories: [], people: ['Me'] },
   'fu.command': { lastSeen: now },
   'fu.projects': [{ id: 'p1', name: 'Garage cleanout', color: '#F2A65A', due: iso(24 * 18), status: 'active', createdAt: iso(-48), log: [] }, { id: 'p2', name: 'Surprise party', color: '#D9A9C6', status: 'active', createdAt: iso(-40) }],

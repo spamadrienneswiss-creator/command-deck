@@ -62,7 +62,7 @@ const combos = JSON.parse(process.env.COMBOS || '[]');
 for (const [theme, font, frame, trim, ink] of combos) {
   const page = await ctx.newPage();
   page.on('pageerror', (e) => console.log('pageerror', e.message));
-  await page.addInitScript(({ seed, settings }) => { localStorage.clear(); for (const [k, v] of Object.entries(seed)) (k === 'fu.comms' ? sessionStorage : localStorage).setItem(k, JSON.stringify(v)); localStorage.setItem('fu.settings', JSON.stringify(settings)); }, { seed, settings: { theme, font: font || 'auto', frame, trim, ink: ink || 'theme', installDismissed: true } });
+  await page.addInitScript(({ seed, settings }) => { localStorage.clear(); for (const [k, v] of Object.entries(seed)) (k === 'fu.comms' ? sessionStorage : localStorage).setItem(k, JSON.stringify(v)); localStorage.setItem('fu.settings', JSON.stringify(settings)); }, { seed, settings: { theme, ui: 'classic', font: font || 'auto', frame, trim, ink: ink || 'theme', installDismissed: true } });
   await page.goto(BASE);
   // Let the Signal load-up finish (it removes #boot) before the Today shot.
   await page.waitForFunction(() => !document.querySelector('#boot'), null, { timeout: 15000 }).catch(() => {});

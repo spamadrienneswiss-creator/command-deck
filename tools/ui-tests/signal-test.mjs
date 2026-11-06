@@ -67,7 +67,7 @@ async function walk(page, tag) {
 // ---- Field Unit
 const local = {
   'fu.deckId': 'deck_1',
-  'fu.settings': { theme: 'dusk', installDismissed: true, commsSound: 'off' },
+  'fu.settings': { theme: 'dusk', ui: 'classic', installDismissed: true, commsSound: 'off' },
   'fu.shared': { operatorName: 'Sam', consoleName: 'Command Deck', categories: [], people: ['Me'], location: { lat: 33.9, lon: -118.0 }, recapAudio: 'd30', recapSummaries: true },
   'fu.command': { lastSeen: now },
   'fu.tasks': [{ id: 't1', title: 'Label bins', due: null, priority: 'low', done: false, repeat: { type: 'none' }, subtasks: [] }],

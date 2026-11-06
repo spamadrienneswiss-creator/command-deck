@@ -7,9 +7,10 @@ import * as U from './lib/util.js';
 import { ManifestRelay, manifestUrl } from './lib/manifest.js';
 import { RosterRelay, scheduleUrl, DEFAULT_TYPES, weekStart, addDays, weekLabel, weekDays, ymd, parseYmd, typeOf, shortName, dayLabel, timeRange, parseTime, chipName, PERSON_COLORS, OWNER_COLOR } from './lib/roster.js';
 import { bootScreen } from './boot.js';
+import * as P from './presence.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.18.2';
+const VERSION = 'v1.19.0';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
@@ -39,6 +40,8 @@ const PHRASES = {
   timer: ['{callsign} will alert you.'],
   miss: ['Command not recognized. Rephrase, or type help.', 'Signal garbled. Repeat? Type help for examples.']
 };
+// Presence talks like a person, not a radio.
+const PRES_PHRASES = { copy: ['Done.', 'Got it.', 'On it.'], miss: ['I didn\'t follow that. Try rephrasing, or say help.'], deleteAsk: ['Delete {title}?'], deleted: ['Deleted.'] };
 const PHRASE_LABELS = {
   greet: 'Greeting', copy: 'Before confirming', transmit: 'Sending to Command', ack: 'Command received it',
   offline: 'No signal', deleteAsk: 'Asking to delete', deleted: 'Deleted', briefing: 'Before a briefing',
@@ -196,17 +199,23 @@ const TRIMS = [['none', 'NONE', []], ['sunset', 'SUNSET', ['#B5432A', '#E07A2E',
   ['hazard', 'HAZARD', ['#E8C547', '#1A1A1A', '#E8C547', '#1A1A1A']], ['aurora', 'AURORA', ['#2BB3A3', '#6FD08C', '#8E6CD8']], ['gulf', 'GULF', ['#8FC1E3', '#F28A2E', '#8FC1E3']],
   ['dock', 'DOCK LIGHTS', ['#1FB8F0', '#F4B41A', '#FF4F86', '#EE8A2E']], ['accretion', 'ACCRETION', ['#D9894A', '#FFF4E3', '#F2C38B']], ['tape', 'LABEL TAPE', ['#C6F432', '#0B0B0C', '#C6F432']]];
 function applyTheme() {
-  const theme = S.settings.theme || 'dusk';
-  const font = S.settings.font || 'auto';
+  const pres = presenceLook();
+  const theme = pres ? 'dusk' : S.settings.theme || 'dusk';
+  const font = pres ? 'auto' : S.settings.font || 'auto';
   document.body.dataset.theme = theme;
   document.body.dataset.font = font === 'auto' ? (THEME_FONT[theme] || 'chakra') : font;
-  document.body.dataset.ink = S.settings.ink || 'theme';
+  document.body.dataset.ink = pres ? 'theme' : S.settings.ink || 'theme';
   if (theme === 'moonbase' || theme === 'cryo' || theme === 'skydock') document.body.dataset.light = '1'; else delete document.body.dataset.light;
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = THEME_BG[theme] || '#0B0C11';
-  document.body.dataset.frame = S.settings.frame || 'dark';
-  document.body.dataset.trim = S.settings.trim || 'none';
+  if (meta) meta.content = pres ? '#050607' : THEME_BG[theme] || '#0B0C11';
+  document.body.dataset.frame = pres ? 'dark' : S.settings.frame || 'dark';
+  document.body.dataset.trim = pres ? 'none' : S.settings.trim || 'none';
+  document.body.classList.toggle('presence', pres);
 }
+// Presence is on (and not peeking at a classic screen).
+function presenceLook() { return (S.settings.ui || 'presence') === 'presence' && !S.peek; }
+// Opens a classic screen from Presence, with a way back.
+function classic(view) { S.peek = true; S.view = view; applyTheme(); render(); $('#view').scrollTop = 0; }
 
 let toastTimer = null;
 function toast(msg, ms = 2600) {
@@ -219,7 +228,7 @@ function toast(msg, ms = 2600) {
 
 function pick(key, vars = {}) {
   const custom = S.settings.phrases && S.settings.phrases[key];
-  const pool = (custom && custom.length ? custom : PHRASES[key]) || [''];
+  const pool = (custom && custom.length ? custom : presenceLook() && PRES_PHRASES[key] ? PRES_PHRASES[key] : PHRASES[key]) || [''];
   const line = pool[Math.floor(Math.random() * pool.length)];
   return line.replace(/\{(\w+)\}/g, (_, k) => (k === 'callsign' ? S.settings.callsign : k === 'name' ? operator() : (vars[k] ?? '')));
 }
@@ -396,6 +405,7 @@ function startSync() {
   S.sync.watchMeta('shared', (d) => { if (d) { S.shared = d; store('fu.shared', d); fetchWeather(); render(); } });
   S.sync.watchMeta('calendar', (d) => { if (d) { S.calendar = d; store('fu.calendar', d); render(); } });
   S.sync.watchMeta('themes', (d) => adoptThemes(d && Array.isArray(d.favs) ? d : null));
+  P.watchConfig();
   S.sync.watchMeta('command', (d) => { if (d) { S.command = d; store('fu.command', d); render(); } });
 
   // If Command unpairs this phone, go back to the pairing screen.
@@ -749,6 +759,9 @@ function projectCard(p, now) {
 
 // ---------------------------------------------------------------- rendering
 function render() {
+  applyTheme();
+  if (presenceLook()) { P.render(); if (C.open) ctRefreshChrome(); return; }
+  P.mount();
   $$('.tab[data-view]').forEach((t) => t.classList.toggle('on', t.dataset.view === S.view));
   const v = $('#view');
   const keep = v.scrollTop;
@@ -757,6 +770,7 @@ function render() {
   else if (S.view === 'calendar') v.innerHTML = viewCalendar();
   else if (S.view === 'notes') v.innerHTML = viewNotes();
   else v.innerHTML = viewSettings();
+  if (S.peek && P.on()) v.insertAdjacentHTML('afterbegin', `<button type="button" class="pz-back" data-pz-back>‹ ${esc(P.name())}</button>`);
   v.scrollTop = keep;
   if (C.open) ctRefreshChrome();
 }
@@ -1716,6 +1730,9 @@ function viewSettings() {
       <button type="button" class="icon-btn" data-go="today" aria-label="Back to Today">${IC.left}</button>
       <h1 class="h1" style="margin:0;font-size:28px">Settings</h1>
     </header>
+    <div class="set-group"><span class="label">INTERFACE</span>
+      <button type="button" class="btn primary" data-to-presence style="width:100%">${P.on() ? `BACK TO ${esc(P.name().toUpperCase())}` : 'SWITCH TO PRESENCE'}</button>
+      <div class="hint">Presence: the Computer as a glowing orb that talks, with calm Tasks and Week screens. Notes, recaps and this screen stay one tap away.</div></div>
     <div class="set-group"><span class="label">CALLSIGN</span>
       <input class="in" id="sCallsign" value="${esc(S.settings.callsign)}" maxlength="24" aria-label="Callsign">
       <div class="hint">What this device calls itself: “${esc(S.settings.callsign)} online. Go ahead.”</div></div>
@@ -2192,6 +2209,7 @@ function saveComms() {
 }
 
 function ctEntryHtml(e) {
+  if (presenceLook()) return P.entryHtml(e);
   if (e.k === 'sep') return `<div class="ct-sep" data-e="${e.id}">── ${esc(e.text)} ──</div>`;
   if (e.k === 'you') return `<div class="ct-you" data-e="${e.id}"><span class="p">&gt; </span>${esc(e.text)}</div>`;
   if (e.k === 'fu') return `<div class="ct-fu ${e.tone || ''}" data-e="${e.id}"><span class="p">› </span><span class="tx">${esc(e.text)}</span></div>`;
@@ -2222,6 +2240,20 @@ function ctLinkHtml() {
 function openComms() {
   ac();
   C.open = true;
+  if (presenceLook()) {
+    $('#overlay').innerHTML = P.talkShell();
+    const scr = $('.ct-screen');
+    scr.addEventListener('click', onCommsClick);
+    $('#ctForm').addEventListener('submit', onCommsSubmit);
+    fitComms();
+    ctScroll(true);
+    const last = C.log[C.log.length - 1];
+    if (!last || Date.now() - (last.at || 0) > 20 * 60000) {
+      const now = new Date();
+      ctAdd({ k: 'sep', text: `${U.DAY_FULL[now.getDay()]} · ${U.fmtTimeShort(now, clock24())}` });
+    }
+    return;
+  }
   $('#overlay').innerHTML = `<div class="ct-screen" role="dialog" aria-label="Comms terminal">
     <header class="ct-head">
       <div class="ct-head-row"><div class="ct-title">COMMS TERMINAL</div>
@@ -2257,6 +2289,7 @@ function openComms() {
 function closeComms() {
   C.open = false;
   C.skip = true;
+  P.onTalkClose();
   sfx.droneStop();
   sfx.hush();
   $('#overlay').innerHTML = '';
@@ -2284,11 +2317,11 @@ function ctScroll(force) {
 }
 
 function ctAdd(entry) {
-  const e = { id: makeId('c_'), at: Date.now(), ...entry };
+  const e = { id: makeId('c_'), at: Date.now(), ...(C.src ? { src: C.src } : {}), ...entry };
   C.log.push(e);
   saveComms();
   const cur = $('#ctCursor');
-  if (cur) cur.insertAdjacentHTML('beforebegin', ctEntryHtml(e));
+  if (cur && C.open) cur.insertAdjacentHTML('beforebegin', ctEntryHtml(e));
   ctScroll(true);
   return e;
 }
@@ -2303,7 +2336,7 @@ function ctRefreshChrome() {
   const chips = $('#ctChips');
   if (chips) chips.innerHTML = ctChipsHtml();
   const i = $('#ctText');
-  if (i) i.placeholder = C.pending ? 'Type y or n' : 'Type a command';
+  if (i) i.placeholder = C.pending ? 'Type y or n' : presenceLook() ? (P.thinks() ? 'Type, or tap the mic' : 'Type a command') : 'Type a command';
   const link = $('#ctLink');
   if (link) link.innerHTML = ctLinkHtml();
 }
@@ -2320,7 +2353,9 @@ async function say(text, tone = '') {
   const per = Math.max(9, Math.min(26, 1600 / Math.max(1, text.length)));
   node.textContent = '';
   node.parentElement.classList.add('typing');
-  const voice = sfx.readout(text, per);
+  const pres = presenceLook();
+  if (pres) P.voiceLine(text, tone);
+  const voice = pres ? { stop() {} } : sfx.readout(text, per);
   const t0 = performance.now();
   await new Promise((resolve) => {
     const step = () => {
@@ -2369,8 +2404,31 @@ function submitCommand(text) {
   if (C.busy) C.skip = true; // fast-forward whatever is still printing
   ctAdd({ k: 'you', text });
   sfx.enter();
-  queueOut(() => runCommand(text));
+  queueOut(() => runBuiltIn(text));
 }
+// The built-in runner, with its replies tagged as built-in (Presence shows the tag).
+async function runBuiltIn(text) {
+  C.src = 'builtin';
+  try { await runCommand(text); } finally { C.src = null; }
+}
+// Presence + Gemini: questions and chat that the parser would file as a new task go to
+// Gemini instead. Plain commands ("call sam thursday at 3") stay built-in.
+const CREATE_START = /^(?:add|create|make|log|put|new|set up|set|schedule|book|remind me|i need to|i have to|i've got to|i gotta|don't forget|need to|gotta|todo|to do|task)\b/i;
+const CHATTY = /^(?:what|what's|whats|when|where|why|how|who|which|can|could|should|would|will|is|are|am|do|does|did|have|has|tell me|help|explain|any|anything|hey|hi|hello|yo|thanks|thank you|good (?:morning|afternoon|evening|night)|i'm|im|i am|i feel|let's|lets|ok so|so|please explain|give me|summarize|plan|suggest|remind me what)\b/i;
+function wantsGemini(text, r) {
+  if (!presenceLook() || !P.thinks()) return false;
+  if (!r || r.intent === 'empty') return true;
+  if (r.intent !== 'add-task' && r.intent !== 'add-event') return false;
+  const t = text.trim().toLowerCase();
+  if (CREATE_START.test(t)) return false;
+  return /\?\s*$/.test(t) || CHATTY.test(t);
+}
+function parsed(text) {
+  const ctx = { categories: categories(), people: people(), projects: liveProjects(), defaultReminder: shared().defaultReminder ?? 15 };
+  try { return fb.parseCommand(text, ctx, new Date()); } catch (e) { return { intent: 'empty' }; }
+}
+// Spoken words Gemini wrote down: does the built-in parser own them?
+function knows(text) { const r = parsed(text); return r.intent !== 'empty' && !wantsGemini(text, r); }
 
 function onCommsClick(e) {
   const b = e.target.closest('[data-ct],[data-chip]');
@@ -2386,6 +2444,8 @@ function onCommsClick(e) {
     return;
   }
   const a = b.dataset.ct;
+  if (a === 'mic') { P.onTalkMic(); return; }
+  if (a === 'sugg-yes' || a === 'sugg-no') { P.onSuggestion(b.dataset.id, a === 'sugg-yes'); return; }
   if (a === 'close') closeComms();
   else if (a === 'clear') {
     if (C.busy) C.skip = true;
@@ -2671,6 +2731,13 @@ function briefing() {
 }
 
 async function transmit(label, fields, firstLine, undo) {
+  if (presenceLook()) {
+    await say(`${firstLine}${quip()}`);
+    const ack = S.sync ? await S.sync.acknowledged(4500) : 'timeout';
+    await card({ head: ack === 'ok' ? `${label} · SYNCED` : `${label} · SYNCS LATER`, tone: ack === 'ok' ? 'ok' : 'wait', fields, undo });
+    ctRefreshChrome();
+    return;
+  }
   await say(`${firstLine}${quip()}`);
   sfx.transmit();
   await say(pick('transmit'), 'dim');
@@ -2726,6 +2793,8 @@ async function runCommand(text) {
   const ctx = { categories: categories(), people: people(), projects: liveProjects(), defaultReminder: shared().defaultReminder ?? 15 };
   let r;
   try { r = fb.parseCommand(text, ctx, now); } catch (e) { r = { intent: 'empty' }; }
+
+  if (!C.pending && wantsGemini(text, r)) { C.src = null; return P.think({ text }); }
 
   // Edits that match no existing task may really be new tasks ("make dinner reservations, high priority").
   if (r.intent === 'edit-task' && r.fallback && !findTask(r.query)) {
@@ -2895,7 +2964,7 @@ async function runCommand(text) {
     case 'cancel': return say('Standing by.', 'sys');
     case 'set-humor': S.settings.humor = r.value; saveSettings(); return say(`Humor setting ${r.value} percent.`);
     case 'humor-query': return say(`Humor setting is at ${S.settings.humor} percent.`);
-    default: return fail(pick('miss'));
+    default: return presenceLook() && P.thinks() ? P.think({ text }) : fail(pick('miss'));
   }
 }
 
@@ -2905,7 +2974,7 @@ function clearComms() {
   C.pending = null;
   saveComms();
   const log = $('#ctLog');
-  if (log) log.innerHTML = '<div class="ct-cursor-line" id="ctCursor"><span class="p">&gt; </span><i class="ct-cursor"></i></div>';
+  if (log) log.innerHTML = presenceLook() ? '<div class="ct-cursor-line" id="ctCursor"></div>' : '<div class="ct-cursor-line" id="ctCursor"><span class="p">&gt; </span><i class="ct-cursor"></i></div>';
   ctRefreshChrome();
 }
 
@@ -3182,6 +3251,8 @@ function wire() {
     if (evr) { const ev = S.events.find((x) => x.id === evr.dataset.ev); if (ev) openEventEditor(ev); return; }
     const tr = t.closest('[data-task]');
     if (tr) { const task = S.tasks.find((x) => x.id === tr.dataset.task); if (task) openTaskEditor(task); return; }
+    if (t.closest('[data-pz-back]')) { S.peek = false; render(); return; }
+    if (t.closest('[data-to-presence]')) { S.settings.ui = 'presence'; S.peek = false; saveSettings(); render(); return; }
     if (t.closest('[data-theme-all]')) { openThemeSheet(); return; }
     const th = t.closest('[data-theme-pick]');
     if (th) { S.settings.theme = th.dataset.themePick; saveSettings(); render(); return; }
@@ -3233,7 +3304,28 @@ function wire() {
 }
 
 // ---------------------------------------------------------------- start
+// What Presence (presence.js) may use from here.
+function presenceApi() {
+  return {
+    S, C, $, $$, esc, U, fb, load, store, saveSettings, render, toast, ac,
+    operator, clock24, commandOnline, active, isOverdue, dueLabel, sortTasks, inQueue, completeTask, uncomplete,
+    allEvents, eventsOnDay, liveProjects, projectById, projectStats, projectDueLabel, categoryById, briefing, wxWords,
+    openTaskEditor, openEventEditor, openProject, openProjectEditor, openSheet, closeSheet, showPairing, classic,
+    openComms, submitCommand, ctChipsHtml, ctAdd, ctUpdate, say, queueOut, knows, runCommand: runBuiltIn,
+    addTask: (title, at, timed) => { const t = { ...blankTask(), title, due: at, dueHasTime: !!(at && timed) }; upsertTask(t); return t; },
+    addEvent: (title, at, allDay) => {
+      const start = at ? new Date(at) : U.startOfDay(new Date());
+      const ev = { id: makeId('e_'), title, start: start.toISOString(), end: new Date(start.getTime() + (allDay ? 864e5 : 3600e3)).toISOString(), allDay: !!allDay, notes: '' };
+      S.events.push(ev);
+      persist('events');
+      return ev;
+    },
+    addNote: (title, body) => saveNote({ id: makeId('n_'), title, body: body || title, pinned: false, src: 'comms' }, true)
+  };
+}
+
 async function start() {
+  P.initPresence(presenceApi());
   applyTheme();
   const boot = bootScreen();
   const params = new URLSearchParams(location.search);

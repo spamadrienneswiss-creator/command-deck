@@ -71,9 +71,21 @@ On the computer running Command Deck (the recipient's PC):
 
 > Why pair inside the Home Screen app? iPhone keeps a Home Screen app's storage separate from Safari's. Pairing in Safari would leave the installed app unpaired.
 
-### About the Comms Terminal
+### Presence: the Computer on your phone
 
-Field Unit is keyboard-only: it doesn't listen or speak (the desktop console keeps its voice). Everything you'd have said works typed:
+Field Unit opens on **Presence**: a glowing orb that speaks your briefing, with calm **Tasks** and **Week** screens and a talk button in the middle of the bottom bar.
+
+1. **Add a Gemini key** so it can listen and chat: Presence **Settings › Brain › Gemini key**. Get one free at aistudio.google.com (Get API key). Paste, **SAVE**. It's stored with your deck, so every paired phone shares it, and Field Unit calls Gemini itself, so it works with the PC off. (If Wine Log has a key, Presence uses that until you add one.)
+2. **Tap the mic** and say something. The first time, iPhone asks to use the microphone: allow it.
+3. Pick a **voice** and a **name** in Settings › Voice & manner.
+
+Known commands run on the built-in commands (instant, free, no internet). Gemini handles questions and conversation, and offers suggestions you confirm with a tap. Without a key, typing still works.
+
+Notes, recaps, the month calendar, sharing, pairing and the classic settings are under Presence **Settings › Field Unit**. To use the classic look instead, tap **Use the classic Field Unit**; classic Settings has **BACK TO PRESENCE** at the top.
+
+### About the Comms Terminal (classic look)
+
+In the classic look, the terminal is keyboard-only (Presence is the one that listens and speaks). Everything you'd have said works typed:
 - Deletes ask first: tap **CONFIRM** / **CANCEL** or type **y** / **n**.
 - The chips: *Status report* runs straight away; *Take a note*, *New project* and *Add to calendar* fill in the start of the command ("take a note: ", "new project ", "schedule ") so you just finish typing.
 - **help** lists examples. **CLEAR** (top right) or typing **clear** wipes the screen; **CLOSE TERMINAL** next to it puts the terminal away. The transcript stays while you switch apps and is wiped when you close Field Unit completely (swipe it away in the app switcher). If iPhone closes it in the background to save memory, that counts too.
@@ -122,6 +134,8 @@ If you ever want to publish by hand instead, Part 2's `npm run deploy -- --proje
 | No notifications | Field Unit must be opened from the Home Screen, iOS 16.4+, alerts enabled in Field Unit Settings, and Command Deck running on the computer. Check iPhone Settings › Notifications › Field Unit and any Focus mode. |
 | No terminal sounds | Check the iPhone's silent switch and volume, and **Settings › Comms terminal sound**. |
 | Old mic screen still shows | Close Field Unit fully (swipe it away) and reopen it to load the new version. |
+| Presence won't listen | Settings › Brain needs a Gemini key and Gemini switched on. If iPhone blocked the microphone: iPhone Settings › Safari › Microphone (or the site's settings) › Allow, then reopen Field Unit. Typing always works. |
+| Presence talks with the iPhone voice instead of Gemini's | No signal, or Gemini's free voice limit is used up for now. It switches back on its own (checks again after 10 minutes). |
 | Share link says **Link not found** or **This link has ended** | The link was stopped, the project was finished (for "when done" links) or its 7 days passed. Share again to make a new one. If no share link opens at all, rerun the Part 2 deploy. |
 | Guest's check-offs don't show up | Command Deck or Field Unit must be open somewhere to relay them. They arrive as soon as either one comes online. |
 | Schedule link says **Link not found** or **This link has ended** | It was stopped, or its 7 or 30 days passed. Share again for a new one. If no schedule link opens at all, rerun the Part 2 deploy (v1.10 adds the schedule page). |

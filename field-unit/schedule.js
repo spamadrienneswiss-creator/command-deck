@@ -6,7 +6,6 @@
 // The gear changes how the page looks on this phone only. Added to the Home Screen,
 // it opens full screen like an app.
 // ============================================================
-import { mountScene, isScene } from './lib/scenes.js';
 import * as fb from './lib/core.js';
 import { startFirebase, signIn } from './lib/sync.js';
 import { weekStart, addDays, weekLabel, weekDays, ymd, typeOf, shortName, timeRange, chipName, parseTime } from './lib/roster.js';
@@ -14,11 +13,11 @@ import { bootScreen } from './boot.js';
 import * as U from './lib/util.js';
 
 const { $, esc } = U;
-const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody', concourse: 'outfit', spire: 'antonio', skyline: 'rajmono', silvan: 'cormorant' };
+const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody' };
 const LIGHT = new Set(['moonbase', 'cryo', 'skydock']);
 const STANDALONE = window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
 // Their own look for this page, kept on this phone.
-const LOOK_THEMES = [['dusk', 'DUSK', ['#F2A65A', '#A8B0D8']], ['moonbase', "MOONBASE '79", ['#F05A1A', '#E4E6E9']], ['blueprint', 'BLUEPRINT', ['#8EC5FF', '#0E2A47']], ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']], ['horizon', 'HORIZON', ['#F2C38B', '#FFF4E3']], ['hivis', 'HI-VIS', ['#C6F432', '#FF3D6E']], ['concourse', 'CONCOURSE', ['#E8B877', '#9FB8FF']], ['spire', 'SPIRE', ['#E2733A', '#C3AFC6']], ['skyline', 'SKYLINE', ['#7FF5E3', '#FF8AC0']], ['silvan', 'SILVAN', ['#D9C27E', '#9FC2A0']]];
+const LOOK_THEMES = [['dusk', 'DUSK', ['#F2A65A', '#A8B0D8']], ['moonbase', "MOONBASE '79", ['#F05A1A', '#E4E6E9']], ['blueprint', 'BLUEPRINT', ['#8EC5FF', '#0E2A47']], ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']], ['horizon', 'HORIZON', ['#F2C38B', '#FFF4E3']], ['hivis', 'HI-VIS', ['#C6F432', '#FF3D6E']]];
 const LOOK_FONTS = [['auto', 'THEME DEFAULT', ''], ['michroma', 'MICHROMA', "'Michroma Scaled'"], ['spacemono', 'SPACE MONO', "'Space Mono'"], ['vt323', 'VT323', "'VT323 Scaled'"], ['orbitron', 'ORBITRON', "'Orbitron Scaled'"]];
 const LOOK_FRAMES = [['dark', 'DARK', '#14151B'], ['bone', 'BONE', '#EEDDC3'], ['navy', 'MIDNIGHT NAVY', '#16264A']];
 const PERSON_IC = '<svg width="8" height="9" viewBox="0 0 9 10" aria-hidden="true"><circle cx="4.5" cy="3" r="2.2" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M0.8 9.5 a3.7 3.7 0 0 1 7.4 0" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>';
@@ -86,7 +85,7 @@ function whoChip(name, color) { return `<span class="sc-chip sc-who" style="--tc
 
 function applyLook() {
   const lk = { ...((P.r && P.r.look) || {}), ...(myLook || {}) };
-  const theme = lk.theme || 'dusk';
+  const theme = THEME_FONT[lk.theme] ? lk.theme : 'dusk'; // retired themes fall back to Dusk
   const b = document.body;
   b.dataset.theme = theme;
   b.dataset.font = !lk.font || lk.font === 'auto' ? (THEME_FONT[theme] || 'chakra') : lk.font;
@@ -94,8 +93,6 @@ function applyLook() {
   b.dataset.trim = myLook ? 'none' : (lk.trim || 'none');
   b.dataset.frame = (myLook && myLook.frame) || 'dark';
   if (LIGHT.has(theme)) b.dataset.light = '1'; else delete b.dataset.light;
-  mountScene(document.body, theme, { base: '/scenes/', phone: true });
-  if (isScene(theme)) b.dataset.scene = theme; else delete b.dataset.scene;
 }
 
 function chip(typeId) {

@@ -8,10 +8,9 @@ import { ManifestRelay, manifestUrl } from './lib/manifest.js';
 import { RosterRelay, scheduleUrl, DEFAULT_TYPES, weekStart, addDays, weekLabel, weekDays, ymd, parseYmd, typeOf, shortName, dayLabel, timeRange, parseTime, chipName, PERSON_COLORS, OWNER_COLOR } from './lib/roster.js';
 import { bootScreen } from './boot.js';
 import * as P from './presence.js';
-import { mountScene, isScene } from './lib/scenes.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.22.0';
+const VERSION = 'v1.23.0';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
@@ -125,18 +124,14 @@ function persist(kind) {
 }
 
 // ---------------------------------------------------------------- small UI helpers
-const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody', concourse: 'outfit', spire: 'antonio', skyline: 'rajmono', silvan: 'cormorant' };
-const THEME_BG = { moonbase: '#DADDE1', blueprint: '#0E2A47', cryo: '#E6F0F7', freighter: '#0A0C07', skydock: '#EEF1F4', vector: '#03050A', horizon: '#050505', hivis: '#0A0A0B', concourse: '#0C0A18', spire: '#1A1220', skyline: '#030812', silvan: '#0B1517' };
+const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody' };
+const THEME_BG = { moonbase: '#DADDE1', blueprint: '#0E2A47', cryo: '#E6F0F7', freighter: '#0A0C07', skydock: '#EEF1F4', vector: '#03050A', horizon: '#050505', hivis: '#0A0A0B' };
 const THEMES = [
   ['dusk', 'DUSK', ['#F2A65A', '#A8B0D8']], ['space', 'DEEP SPACE', ['#4FD1E8', '#9FB7FF']], ['red', 'RED ALERT', ['#FF4D4D', '#FFD27A']],
   ['terminal', 'TERMINAL', ['#39FF88', '#1F3328']], ['retro', 'RETRO', ['#5EE7FF', '#FF7BD5']],
   ['moonbase', "MOONBASE '79", ['#F05A1A', '#E4E6E9']], ['blueprint', 'BLUEPRINT', ['#8EC5FF', '#0E2A47']],
   ['cryo', 'CRYO', ['#2D8CFF', '#D6E7F3']], ['freighter', 'FREIGHTER', ['#9CF2A8', '#E8C547']],
-  ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']], ['horizon', 'HORIZON', ['#F2C38B', '#FFF4E3']], ['hivis', 'HI-VIS', ['#C6F432', '#FF3D6E']],
-  ['concourse', 'CONCOURSE', ['#E8B877', '#9FB8FF']],
-  ['spire', 'SPIRE', ['#E2733A', '#C3AFC6']],
-  ['skyline', 'SKYLINE', ['#7FF5E3', '#FF8AC0']],
-  ['silvan', 'SILVAN', ['#D9C27E', '#9FC2A0']]
+  ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']], ['horizon', 'HORIZON', ['#F2C38B', '#FFF4E3']], ['hivis', 'HI-VIS', ['#C6F432', '#FF3D6E']]
 ];
 const FONTS = [
   ['auto', 'THEME DEFAULT', ''], ['chakra', 'CHAKRA', "'Chakra Petch'"], ['michroma', 'MICHROMA', "'Michroma Scaled'"],
@@ -148,7 +143,7 @@ const FONTS = [
 const INKS = [['theme', 'THEME', null], ['amber', 'AMBER CRT', '#FFC27A'], ['phosphor', 'PHOSPHOR', '#A8F5B4'], ['ice', 'ICE', '#CFE6FF'], ['arctic', 'ARCTIC', '#FFFFFF'], ['rose', 'ROSE', '#F6C1CF']];
 // Your themes: only starred themes show in Settings (null = never edited, so all).
 // The list is shared with the deck through meta/themes; the newest edit wins.
-const THEME_PREV = { dusk: '#14121A', space: '#070B14', red: '#140708', terminal: '#050A07', retro: '#0E0716', moonbase: '#E4E6E9', blueprint: '#0E2A47', cryo: '#D6E7F3', freighter: '#0B0F0A', skydock: '#F2F4F7', vector: '#0A0D12', horizon: '#0A0806', hivis: '#0B0B0B', concourse: '#241A33', spire: '#3A1E22', skyline: '#06202A', silvan: '#12282A' };
+const THEME_PREV = { dusk: '#14121A', space: '#070B14', red: '#140708', terminal: '#050A07', retro: '#0E0716', moonbase: '#E4E6E9', blueprint: '#0E2A47', cryo: '#D6E7F3', freighter: '#0B0F0A', skydock: '#F2F4F7', vector: '#0A0D12', horizon: '#0A0806', hivis: '#0B0B0B' };
 function themeFavs() {
   const all = THEMES.map((t) => t[0]);
   const favs = Array.isArray(S.settings.themeFavs) ? S.settings.themeFavs.filter((v) => all.includes(v)) : all;
@@ -178,7 +173,7 @@ function openThemeSheet() {
       <div class="hint" style="margin:0 0 6px">Tap a name to try it. ★ keeps it in your list. Synced with the deck.</div>
       <div class="th-list">${THEMES.map(([v, l, cs]) => {
         const on = starred.includes(v) || v === cur;
-        return `<div class="th-row${on ? ' fav' : ''}"><button type="button" class="th-try" data-try="${v}"><span class="th-prev" aria-hidden="true" style="background:${isScene(v) ? `url(scenes/${v}.jpg) center / cover` : THEME_PREV[v] || '#111'}"><i style="background:${cs[0]}"></i><i style="background:${cs[1]}"></i></span><span class="th-name">${l}${v === cur ? '<em>IN USE</em>' : ''}</span></button>
+        return `<div class="th-row${on ? ' fav' : ''}"><button type="button" class="th-try" data-try="${v}"><span class="th-prev" aria-hidden="true" style="background:${THEME_PREV[v] || '#111'}"><i style="background:${cs[0]}"></i><i style="background:${cs[1]}"></i></span><span class="th-name">${l}${v === cur ? '<em>IN USE</em>' : ''}</span></button>
           <button type="button" class="th-star" data-star="${v}" aria-pressed="${on}" aria-label="${on ? 'Unstar' : 'Star'} ${l}"${v === cur ? ' disabled' : ''}>${on ? '★' : '☆'}</button></div>`;
       }).join('')}</div>`;
   };
@@ -205,7 +200,8 @@ const TRIMS = [['none', 'NONE', []], ['sunset', 'SUNSET', ['#B5432A', '#E07A2E',
   ['dock', 'DOCK LIGHTS', ['#1FB8F0', '#F4B41A', '#FF4F86', '#EE8A2E']], ['accretion', 'ACCRETION', ['#D9894A', '#FFF4E3', '#F2C38B']], ['tape', 'LABEL TAPE', ['#C6F432', '#0B0B0C', '#C6F432']]];
 function applyTheme() {
   const pres = presenceLook();
-  const theme = pres ? 'dusk' : S.settings.theme || 'dusk';
+  // A theme this version doesn't have (the retired painted ones) falls back to Dusk.
+  const theme = pres || !THEME_FONT[S.settings.theme] ? 'dusk' : S.settings.theme;
   const font = pres ? 'auto' : S.settings.font || 'auto';
   document.body.dataset.theme = theme;
   document.body.dataset.font = font === 'auto' ? (THEME_FONT[theme] || 'chakra') : font;
@@ -216,9 +212,6 @@ function applyTheme() {
   document.body.dataset.frame = pres ? 'dark' : S.settings.frame || 'dark';
   document.body.dataset.trim = pres ? 'none' : S.settings.trim || 'none';
   document.body.classList.toggle('presence', pres);
-  // Painted themes: the painting and its live layers sit behind the screens.
-  mountScene($('#app'), theme, { base: 'scenes/', phone: true });
-  if (isScene(theme)) document.body.dataset.scene = theme; else delete document.body.dataset.scene;
 }
 // Presence is on (and not peeking at a classic screen).
 function presenceLook() { return P.on() && !S.peek; }

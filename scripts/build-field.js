@@ -10,8 +10,6 @@ const copies = [
   ['shared/sync.js', 'sync.js'],
   ['shared/manifest.js', 'manifest.js'],
   ['shared/roster.js', 'roster.js'],
-  ['shared/scenes.js', 'scenes.js'],
-  ['shared/scenes.css', 'scenes.css'],
   ['renderer/util.js', 'util.js']
 ];
 for (const [from, to] of copies) {
@@ -54,8 +52,6 @@ for (const w of [300, 400, 500, 600, 700]) fs.copyFileSync(path.join(root, 'asse
 // Hi-Vis's variable fonts (Anybody stretches wide) also ship in assets/fonts.
 fs.copyFileSync(path.join(root, 'assets', 'fonts', 'anybody', 'anybody-var.woff2'), path.join(fontDir, 'anybody-var.woff2'));
 fs.copyFileSync(path.join(root, 'assets', 'fonts', 'martian-mono', 'martian-mono-var.woff2'), path.join(fontDir, 'martian-mono-var.woff2'));
-// The painted themes' typefaces (Outfit, Antonio, Inter, JetBrains Mono, Cormorant; all OFL).
-for (const f of fs.readdirSync(path.join(root, 'assets', 'fonts', 'painted'))) if (f.endsWith('.woff2')) fs.copyFileSync(path.join(root, 'assets', 'fonts', 'painted', f), path.join(fontDir, f));
 console.log('  typefaces → field-unit/fonts');
 const version = require(path.join(root, 'package.json')).version;
 fs.writeFileSync(path.join(root, 'field-unit', 'version.json'), JSON.stringify({ version, built: new Date().toISOString() }) + '\n');

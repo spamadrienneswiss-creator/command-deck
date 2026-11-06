@@ -9,15 +9,11 @@ import { initModals, openTaskEditor, openEventEditor, openNoteEditor, openRecap,
 import * as FU from './fieldunit.js';
 import * as Recap from './recap.js';
 import * as Motion from './motion.js';
-import { mountScene, isScene, moonWords } from '../shared/scenes.js';
-// "fourth", "twenty-first": Silvan's dates in words.
-const ORD = ['', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth', 'fourteenth', 'fifteenth', 'sixteenth', 'seventeenth', 'eighteenth', 'nineteenth', 'twentieth'];
-function dayWords(n) { return n <= 20 ? ORD[n] : n === 30 ? 'thirtieth' : n === 31 ? 'thirty-first' : `${n < 30 ? 'twenty' : 'thirty'}-${ORD[n % 10]}`; }
 import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ymd, parseYmd, typeOf, shortName, timeRange, parseTime, chipName } from '../shared/roster.js';
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.22.0';
+const VERSION = 'v1.23.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -157,18 +153,14 @@ function saveMeta() {
 
 // ---------------------------------------------------------------- settings
 // Each theme has its own typeface; the Typeface setting can override it.
-const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody', concourse: 'outfit', spire: 'antonio', skyline: 'rajmono', silvan: 'cormorant' };
+const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody' };
 const LIGHT_THEMES = new Set(['moonbase', 'cryo', 'skydock']);
 // Some themes rename panels to fit their world. Only the label text changes.
 const PANEL_NAMES = {
   skydock: { computer: '03 · STATION COMPUTER' },
   vector: { clock: 'PRIMARY · CHRONO', weather: 'EXTERNAL', computer: 'CO-PILOT', calendar: 'FLIGHT PLAN', events: 'WAYPOINTS', notes: 'LOGBOOK' },
   hivis: { clock: '01 / TIME', weather: '02 / ATMOS', computer: '03 / VOICE', calendar: '04 / CYCLE', events: '05 / NEXT', notes: '07 / MEMO' },
-  horizon: { clock: '01 · MISSION CLOCK', weather: '02 · CONDITIONS', calendar: '04 · MISSION CALENDAR', notes: '07 · FIELD NOTES' },
-  concourse: { clock: 'LOCAL TIME', weather: 'SURFACE CONDITIONS', computer: 'CONCIERGE', calendar: 'THE CALENDAR', events: 'DEPARTURES', notes: 'LOG' },
-  spire: { clock: 'LEVEL 1,180', weather: 'GROUND LEVEL', computer: 'SPIRE COMPUTER', calendar: 'ARRIVALS', events: 'NEXT ARRIVALS', notes: 'NOTES' },
-  skyline: { clock: 'LOCAL', weather: 'STREET LEVEL', computer: 'ASSISTANT', calendar: 'CALENDAR', events: 'UPCOMING', notes: 'NOTES' },
-  silvan: { clock: 'The Hour', weather: 'Sky & Wind', computer: 'Counsel', calendar: 'The Days', events: 'The Road Ahead', notes: 'Lore' }
+  horizon: { clock: '01 · MISSION CLOCK', weather: '02 · CONDITIONS', calendar: '04 · MISSION CALENDAR', notes: '07 · FIELD NOTES' }
 };
 function applyPanelNames(theme) {
   const names = PANEL_NAMES[theme] || {};
@@ -190,10 +182,6 @@ function applyLook(theme = look.theme, font = look.font, ink = look.ink) {
   b.dataset.theme = look.theme;
   b.dataset.font = look.font === 'auto' ? (THEME_FONT[look.theme] || 'chakra') : look.font;
   if (LIGHT_THEMES.has(look.theme)) b.dataset.light = '1'; else delete b.dataset.light;
-  // Painted themes: the backdrop painting and its live layers sit behind the panels.
-  mountScene($('#console'), look.theme, { base: '../assets/scenes/' });
-  if (isScene(look.theme)) b.dataset.scene = look.theme; else delete b.dataset.scene;
-  if (!isScene(look.theme) && typeof setSceneView === 'function') setSceneView(false);
   applyPanelNames(look.theme);
 }
 
@@ -202,10 +190,7 @@ function applySettings() {
   document.body.classList.remove('motion-full', 'motion-subtle', 'motion-still');
   document.body.classList.add(`motion-${s.motion}`);
   document.documentElement.style.setProperty('--frame-alpha', String(s.frameDarkness ?? 0.8));
-  document.documentElement.style.setProperty('--glass', String(Math.max(0, Math.min(100, Number(s.glass) || 0)) / 100));
   applyLook(s.theme, s.font, s.ink);
-  document.body.classList.toggle('open-window', (s.paintLayout || 'mine') === 'open');
-  armSceneIdle();
   document.body.dataset.frame = s.frame || 'dark';
   document.body.dataset.trim = s.trim || 'none';
   sounds.setQuiet(isQuiet());
@@ -233,7 +218,6 @@ async function saveSettings(next, { refetch = true } = {}) {
   renderAll();
   checkRedAlert();
   FU.relayShared(next);
-  if ((prev.paintLayout || 'mine') !== (next.paintLayout || 'mine')) setPaintLayout(next.paintLayout || 'mine');
   if (Array.isArray(next.themeFavs) && (next.themeFavsAt || 0) > themesHeardAt && FU.relayThemes(next.themeFavs, next.themeFavsAt)) themesHeardAt = next.themeFavsAt;
   if (deck.lights && JSON.stringify((prev || {}).lighting) !== JSON.stringify(next.lighting)) deck.lights.configure(next.lighting).catch(() => {});
   if (!prev || prev.layoutMode !== next.layoutMode) applyLayout();
@@ -341,14 +325,8 @@ function renderClock(now = new Date()) {
     $('#clkHoleDot').setAttribute('transform', `rotate(${(turn * 360).toFixed(1)})`);
   }
   $('#clkAmpm').textContent = h24 ? '24H' : (now.getHours() < 12 ? 'AM' : 'PM');
-  if (look.theme === 'silvan') {
-    // Silvan writes the day out, and reads the real moon.
-    $('#clkDay').textContent = `${U.DAY_FULL[now.getDay()]}, the ${dayWords(now.getDate())} of ${U.MONTHS[now.getMonth()]}`;
-    $('#clkDate').textContent = moonWords(now);
-  } else {
-    $('#clkDay').textContent = U.DAY_FULL[now.getDay()].toUpperCase();
-    $('#clkDate').textContent = `${now.getDate()} ${U.MONTHS[now.getMonth()].toUpperCase()} ${now.getFullYear()}`;
-  }
+  $('#clkDay').textContent = U.DAY_FULL[now.getDay()].toUpperCase();
+  $('#clkDate').textContent = `${now.getDate()} ${U.MONTHS[now.getMonth()].toUpperCase()} ${now.getFullYear()}`;
   const mins = now.getHours() * 60 + now.getMinutes();
   const pct = Math.round(mins / 14.4);
   $('#cycPct').textContent = `${pct}%`;
@@ -1959,7 +1937,6 @@ const VOICE_TEXT = {
 };
 
 function setVoiceState(state) {
-  if (state && state !== 'idle' && state !== 'standby') setSceneView(false);
   if ((state === 'speaking') !== (S.voice === 'speaking')) lights('speaking', state === 'speaking');
   S.voice = state;
   document.body.dataset.voice = state;
@@ -2184,7 +2161,6 @@ function reconcileTimers() {
 
 // ---------------------------------------------------------------- alert strip & snooze
 function showAlert(alert) {
-  setSceneView(false);
   S.alert = { ...alert, at: Date.now() };
   S.lastAlert = S.alert;
   const el = $('#alertStrip');
@@ -2512,14 +2488,12 @@ function pageSettings() {
   const p = (S.settings && S.settings.pages) || {};
   const names = Array.isArray(p.names) ? p.names : [];
   const pick = (list, dflt) => { const v = Array.isArray(list) ? list.filter((id) => PANEL_IDS.includes(id)) : []; return v.length ? v : dflt; };
-  // Page 1 shows every panel until its own list is picked (v1.21).
-  const tiles1 = pick(p.tiles1, PANEL_IDS.slice());
+  // Page 1 always shows every panel; page 2 shows the ones picked in Settings.
   const tiles2 = pick(p.tiles2, ['clock', 'tasks', 'notes']);
-  return { names: [String(names[0] || 'MAIN').toUpperCase(), String(names[1] || 'WORK').toUpperCase()], tiles1, tiles2 };
+  return { names: [String(names[0] || 'MAIN').toUpperCase(), String(names[1] || 'WORK').toUpperCase()], tiles2 };
 }
 function onPage(id, page = pageNow) {
-  const ps = pageSettings();
-  return (page === 2 ? ps.tiles2 : ps.tiles1).includes(id);
+  return page === 1 || pageSettings().tiles2.includes(id);
 }
 // Where each panel sits on a page in the standard layout (for the Settings preview).
 function pagePreview(page, tiles) {
@@ -2596,10 +2570,10 @@ function applyLayout(force = false) {
   columnCss(LAYOUTS[mode].columns);
   grid.column(LAYOUTS[mode].columns, 'none');
   // Place everything with floating on (so moves don't shove each other around), then
-  // settle: Open Window keeps the middle empty on purpose, other layouts pack upward.
+  // let the panels settle upward.
   grid.float(true);
   placePanels(mode);
-  grid.float(openWindowActive(mode));
+  grid.float(false);
   applyingLayout = false;
   renderPageChip();
   const chip = $('#layoutChip');
@@ -2611,70 +2585,7 @@ function applyLayout(force = false) {
   fitGrid();
 }
 
-// ---------------------------------------------------------------- painted themes: let the painting show
-// Open Window: a page 1 arrangement for the painted themes. The clock floats on the sky
-// (top left), a slim column runs down the right, the rest sits along the floor, and the
-// middle of the painting stays open. Your own arrangement is kept in layoutMine.
-const OPEN_WINDOW = { clock: [0, 0, 6, 4], weather: [9, 0, 3, 3], computer: [9, 3, 3, 3], calendar: [9, 6, 3, 6], events: [0, 8, 3, 4], tasks: [3, 8, 4, 4], notes: [7, 8, 2, 4] };
-function openWindowActive(mode = layoutNow) { return (S.settings.paintLayout || 'mine') === 'open' && mode === 'standard' && pageNow === 1; }
-function setPaintLayout(mode) {
-  if (mode === 'open') {
-    if (!Array.isArray(S.data.layoutMine)) { S.data.layoutMine = Array.isArray(S.data.layout) ? S.data.layout : []; deck.save('layoutMine', S.data.layoutMine); }
-    S.data.layout = PANEL_IDS.map((id) => { const [x, y, w, h] = OPEN_WINDOW[id]; return { id, x, y, w, h }; });
-  } else {
-    if (Array.isArray(S.data.layoutMine)) S.data.layout = S.data.layoutMine.length ? S.data.layoutMine : null;
-    S.data.layoutMine = null;
-    deck.save('layoutMine', null);
-  }
-  deck.save('layout', S.data.layout);
-  if (layoutNow === 'standard' && pageNow === 1) applyLayout(true);
-}
-
-// Scene view: the panels fade away and the painting has the deck to itself, with a quiet
-// clock line. The SCENE button (painted themes only) or a few idle minutes start it; any
-// touch, key, alert or the Computer waking ends it.
-let sceneIdleTimer = null;
-let sceneClockTimer = null;
-function sceneOn() { return document.body.classList.contains('scene-view'); }
-function setSceneView(on) {
-  if (on && !isScene(look.theme)) return;
-  if (on === sceneOn()) return;
-  document.body.classList.toggle('scene-view', on);
-  const b = $('#btnScene');
-  if (b) b.setAttribute('aria-pressed', String(on));
-  clearInterval(sceneClockTimer);
-  if (on) { renderSceneClock(); sceneClockTimer = setInterval(renderSceneClock, 15000); }
-  else armSceneIdle();
-}
-function renderSceneClock() {
-  const el = $('#sceneClock');
-  if (!el) return;
-  const now = new Date();
-  const c24 = !!S.settings.clock24;
-  const t = U.fmtTimeShort(now, c24);
-  const w = S.weather && S.weather.current ? ` · ${Math.round(S.weather.current.temperature_2m)}°` : '';
-  const ev = allEvents().filter((e) => new Date(e.end || e.start) > now).sort((a, b) => new Date(a.start) - new Date(b.start))[0];
-  const next = ev ? ` · next: ${ev.title}` : '';
-  el.innerHTML = `<div class="sc-t">${esc(t)}</div><div class="sc-l">${esc(`${U.DAY_FULL[now.getDay()]}, ${U.MONTHS[now.getMonth()]} ${now.getDate()}${w}${next}`)}</div>`;
-}
-function armSceneIdle() {
-  clearTimeout(sceneIdleTimer);
-  const mins = Number(S.settings && S.settings.sceneIdle) || 0;
-  if (!mins || !isScene(look.theme) || sceneOn()) return;
-  sceneIdleTimer = setTimeout(() => { if (!isModalOpen() && $('#alertStrip').hidden) setSceneView(true); else armSceneIdle(); }, mins * 60000);
-}
-function wireScene() {
-  const b = $('#btnScene');
-  if (b) b.addEventListener('click', (e) => { e.stopPropagation(); sounds.click(); setSceneView(!sceneOn()); });
-  const wake = (e) => {
-    if (sceneOn()) { if (e.target && e.target.closest && e.target.closest('#btnScene')) return; e.preventDefault(); e.stopPropagation(); setSceneView(false); return; }
-    armSceneIdle();
-  };
-  window.addEventListener('pointerdown', wake, true);
-  window.addEventListener('keydown', (e) => { if (sceneOn()) setSceneView(false); else armSceneIdle(); }, true);
-}
-
-/** Pages: each page shows the panels picked for it in Settings › System › PAGES (page 1: all, until picked). */
+/** Pages: page 1 is the whole deck, page 2 the panels picked in Settings › System › PAGES. */
 function setPage(n, { announce = false } = {}) {
   const page = n === 2 ? 2 : 1;
   if (page === pageNow) return false;
@@ -3031,9 +2942,29 @@ function startTimers() {
 }
 
 // ---------------------------------------------------------------- start
+// v1.23: the painted themes (and Open Window, Glass, Scene view, picking page 1's panels)
+// are gone. Anyone on a painted theme goes back to Dusk, and if Open Window had moved
+// page 1, your own arrangement comes back.
+const RETIRED_THEMES = ['concourse', 'spire', 'skyline', 'silvan'];
+function retirePainted() {
+  const s = S.settings;
+  let changed = false;
+  if (RETIRED_THEMES.includes(s.theme)) { s.theme = 'dusk'; changed = true; }
+  for (const k of ['paintLayout', 'glass', 'sceneIdle']) if (k in s) { delete s[k]; changed = true; }
+  if (s.pages && 'tiles1' in s.pages) { const { tiles1, ...rest } = s.pages; s.pages = rest; changed = true; }
+  if (changed) deck.save('settings', s);
+  if (Array.isArray(S.data.layoutMine)) {
+    S.data.layout = S.data.layoutMine.length ? S.data.layoutMine : null;
+    S.data.layoutMine = null;
+    deck.save('layout', S.data.layout);
+    deck.save('layoutMine', null);
+  }
+}
+
 async function start() {
   S.data = await deck.load();
   S.settings = S.data.settings;
+  retirePainted();
   themesHeardAt = S.settings.themeFavsAt || 0;
   S.tasks = S.data.tasks || [];
   S.localEvents = S.data.localEvents || [];
@@ -3061,7 +2992,6 @@ async function start() {
   applySettings();
   initGrip();
   wirePages();
-  wireScene();
   wire();
   wireNotes();
   wireProjects();
@@ -3115,7 +3045,6 @@ async function start() {
     loadTts,
     previewOpacity: (v) => deck.setOpacity(v),
     previewDarkness: (v) => document.documentElement.style.setProperty('--frame-alpha', String(v)),
-    previewGlass: (v) => document.documentElement.style.setProperty('--glass', String(v / 100)),
     previewTheme: (t) => applyLook(t, look.font),
     pagePreview,
     previewFont: (f) => applyLook(look.theme, f),

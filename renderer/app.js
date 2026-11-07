@@ -13,7 +13,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.24.0';
+const VERSION = 'v1.24.1';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },

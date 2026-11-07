@@ -421,38 +421,46 @@ app.on('second-instance', () => {
 // ---------------------------------------------------------------- Comm Tower 1
 // A small always-on-top chip on the main monitor. Click it and talk: the deck window
 // does the listening, transcribing and filing (its voice core lives there), and sends
-// each step back here so the chip can show it. The window is mostly see-through, so
-// clicks pass through it except over the chip and its card.
-const TOWER_W = 380;
-const TOWER_H = 330;
+// each step back here so the chip can show it. The window is sized to what it shows
+// (just the chip, or the chip plus its card), grown and shrunk from its bottom-right
+// corner, so every click on it lands and nothing around it is covered.
+const TOWER_CHIP = { w: 340, h: 116 }; // the chip plus room for its glow
+const TOWER_GAP = 6; // from the screen's corner
 function towerSettings() {
   const t = settings().tower || {};
   return { on: t.on !== false, name: String(t.name || 'COMM TOWER 1').trim().toUpperCase() || 'COMM TOWER 1', operator: settings().operatorName || '' };
 }
-function towerHome() {
+// Where the window's bottom-right corner goes: saved, or the main monitor's corner.
+function towerCorner() {
+  const p = store.get().towerPos;
+  if (p && Number.isFinite(p.r) && Number.isFinite(p.b)) {
+    const on = screen.getAllDisplays().some((d) => { const a = d.bounds; return p.r - 120 >= a.x && p.r - 120 < a.x + a.width && p.b - 40 >= a.y && p.b - 40 < a.y + a.height; });
+    if (on) return { r: p.r, b: p.b };
+  }
   const wa = screen.getPrimaryDisplay().workArea;
-  return { x: wa.x + wa.width - TOWER_W - 8, y: wa.y + wa.height - TOWER_H - 8 };
+  return { r: wa.x + wa.width - TOWER_GAP, b: wa.y + wa.height - TOWER_GAP };
 }
-function towerPosOnScreen(p) {
-  if (!p) return false;
-  // The chip sits at the window's bottom-right; keep that corner on some screen.
-  const cx = p.x + TOWER_W - 140;
-  const cy = p.y + TOWER_H - 40;
-  return screen.getAllDisplays().some((d) => { const a = d.bounds; return cx >= a.x && cx < a.x + a.width && cy >= a.y && cy < a.y + a.height; });
+function towerFit(w, h) {
+  if (!tower || tower.isDestroyed()) return;
+  const cur = tower.getBounds();
+  const r = cur.x + cur.width;
+  const b = cur.y + cur.height;
+  w = Math.max(TOWER_CHIP.w, Math.min(420, Math.round(w)));
+  h = Math.max(TOWER_CHIP.h, Math.min(420, Math.round(h)));
+  if (w === cur.width && h === cur.height) return;
+  tower.setBounds({ x: r - w, y: b - h, width: w, height: h });
 }
 function createTower() {
   if (tower && !tower.isDestroyed()) return;
-  const saved = store.get().towerPos;
-  const p = towerPosOnScreen(saved) ? saved : towerHome();
+  const c = towerCorner();
   tower = new BrowserWindow({
-    x: Math.round(p.x), y: Math.round(p.y), width: TOWER_W, height: TOWER_H,
+    x: c.r - TOWER_CHIP.w, y: c.b - TOWER_CHIP.h, width: TOWER_CHIP.w, height: TOWER_CHIP.h,
     frame: false, transparent: true, resizable: false, movable: true, hasShadow: false,
-    skipTaskbar: true, show: false, focusable: false, alwaysOnTop: true,
+    skipTaskbar: true, show: false, focusable: false, alwaysOnTop: true, minimizable: false, maximizable: false,
     backgroundColor: '#00000000', title: 'Comm Tower 1',
     webPreferences: { preload: path.join(__dirname, 'tower-preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false }
   });
   tower.setAlwaysOnTop(true, 'floating');
-  tower.setIgnoreMouseEvents(true, { forward: true });
   tower.loadURL('deck://app/renderer/tower.html');
   tower.once('ready-to-show', () => { if (tower && !tower.isDestroyed()) tower.showInactive(); });
   tower.webContents.on('did-finish-load', () => sendTower('tower:config', towerSettings()));
@@ -468,24 +476,26 @@ function applyTower() {
   else if (tower && !tower.isDestroyed()) tower.destroy();
 }
 function registerTowerIpc() {
-  ipcMain.on('tower:hit', (_e, over) => { if (tower && !tower.isDestroyed()) tower.setIgnoreMouseEvents(!over, { forward: true }); });
+  // The chip page measures what it's showing; the window follows, anchored bottom-right.
+  ipcMain.on('tower:size', (_e, w, h) => towerFit(Number(w) || 0, Number(h) || 0));
   let dragFrom = null;
   ipcMain.on('tower:drag', (_e, phase, sx, sy) => {
     if (!tower || tower.isDestroyed()) return;
-    if (phase === 'start') { const [x, y] = tower.getPosition(); dragFrom = { x, y, sx, sy }; return; }
+    if (phase === 'start') { const bb = tower.getBounds(); dragFrom = { ...bb, sx, sy }; return; }
     if (!dragFrom) return;
-    tower.setPosition(Math.round(dragFrom.x + sx - dragFrom.sx), Math.round(dragFrom.y + sy - dragFrom.sy));
+    tower.setBounds({ x: Math.round(dragFrom.x + sx - dragFrom.sx), y: Math.round(dragFrom.y + sy - dragFrom.sy), width: dragFrom.width, height: dragFrom.height });
     if (phase === 'end') {
-      const [x, y] = tower.getPosition();
-      store.set('towerPos', { x, y });
+      const bb = tower.getBounds();
+      store.set('towerPos', { r: bb.x + bb.width, b: bb.y + bb.height });
       dragFrom = null;
     }
   });
   ipcMain.on('tower:home', () => {
-    if (!tower || tower.isDestroyed()) return;
-    const h = towerHome();
-    tower.setPosition(h.x, h.y);
     store.set('towerPos', null);
+    if (!tower || tower.isDestroyed()) return;
+    const c = towerCorner();
+    const bb = tower.getBounds();
+    tower.setBounds({ x: c.r - bb.width, y: c.b - bb.height, width: bb.width, height: bb.height });
   });
   // Chip → deck: start or stop talking.
   ipcMain.on('tower:talk', () => {

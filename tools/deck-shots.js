@@ -39,6 +39,7 @@ app.on('browser-window-created', (_e, win) => {
             await js(`deck.tower.state(${JSON.stringify(c.tower[i])})`);
             await wait(700);
             fs.writeFileSync(`${SP}/deck/${c.name}-tower-${i}.png`, (await towerWin.webContents.capturePage()).toPNG());
+            console.log('TOWERSTATE', c.name, i, c.tower[i].stage, JSON.stringify(towerWin.getBounds()));
           }
           console.log('TOWER', c.name, JSON.stringify(towerWin.getBounds()), towerWin.isVisible());
         }

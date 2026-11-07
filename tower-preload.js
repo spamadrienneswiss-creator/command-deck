@@ -3,7 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('tower', {
   talk: () => ipcRenderer.send('tower:talk'),
-  hit: (over) => ipcRenderer.send('tower:hit', !!over),
+  size: (w, h) => ipcRenderer.send('tower:size', w, h),
   drag: (phase, sx, sy) => ipcRenderer.send('tower:drag', phase, sx, sy),
   home: () => ipcRenderer.send('tower:home'),
   onState: (fn) => ipcRenderer.on('tower:state', (_e, s) => fn(s)),

@@ -1,5 +1,5 @@
 /* Comm Tower 1: the talk-to-capture chip (C3 "Operator" on the design board).
-   The window is see-through; only the chip and its card take clicks. */
+   The window is sized to the chip (and its card while it shows), with 18 px for the glow. */
 :root {
   --amb: #F2A65A; --amb-rgb: 242, 166, 90;
   --grn: #B8E27A; --grn-rgb: 184, 226, 122;
@@ -11,7 +11,7 @@ html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
 body { font-family: 'Chakra Petch', 'Segoe UI', sans-serif; color: var(--ink); }
 body[data-stage="reply"]:not([data-kind="err"]) { --acc: var(--grn); --acc-rgb: var(--grn-rgb); }
 
-.tw { position: absolute; right: 8px; bottom: 8px; display: flex; flex-direction: column; align-items: flex-end; }
+.tw { position: absolute; right: 18px; bottom: 18px; display: flex; flex-direction: column; align-items: flex-end; }
 
 /* ---- the chip */
 .tw-chip {

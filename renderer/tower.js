@@ -82,13 +82,12 @@ T.onConfig((c) => {
 });
 T.onState(render);
 
-// Clicks reach the window only over the chip and the card; everywhere else passes through.
-let over = false;
-const hit = (v) => { if (v !== over) { over = v; T.hit(v); } };
-for (const el of [chip, card]) {
-  el.addEventListener('mouseenter', () => hit(true));
-  el.addEventListener('mouseleave', () => { if (!body.classList.contains('dragging')) hit(false); });
-}
+// The window is sized to what's showing (chip, or chip + card) plus room for the glow,
+// so there's no see-through area covering whatever sits behind it.
+const PAD = 18;
+const tw = document.querySelector('.tw');
+const fit = () => { const r = tw.getBoundingClientRect(); T.size(Math.ceil(r.width) + PAD * 2, Math.ceil(r.height) + PAD * 2); };
+new ResizeObserver(fit).observe(tw);
 // Clicking the card puts it away.
 card.addEventListener('click', () => { if (body.dataset.stage === 'reply' || body.dataset.stage === 'idle') render({ stage: 'idle' }); });
 

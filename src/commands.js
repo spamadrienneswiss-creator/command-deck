@@ -215,7 +215,25 @@ function fixMeridiem(date, comp, title) {
   return d;
 }
 
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+// "on the 20th" with no month: the next 20th from today (chrono can't read a bare day).
+function nameBareDay(text, ref) {
+  return text.replace(/\bthe\s+(\d{1,2})(?:st|nd|rd|th)\b(?!\s+(?:of\s+)?(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b)/i, (m, d) => {
+    const day = Number(d);
+    if (day < 1 || day > 31) return m;
+    let y = ref.getFullYear();
+    let mo = ref.getMonth();
+    if (day < ref.getDate()) mo += 1;
+    for (let k = 0; k < 3; k++, mo++) {
+      const dt = new Date(y, mo, day);
+      if (dt.getDate() === day) return `${MONTH_NAMES[dt.getMonth()]} ${day}`;
+    }
+    return m;
+  });
+}
+
 function extractDate(text, out, ref) {
+  text = nameBareDay(text, ref);
   const results = chrono.parse(text, ref, { forwardDate: true });
   if (!results.length) return text;
   const r = results[0];

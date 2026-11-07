@@ -72,6 +72,9 @@ body[data-stage="open"] .tw-live { animation: tw-blink 1s steps(2, start) infini
 .tw-head { display: flex; align-items: center; gap: 9px; }
 .tw-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px rgba(var(--c-rgb), 0.9); }
 .tw-who { font: 600 11px/1 'Chakra Petch', sans-serif; letter-spacing: 0.18em; color: var(--ink); }
+.tw-src { margin-left: auto; padding: 3px 5px; border-radius: 3px; font: 500 8.5px/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: var(--c); background: rgba(var(--c-rgb), 0.1); box-shadow: inset 0 0 0 1px rgba(var(--c-rgb), 0.3); }
+.tw-src:empty { display: none; }
+.tw-src:not(:empty) + .tw-time { margin-left: 8px; }
 .tw-time { margin-left: auto; font: 500 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.1em; color: var(--mute); }
 .tw-wave { display: none; margin-top: 14px; align-items: center; gap: 3px; height: 26px; }
 .tw-card.live .tw-wave { display: flex; }

@@ -1721,9 +1721,13 @@ function editItem(r) {
   return { reply, kind: 'ok' };
 }
 
-async function handleCommand(text, { fromVoice = false, noEdit = false, skipLog = false, onReply = null } = {}) {
+function commandCtx(noEdit = false) {
+  return { pageNames: pageSettings().names, categories: S.settings.categories, people: S.settings.people, defaultReminder: S.settings.defaultReminder, noEdit, projects: S.projects.filter((p) => p.status !== 'done').map((p) => ({ id: p.id, name: p.name })) };
+}
+
+async function handleCommand(text, { fromVoice = false, noEdit = false, skipLog = false, onReply = null, quiet = false } = {}) {
   if (!skipLog) pushLog('u', text);
-  const ctx = { pageNames: pageSettings().names, categories: S.settings.categories, people: S.settings.people, defaultReminder: S.settings.defaultReminder, noEdit, projects: S.projects.filter((p) => p.status !== 'done').map((p) => ({ id: p.id, name: p.name })) };
+  const ctx = commandCtx(noEdit);
   let r;
   try {
     r = await deck.parse(text, ctx);
@@ -1732,7 +1736,7 @@ async function handleCommand(text, { fromVoice = false, noEdit = false, skipLog 
   }
   // An edit that matches no existing task may really be a new task ("make dinner reservations, high priority").
   if (r.intent === 'edit-task' && r.fallback && !findTask(r.query) && !findLocalEvent(r.query)) {
-    return handleCommand(text, { fromVoice, noEdit: true, skipLog: true, onReply });
+    return handleCommand(text, { fromVoice, noEdit: true, skipLog: true, onReply, quiet });
   }
   let reply = '';
   let kind = 'c';
@@ -1906,7 +1910,7 @@ async function handleCommand(text, { fromVoice = false, noEdit = false, skipLog 
   pushLog(kind, reply);
   if (onReply) onReply({ reply, kind, task: made, intent: r.intent });
   const isQuery = !['add-task', 'add-event', 'complete-task', 'edit-task', 'confirm', 'set-timer', 'set-alarm', 'cancel-timer'].includes(r.intent);
-  if (fromVoice || isQuery || followUp) await speak(reply);
+  if ((fromVoice || isQuery || followUp) && !quiet) await speak(reply);
   return { reply, followUp: fromVoice && followUp };
 }
 
@@ -2121,13 +2125,92 @@ async function towerTalk() {
   }
   towerSend({ stage: 'heard', you: text });
   await new Promise((r) => setTimeout(r, 650)); // a beat to read your own words
-  let shown = null;
-  await handleCommand(text, {
-    fromVoice: true,
-    onReply: (res) => { shown = res; towerSend({ stage: 'reply', text: res.reply, kind: res.kind, tags: towerTags(res.task), speaking: true }); }
-  });
-  if (shown) towerSend({ stage: 'reply', text: shown.reply, kind: shown.kind, tags: towerTags(shown.task), speaking: false });
-  towerSettle();
+  await towerRespond(text);
+}
+
+// Talking back (v1.25): the deck does anything that's a command, then Gemini words the
+// reply (or answers a question from the deck's own tasks and schedule). No key, no signal,
+// or a slow answer: the deck's own reply, as before.
+let towerOffer = null; // { command, at }: something Comm Tower 1 offered to add, waiting for "yes"
+const YES = /^(?:yes|yeah|yep|yup|sure|please|do it|go ahead|sounds good|ok(?:ay)?|affirmative|add it|book it|that works)\b/i;
+const NO = /^(?:no|nope|nah|not now|never mind|skip it|negative|don't)\b/i;
+function looksLikeQuestion(text) {
+  return /\?\s*$/.test(text) || /^(?:can|could|should|would|will|do|does|did|am|is|are|was|were|what|what's|whats|when|where|why|how|which|who|any|tell me|help me|give me|remind me what|is there|are there|have i|did i)\b/i.test(text.trim());
+}
+function towerTalkOn() {
+  const t = S.settings.tower || {};
+  const r = S.settings.recap || {};
+  return t.talk !== false && !!r.geminiKey;
+}
+function towerContext() {
+  const now = new Date();
+  const lines = [`Right now: ${U.DAY_FULL[now.getDay()]}, ${U.MONTHS[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}, ${U.fmtTimeShort(now, false)}.`];
+  try { lines.push(`Weather: ${weatherSentence()}`); } catch (e) { /* no weather yet */ }
+  const soon = new Date(now.getTime() + 14 * 864e5);
+  const ev = allEvents().filter((e) => e.end >= now && e.start <= soon).slice(0, 25);
+  lines.push('Calendar, next two weeks:');
+  lines.push(ev.length ? ev.map((e) => `- ${U.DAY_FULL[e.start.getDay()].slice(0, 3)} ${U.MONTHS[e.start.getMonth()].slice(0, 3)} ${e.start.getDate()}${e.allDay ? ' (all day)' : ` ${U.fmtTimeShort(e.start, false)}–${U.fmtTimeShort(e.end, false)}`}: ${e.title}`).join('\n') : '- nothing');
+  const sched = (S.schedule || []).filter((x) => !x.deleted && x.date && new Date(`${x.date}T00:00`) >= new Date(now.toDateString()) && new Date(`${x.date}T00:00`) <= soon).slice(0, 20);
+  if (sched.length) lines.push('Schedule (shifts and appointments):', sched.map((x) => `- ${x.date}: ${[x.type, x.title, x.start && `${x.start}${x.end ? `–${x.end}` : ''}`].filter(Boolean).join(' · ')}`).join('\n'));
+  const tasks = activeTasks().slice().sort((a, b) => (a.due ? new Date(a.due) : Infinity) - (b.due ? new Date(b.due) : Infinity)).slice(0, 25);
+  lines.push('Open tasks:');
+  lines.push(tasks.length ? tasks.map((t) => `- ${t.title}${t.due ? ` (due ${spokenWhen(t.due, t.dueHasTime)}${isOverdue(t, now) ? ', OVERDUE' : ''})` : ''}${t.priority === 'high' ? ' [high priority]' : ''}`).join('\n') : '- none');
+  const tm = (S.timers || []).filter((t) => t.endsAt && new Date(t.endsAt) > now);
+  if (tm.length) lines.push(`Running timers/alarms: ${tm.map((t) => `${t.label || t.kind} until ${U.fmtTimeShort(new Date(t.endsAt), false)}`).join('; ')}`);
+  return lines.join('\n');
+}
+async function towerWord(heard, done) {
+  if (!towerTalkOn() || !deck.tower || !deck.tower.word) return null;
+  const r = S.settings.recap || {};
+  const res = await deck.tower.word({ key: r.geminiKey, model: r.model || '', name: (S.settings.tower && S.settings.tower.name) || 'COMM TOWER 1', operator: S.settings.operatorName, humor: S.settings.humor ?? 40, heard, done, context: towerContext() }).catch(() => null);
+  return res && res.ok ? res : null;
+}
+async function towerRespond(text) {
+  let made = null;
+  let built = null;
+  const say = async (reply, kind, tags, src) => {
+    towerSend({ stage: 'reply', text: reply, kind, tags, src, speaking: true });
+    await speak(reply);
+    towerSend({ stage: 'reply', text: reply, kind, tags, src, speaking: false });
+    towerSettle();
+  };
+  const run = (cmd) => handleCommand(cmd, { fromVoice: true, quiet: true, onReply: (res) => { built = res; made = res.task; } });
+
+  // An answer to something Comm Tower 1 offered ("Want me to hold 10 AM? Say yes.")
+  if (towerOffer && Date.now() - towerOffer.at < 5 * 60e3 && (YES.test(text) || NO.test(text))) {
+    const offer = towerOffer;
+    towerOffer = null;
+    if (NO.test(text)) { pushLog('u', text); pushLog('c', 'Understood. Leaving it off.'); return say(`Understood, ${S.settings.operatorName}. I'll leave it off.`, 'c', [], 'built-in'); }
+    pushLog('u', text);
+    await run(offer.command);
+    if (!built) return say("That didn't go through. Try saying it the long way.", 'err', [], 'built-in');
+    const plain = built.reply.replace(/^Copy that, [^.]+\.\s*/, '');
+    return say(built.kind === 'ok' ? `Done. ${plain}` : built.reply, built.kind, towerTags(made), 'built-in');
+  }
+  towerOffer = null;
+
+  let parsed = null;
+  try { parsed = await deck.parse(text, commandCtx()); } catch (e) { parsed = { intent: 'empty' }; }
+  const question = (!parsed || ['add-task', 'empty'].includes(parsed.intent)) && looksLikeQuestion(text) && towerTalkOn();
+
+  if (question) {
+    pushLog('u', text);
+    towerSend({ stage: 'thinking', you: text });
+    const g = await towerWord(text, null);
+    if (!g) { pushLog('c', "I can't answer that one offline."); return say("I can't answer that one right now, but I can file it, set a timer, or tell you what's next.", 'err', [], 'built-in'); }
+    pushLog('c', g.reply);
+    if (g.command) towerOffer = { command: g.command, at: Date.now() };
+    return say(g.reply, 'ok', g.command ? [{ t: 'CLICK · SAY "YES" TO ADD', k: '' }] : [], 'gemini');
+  }
+
+  // A command: the deck does it now, then the reply gets worded.
+  await run(text);
+  if (!built) return say("I didn't catch that. Try me again.", 'err', [], 'built-in');
+  const tags = towerTags(made);
+  // Built-in queries already read well and are factual; Gemini still smooths them out.
+  const g = await towerWord(text, { reply: built.reply.replace(/^Copy that, [^.]+\.\s*/, ''), kind: built.kind, intent: built.intent });
+  if (g) return say(g.reply, built.kind, tags, 'gemini');
+  return say(built.reply, built.kind, tags, 'built-in');
 }
 
 // ---------------------------------------------------------------- timers & alarms
@@ -3091,6 +3174,7 @@ async function start() {
   Motion.start();
   if (deck.onAway) deck.onAway((away) => { Motion.setAway(away); voicesAway(away); });
   if (deck.tower) deck.tower.onTalk(() => towerTalk());
+  window.__towerRespond = (t) => towerRespond(t); // test hook: tools/deck-shots.js drives the reply flow without a microphone
   wireUpdates();
   wireLights();
   applySettings();

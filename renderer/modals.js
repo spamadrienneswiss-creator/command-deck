@@ -1054,8 +1054,9 @@ export function openSettings(welcome = false) {
           <div class="f-hint">How long a pause ends your turn. Tapping the mic button again always finishes right away.</div></div>
         <div class="f"><span class="f-label">COMM TOWER 1 · TALK FROM ANY SCREEN</span>
           <div class="toggle-row"><span>Show the chip on the main monitor</span>${switchHtml('swTower', (draft.tower || {}).on !== false, 'Show Comm Tower 1')}</div>
+          <div class="toggle-row"><span>Talk back conversationally (Gemini)</span>${switchHtml('swTowerTalk', (draft.tower || {}).talk !== false, 'Conversational replies')}</div>
           <div class="inline" style="flex:none;margin-top:6px"><input id="sTowerName" class="in" maxlength="20" aria-label="Comm Tower name" value="${esc((draft.tower || {}).name || 'COMM TOWER 1')}" placeholder="COMM TOWER 1" style="flex:1"><button type="button" class="btn line" id="sTowerHome">BACK TO CORNER</button></div>
-          <div class="f-hint">Click the chip and talk; it files tasks, events, notes and timers the same as the Computer, then answers you by name. Drag it to move it. The name is whatever you call it.</div></div>
+          <div class="f-hint">Click the chip and talk; it files tasks, events, notes and timers the same as the Computer, then answers you by name. Drag it to move it. The name is whatever you call it.<br>Talking back uses the Gemini key from Field Unit › DATA RECAP: the deck still does the filing, Gemini words the reply and answers questions about your day from your tasks and schedule (they're sent to Gemini for that). No key or no signal: the deck's own replies.</div></div>
         <div class="f"><label class="f-label" for="sHumor" style="display:flex;justify-content:space-between"><span>HUMOR SETTING</span><span id="sHumorVal" class="amber-t">${draft.humor ?? 40}%</span></label>
           <input id="sHumor" class="range" type="range" min="0" max="100" step="5" value="${draft.humor ?? 40}">
           <div class="f-hint">0% is strictly professional; higher settings add dry, deadpan remarks. You can also just say "set humor to 75 percent."</div></div>
@@ -1485,6 +1486,7 @@ export function openSettings(welcome = false) {
       slider('#sHumor', 'humor', (v) => v);
       wireSwitch($('#swAuto', body), (on) => { draft.autoStart = on; });
       wireSwitch($('#swTower', body), (on) => { draft.tower = { ...(draft.tower || {}), on }; });
+      wireSwitch($('#swTowerTalk', body), (talk) => { draft.tower = { ...(draft.tower || {}), talk }; });
       $('#sTowerName', body).addEventListener('input', (e) => { draft.tower = { ...(draft.tower || {}), name: e.target.value.trim().toUpperCase() || 'COMM TOWER 1' }; });
       $('#sTowerHome', body).addEventListener('click', () => { if (window.deck.tower && window.deck.tower.home) window.deck.tower.home(); app.toast('Back in the corner.', 1800); });
       wireSwitch($('#swBrief', body), (on) => { draft.morningBriefing = on; });

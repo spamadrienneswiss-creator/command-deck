@@ -129,6 +129,92 @@ async function summarize({ key, model, transcript, title, include }, fetchFn = f
   return { model: m, ...parseRecap(text) };
 }
 
+// ---------------------------------------------------------------- Comm Tower 1
+// Gemini words what Comm Tower 1 says back (the deck has already done the filing), and
+// answers questions about the operator's day from the deck's own tasks and schedule.
+const TOWER_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    reply: { type: 'STRING', description: 'What to say out loud: one or two short sentences' },
+    command: { type: 'STRING', description: 'Only when the reply offers to add or set something: the exact command for the deck, e.g. "Add dentist appointment on Tuesday November 10 at 10 AM". Otherwise empty.' }
+  },
+  required: ['reply']
+};
+
+function towerPrompt({ name, operator, humor, heard, done, context }) {
+  const who = operator || 'the operator';
+  const dry = Number(humor) >= 60 ? 'Dry wit is welcome, lightly.' : Number(humor) <= 10 ? 'Strictly businesslike, no jokes.' : 'A touch of dry humor is fine, never forced.';
+  return [
+    `You are ${name || 'Comm Tower 1'}, the voice on the comms line of ${who}'s Command Deck (a desktop console). ${who} just spoke to you.`,
+    `Talk like a capable, warm crew member on a ship's comms line: natural, brief, friendly, a little JARVIS. ${dry}`,
+    'Your reply is spoken aloud: one or two short sentences, usually under 35 words. No lists, no markdown, no emoji. Say dates and times the way a person would ("Friday the 20th", "10 in the morning").',
+    `Use ${who}'s name now and then, not every time.`,
+    'Only state facts that appear below. Never invent tasks, events, times or plans.',
+    '',
+    done
+      ? `The deck has ALREADY done what was asked. Its own confirmation: "${done.reply}". (${done.kind === 'err' ? 'This was a problem, not a success: say so plainly and helpfully.' : 'Say it back conversationally, keeping every fact exact: titles, dates, times, amounts.'}) If something in the context below is clearly and usefully related (a clash, a same-day errand, an overdue item), you may mention it in a few words; otherwise don't. Leave "command" empty.`
+      : 'This is a question or a request the deck can\'t do by itself. Answer it from the context below. If the honest answer is that you don\'t know, say so briefly. If adding a task, event, reminder or timer would clearly help, offer it in the reply ("Want me to …? Click and say yes.") and put the matching deck command, with an explicit day and time, in "command". Never claim you already did it.',
+    '',
+    `${who} said: "${heard}"`,
+    '',
+    'CONTEXT FROM THE DECK:',
+    context || '(nothing)'
+  ].join('\n');
+}
+
+/** Model fallback shared by every call: the remembered model, the aliases, then whatever Flash the key can see. */
+async function generate(key, model, body, fetchFn) {
+  const tried = new Set();
+  const attempt = async (m) => {
+    tried.add(m);
+    const r = await call(fetchFn, `models/${encodeURIComponent(m)}:generateContent`, key, body);
+    return { m, r };
+  };
+  let { m, r } = await attempt(model || PREFERRED[0]);
+  if (!r.ok && (r.status === 404 || (r.status === 400 && /not found|not supported/i.test(JSON.stringify(r.json || {}))))) {
+    const options = [...PREFERRED, ...(await listModels(key, fetchFn).catch(() => []))].filter((x) => !tried.has(x));
+    for (const next of options) {
+      ({ m, r } = await attempt(next));
+      if (r.ok || !(r.status === 404 || r.status === 400)) break;
+    }
+  }
+  if (!r.ok) throw new Error(friendly(r.status, r.json));
+  const cand = r.json && r.json.candidates && r.json.candidates[0];
+  const text = cand && cand.content && Array.isArray(cand.content.parts) ? cand.content.parts.map((p) => p.text || '').join('') : '';
+  return { model: m, text };
+}
+
+/** Returns { model, reply, command }. Throws on any problem; the deck falls back to its own reply. */
+async function towerReply(opts, fetchFn = fetch) {
+  const { key, model } = opts || {};
+  if (!key) throw new Error('no key');
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), opts.timeoutMs || 7000);
+  const f = (url, init) => fetchFn(url, { ...init, signal: ac.signal });
+  try {
+    const body = {
+      contents: [{ role: 'user', parts: [{ text: towerPrompt(opts) }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 400, responseMimeType: 'application/json', responseSchema: TOWER_SCHEMA, thinkingConfig: { thinkingBudget: 0 } }
+    };
+    let out;
+    try {
+      out = await generate(key, model, body, f);
+    } catch (e) {
+      // Some models don't take a thinking budget: try once more without it.
+      if (!/thinking/i.test(String(e.message))) throw e;
+      delete body.generationConfig.thinkingConfig;
+      out = await generate(key, model, body, f);
+    }
+    let obj;
+    try { obj = JSON.parse(String(out.text || '').replace(/^```(?:json)?\s*|\s*```$/g, '')); } catch (e) { throw new Error('unreadable reply'); }
+    const reply = String(obj.reply || '').replace(/\s+/g, ' ').trim().slice(0, 400);
+    if (!reply) throw new Error('empty reply');
+    return { model: out.model, reply, command: String(obj.command || '').trim().slice(0, 200) };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** A quick check for the TEST KEY button. */
 async function testKey(key, fetchFn = fetch) {
   if (!key) return { ok: false, error: 'Paste a key first.' };
@@ -140,4 +226,4 @@ async function testKey(key, fetchFn = fetch) {
   }
 }
 
-module.exports = { summarize, testKey, listModels, buildPrompt, parseRecap, RECAP_SCHEMA };
+module.exports = { summarize, testKey, listModels, buildPrompt, parseRecap, RECAP_SCHEMA, towerReply, towerPrompt, TOWER_SCHEMA };

@@ -2,9 +2,17 @@
   "size": "1440x900",
   "combos": [
     {
-      "name": "dusk",
+      "name": "talk",
       "theme": "dusk",
-      "wait": 11000
+      "wait": 11000,
+      "seed": "(async()=>{const d=await deck.load();await deck.save('settings',{...d.settings,operatorName:'Nick',recap:{...(d.settings.recap||{}),geminiKey:'bogus-key-for-test'}});})()",
+      "js": [
+        "window.__towerRespond('Remember to renew the car registration on the 20th').then(()=>'filed: '+JSON.stringify((window.deck&&1)))",
+        "new Promise(r=>setTimeout(r,9000)).then(()=>deck.load()).then(d=>JSON.stringify(d.tasks.filter(t=>/registration/i.test(t.title)).map(t=>[t.title,t.due])))",
+        "window.__towerRespond('Can I fit the dentist in before my shift on Tuesday?').then(()=>'asked')",
+        "new Promise(r=>setTimeout(r,9000)).then(()=>deck.load()).then(d=>JSON.stringify(d.tasks.filter(t=>/dentist/i.test(t.title)).map(t=>t.title)))"
+      ],
+      "towerClick": false
     }
   ],
   "seed": "(async()=>{const d=await deck.load();const now=Date.now();const iso=(h)=>new Date(now+h*3600e3).toISOString();\nawait deck.save('settings',{...d.settings,setupComplete:true,operatorName:'Nick',consoleName:'Command Deck'});\nawait deck.save('tasks',[{id:'t1',title:'Pay electric bill',due:iso(-3),dueHasTime:true,priority:'high',category:'home',done:false,repeat:{type:'none'},subtasks:[]},{id:'t2',title:'Order bin labels',due:iso(30),dueHasTime:false,priority:'medium',category:'home',done:false,repeat:{type:'none'},subtasks:[]},{id:'t3',title:'Renew car registration',due:iso(54),dueHasTime:false,priority:'medium',category:'personal',done:false,repeat:{type:'none'},subtasks:[]},{id:'t4',title:'Book flights',due:null,priority:'low',done:true,doneAt:iso(-5),repeat:{type:'none'},subtasks:[]}]);\nawait deck.save('localEvents',[{id:'e1',title:'Work shift',start:iso(14),end:iso(19),allDay:false,notes:''},{id:'e2',title:'Dentist',start:iso(60),end:iso(61),allDay:false,notes:''},{id:'e3',title:'Dinner with the Parks',start:iso(140),end:iso(142),allDay:false,notes:''}]);\nawait deck.save('notes',[{id:'n1',title:'Guest Wi-Fi',body:'DECK-7 \u00b7 pass on the fridge',pinned:true},{id:'n2',title:'Paint colors',body:'Sea Salt \u00b7 Agreeable Gray',pinned:false}]);})()"

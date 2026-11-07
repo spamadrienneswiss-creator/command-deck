@@ -34,7 +34,7 @@ function level(v) {
 }
 const clock = () => { const d = new Date(); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
 
-function showCard(mode, who, time, text, tags = []) {
+function showCard(mode, who, time, text, tags = [], src = '') {
   if (!mode) { card.hidden = true; link.hidden = true; return; }
   card.hidden = false;
   link.hidden = false;
@@ -42,6 +42,7 @@ function showCard(mode, who, time, text, tags = []) {
   link.className = `tw-link${mode === 'you' || mode === 'live' ? ' you' : ''}`;
   $('#who').textContent = who;
   $('#time').textContent = time;
+  $('#src').textContent = src === 'gemini' ? 'GEMINI' : src === 'built-in' ? 'BUILT-IN' : '';
   $('#text').textContent = text || '';
   const tg = $('#tags');
   tg.replaceChildren(...tags.map((g) => { const sp = document.createElement('span'); if (g.k) sp.className = g.k; sp.textContent = g.t; return sp; }));
@@ -61,13 +62,13 @@ function render(st) {
     showCard('live', 'YOU', 'LIVE', 'Go ahead…');
   } else if (stage === 'thinking') {
     setBars(vbars, IDLE);
-    showCard('you', 'YOU', clock(), 'Copying that down…');
+    showCard('you', 'YOU', clock(), st.you ? `“${st.you}”` : 'Copying that down…');
   } else if (stage === 'heard') {
     setBars(vbars, IDLE);
     showCard('you', 'YOU', clock(), `“${st.you}”`);
   } else if (stage === 'reply') {
     setBars(vbars, SPEAK);
-    showCard('reply', name, clock(), st.text, st.tags || []);
+    showCard('reply', name, clock(), st.text, st.tags || [], st.src || '');
   } else {
     setBars(vbars, IDLE);
     showCard(null);

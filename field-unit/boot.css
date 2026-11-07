@@ -9,6 +9,10 @@
 @font-face { font-family: 'Space Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/space-mono-400.woff2) format('woff2'); }
 @font-face { font-family: 'Space Mono'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/space-mono-700.woff2) format('woff2'); }
 
+/* While the load screen shows, the whole page is its dark color, so iPhone's status bar
+   tint and the strip by the home indicator don't pick up a light theme underneath. */
+html:has(#boot:not(.out)), html:has(#boot:not(.out)) body { background: #0B0C0D !important; }
+
 .boot {
   --g: #C8F54A; --g-rgb: 200, 245, 74; --void: #0B0C0D; --plate: #2A2D33; --ink: #E9EAE4; --static: #8A8E93;
   position: fixed; inset: 0; z-index: 9000; overflow: hidden;

@@ -34,9 +34,22 @@ export function bootScreen() {
   const d = el.dataset;
   stage(1);
 
+  // Keep iPhone's status bar color dark while the load screen shows, even if the page
+  // switches to a light theme underneath; the theme's own color goes back on at the end.
+  const VOID = '#0B0C0D';
+  const meta = document.querySelector('meta[name="theme-color"]');
+  let after = meta ? meta.content : null;
+  let tint = null;
+  if (meta) {
+    meta.content = VOID;
+    tint = new MutationObserver(() => { if (meta.content !== VOID) { after = meta.content; meta.content = VOID; } });
+    tint.observe(meta, { attributes: true, attributeFilter: ['content'] });
+  }
+
   function hide() {
     if (el.classList.contains('out')) return;
     el.classList.add('out');
+    if (tint) { tint.disconnect(); tint = null; if (after) meta.content = after; }
     setTimeout(() => el.remove(), 500);
   }
 

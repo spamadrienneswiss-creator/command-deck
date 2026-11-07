@@ -40,8 +40,11 @@ check('"remember to …" files a task without the lead-in (Comm Tower 1 phrasing
   assert.strictEqual(r.intent, 'add-task');
   assert.strictEqual(r.task.title, 'Renew the car registration');
   assert.strictEqual(local(r.task.due).getDate(), 20);
-  assert.strictEqual(parseCommand("Don't let me forget to call the bank", ctx, ref).task.title, 'Call the bank');
+  const bank = parseCommand("Don't let me forget to call the bank", ctx, ref);
+  assert.strictEqual(bank.intent, 'add-task', JSON.stringify(bank));
+  assert.strictEqual(bank.task.title, 'Call the bank');
   const early = parseCommand('Pay rent on the 1st', ctx, ref); // ref is Oct 12, so the next 1st is in November
+  assert.strictEqual(early.intent, 'add-task', JSON.stringify(early));
   assert.strictEqual(early.task.title, 'Pay rent');
   assert.strictEqual(local(early.task.due).getMonth(), 10);
 });

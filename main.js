@@ -335,6 +335,9 @@ function registerIpc() {
   ipcMain.handle('recap:summarize', async (_e, opts) => {
     try { return { ok: true, ...(await gemini.summarize(opts || {})) }; } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
   });
+  ipcMain.handle('tower:word', async (_e, opts) => {
+    try { return { ok: true, ...(await gemini.towerReply(opts || {})) }; } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
+  });
   ipcMain.handle('recap:testKey', (_e, key) => gemini.testKey(String(key || '').trim()));
 
   ipcMain.handle('sys:hostname', () => { try { return require('os').hostname(); } catch (e) { return ''; } });

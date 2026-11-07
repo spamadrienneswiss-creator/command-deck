@@ -92,6 +92,7 @@ A small chip sits in the bottom-right corner of your main monitor, above everyth
 - **Drag** the chip to move it; it remembers where you put it.
 - **Settings › System › COMM TOWER 1:** show or hide it, rename it (call it whatever you like), and **BACK TO CORNER**. The tray menu can show or hide it too.
 - The listening still happens on this computer, through the deck, so the deck needs to be running (it can be hidden in the tray).
+- **Talking back (Gemini):** with a Gemini key in **Settings › Field Unit › DATA RECAP**, Comm Tower 1 answers conversationally. The deck still does the filing instantly; Gemini words the reply (*"You got it, Nick. Registration's on for Friday the 20th."*) and answers questions about your day (*"Can I fit the dentist in before my shift Tuesday?"*) from your tasks, calendar and schedule, which are sent to Gemini for that. If it offers to add something, click the chip and say **yes** (or **no**). It never changes anything on its own. No key, no signal, or Gemini too slow: the deck's own replies, as before. The card shows **GEMINI** or **BUILT-IN** so you know which answered. Switch it off under **Settings › System › COMM TOWER 1**.
 
 ---
 

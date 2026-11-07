@@ -140,7 +140,7 @@ function parseSnooze(text, lower) {
 
 function parseConfirm(lower) {
   if (/^(?:yes|yeah|yep|yup|confirm(?:ed)?|affirmative|do it|go ahead|correct|sure|delete it|proceed)\b/.test(lower)) return { intent: 'confirm' };
-  if (/^(?:no|nope|negative|don't|do not|keep it|cancel that|abort)\b/.test(lower)) return { intent: 'deny' };
+  if (/^(?:no|nope|negative|don't|do not|keep it|cancel that|abort)\b/.test(lower) && !/^(?:don't|do not) (?:let me )?forget\b/.test(lower)) return { intent: 'deny' };
   return null;
 }
 

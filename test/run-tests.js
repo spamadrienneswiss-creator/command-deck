@@ -35,6 +35,13 @@ check('remind me + weekly repeat lands on the named day', () => {
   assert.deepStrictEqual(r.task.repeat.days, [2]);
   assert.strictEqual(local(r.task.due).getDay(), 2);
 });
+check('"remember to …" files a task without the lead-in (Comm Tower 1 phrasing)', () => {
+  const r = parseCommand('Remember to renew the car registration on the 20th', ctx, ref);
+  assert.strictEqual(r.intent, 'add-task');
+  assert.strictEqual(r.task.title, 'Renew the car registration');
+  assert.strictEqual(local(r.task.due).getDate(), 20);
+  assert.strictEqual(parseCommand("Don't let me forget to call the bank", ctx, ref).task.title, 'Call the bank');
+});
 check('assignee', () => {
   const r = parseCommand('Pay the electric bill by October 20th assign to Sam', ctx, ref);
   assert.strictEqual(r.task.assignee, 'Sam');

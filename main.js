@@ -31,6 +31,7 @@ const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
 
 let win = null;
+let tower = null; // Comm Tower 1: the talk-to-capture chip on the main monitor
 let tray = null;
 const ICON = path.join(__dirname, 'assets', 'icon.png');
 
@@ -168,6 +169,15 @@ function rebuildTrayMenu() {
         win.webContents.send('deck:settings-changed', s);
       }
     },
+    {
+      label: `Show ${towerSettings().name.replace(/\w\S*/g, (w) => w[0] + w.slice(1).toLowerCase())}`, type: 'checkbox', checked: towerSettings().on,
+      click: (item) => {
+        s.tower = { ...(s.tower || {}), on: item.checked };
+        store.set('settings', s);
+        applyTower();
+        win.webContents.send('deck:settings-changed', s);
+      }
+    },
     { type: 'separator' },
     { label: 'Quit', click: () => { app.isQuitting = true; app.quit(); } }
   ]));
@@ -213,6 +223,7 @@ function registerIpc() {
       if (win) win.setTitle(value.consoleName || 'Command Deck');
       applyWindowMode();
       applyAutoStart();
+      applyTower();
     }
     return ok;
   });
@@ -407,6 +418,83 @@ app.on('second-instance', () => {
   if (win) { win.show(); win.focus(); }
 });
 
+// ---------------------------------------------------------------- Comm Tower 1
+// A small always-on-top chip on the main monitor. Click it and talk: the deck window
+// does the listening, transcribing and filing (its voice core lives there), and sends
+// each step back here so the chip can show it. The window is mostly see-through, so
+// clicks pass through it except over the chip and its card.
+const TOWER_W = 380;
+const TOWER_H = 330;
+function towerSettings() {
+  const t = settings().tower || {};
+  return { on: t.on !== false, name: String(t.name || 'COMM TOWER 1').trim().toUpperCase() || 'COMM TOWER 1', operator: settings().operatorName || '' };
+}
+function towerHome() {
+  const wa = screen.getPrimaryDisplay().workArea;
+  return { x: wa.x + wa.width - TOWER_W - 8, y: wa.y + wa.height - TOWER_H - 8 };
+}
+function towerPosOnScreen(p) {
+  if (!p) return false;
+  // The chip sits at the window's bottom-right; keep that corner on some screen.
+  const cx = p.x + TOWER_W - 140;
+  const cy = p.y + TOWER_H - 40;
+  return screen.getAllDisplays().some((d) => { const a = d.bounds; return cx >= a.x && cx < a.x + a.width && cy >= a.y && cy < a.y + a.height; });
+}
+function createTower() {
+  if (tower && !tower.isDestroyed()) return;
+  const saved = store.get().towerPos;
+  const p = towerPosOnScreen(saved) ? saved : towerHome();
+  tower = new BrowserWindow({
+    x: Math.round(p.x), y: Math.round(p.y), width: TOWER_W, height: TOWER_H,
+    frame: false, transparent: true, resizable: false, movable: true, hasShadow: false,
+    skipTaskbar: true, show: false, focusable: false, alwaysOnTop: true,
+    backgroundColor: '#00000000', title: 'Comm Tower 1',
+    webPreferences: { preload: path.join(__dirname, 'tower-preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false }
+  });
+  tower.setAlwaysOnTop(true, 'floating');
+  tower.setIgnoreMouseEvents(true, { forward: true });
+  tower.loadURL('deck://app/renderer/tower.html');
+  tower.once('ready-to-show', () => { if (tower && !tower.isDestroyed()) tower.showInactive(); });
+  tower.webContents.on('did-finish-load', () => sendTower('tower:config', towerSettings()));
+  tower.webContents.on('will-navigate', (e) => e.preventDefault());
+  tower.on('closed', () => { tower = null; });
+}
+function sendTower(ch, data) {
+  if (tower && !tower.isDestroyed()) tower.webContents.send(ch, data);
+}
+function applyTower() {
+  const t = towerSettings();
+  if (t.on) { createTower(); sendTower('tower:config', t); }
+  else if (tower && !tower.isDestroyed()) tower.destroy();
+}
+function registerTowerIpc() {
+  ipcMain.on('tower:hit', (_e, over) => { if (tower && !tower.isDestroyed()) tower.setIgnoreMouseEvents(!over, { forward: true }); });
+  let dragFrom = null;
+  ipcMain.on('tower:drag', (_e, phase, sx, sy) => {
+    if (!tower || tower.isDestroyed()) return;
+    if (phase === 'start') { const [x, y] = tower.getPosition(); dragFrom = { x, y, sx, sy }; return; }
+    if (!dragFrom) return;
+    tower.setPosition(Math.round(dragFrom.x + sx - dragFrom.sx), Math.round(dragFrom.y + sy - dragFrom.sy));
+    if (phase === 'end') {
+      const [x, y] = tower.getPosition();
+      store.set('towerPos', { x, y });
+      dragFrom = null;
+    }
+  });
+  ipcMain.on('tower:home', () => {
+    if (!tower || tower.isDestroyed()) return;
+    const h = towerHome();
+    tower.setPosition(h.x, h.y);
+    store.set('towerPos', null);
+  });
+  // Chip → deck: start or stop talking.
+  ipcMain.on('tower:talk', () => {
+    if (win && !win.isDestroyed()) win.webContents.send('tower:talk');
+  });
+  // Deck → chip: what's happening (listening, levels, what it heard, the reply).
+  ipcMain.on('tower:state', (_e, st) => sendTower('tower:state', st));
+}
+
 // ---------------------------------------------------------------- rest when away
 // Tells the console to freeze its looping animations while nobody's at the PC
 // (no mouse or keyboard for 5 minutes, screen locked) or while it's hidden.
@@ -485,8 +573,10 @@ app.whenReady().then(() => {
 
   serveFiles();
   registerIpc();
+  registerTowerIpc();
   allowFirebaseFromApp();
   createWindow();
+  applyTower();
   watchAway();
   createTray();
   applyAutoStart();

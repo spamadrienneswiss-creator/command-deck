@@ -2,7 +2,7 @@ const { app } = require('electron');
 const fs = require('fs');
 // Screenshots the deck in given themes. Usage (Linux, headless):
 //   COMBOS='[{"name":"dusk","theme":"dusk"}]' SIZE=1280x800 xvfb-run -a npx electron --no-sandbox tools/deck-shots.js
-// Each combo: { name, theme, wait? (ms after reload; the Signal load-up takes ~9 s on FULL), frame?, trim?, alert?, extra?: 'settings', seed?: js run before reload, js?: js string(s) run before capture }.
+// Each combo: { name, theme, tower?: [chip states] (sent to Comm Tower 1, each captured as <name>-tower-<i>.png), towerClick?: true (clicks the chip and captures what follows), wait? (ms after reload; the Signal load-up takes ~9 s on FULL), frame?, trim?, alert?, extra?: 'settings', seed?: js run before reload, js?: js string(s) run before capture }.
 // Images land in tools/out/deck/. Uses its own settings folder, so your real deck data is never touched.
 const path = require('path');
 const SP = path.join(__dirname, 'out');
@@ -11,7 +11,10 @@ fs.mkdirSync(SP + '/deck', { recursive: true });
 const combos = JSON.parse(process.env.COMBOS);
 const SEED = process.env.SEED || ''; // optional js run once before the first combo (sample data)
 const [W, H] = (process.env.SIZE || '1280x800').split('x').map(Number);
+let towerWin = null;
 app.on('browser-window-created', (_e, win) => {
+  // Comm Tower 1 is its own small window: keep a handle for its pictures, don't drive it.
+  if (win.getTitle() === 'Comm Tower 1') { towerWin = win; win.webContents.on('console-message', (ev) => { if (ev.level === 'error' || ev.level === 3) console.log('[tower err]', ev.message); }); return; }
   win.webContents.on('console-message', (ev) => { if (ev.level === 'error' || ev.level === 3) console.log('[renderer err]', ev.message); });
   setTimeout(async () => {
     // Gives up after 10 s, so a frozen page shows up as HUNG instead of stalling the run.
@@ -31,6 +34,23 @@ app.on('browser-window-created', (_e, win) => {
         if (c.js) { for (const step of [].concat(c.js)) { console.log('STEP', c.name, String(await js(step).catch((e) => 'js err ' + e.message)).slice(0, 300)); await wait(500); } }
         await wait(600);
         fs.writeFileSync(`${SP}/deck/${c.name}.png`, (await win.webContents.capturePage()).toPNG());
+        if (c.tower && towerWin) {
+          for (let i = 0; i < c.tower.length; i++) {
+            await js(`deck.tower.state(${JSON.stringify(c.tower[i])})`);
+            await wait(700);
+            fs.writeFileSync(`${SP}/deck/${c.name}-tower-${i}.png`, (await towerWin.webContents.capturePage()).toPNG());
+          }
+          console.log('TOWER', c.name, JSON.stringify(towerWin.getBounds()), towerWin.isVisible());
+        }
+        if (c.towerClick && towerWin) {
+          await towerWin.webContents.executeJavaScript(`document.querySelector('#chip').dispatchEvent(new PointerEvent('pointerdown',{button:0,pointerId:1,screenX:5,screenY:5}));document.querySelector('#chip').dispatchEvent(new PointerEvent('pointerup',{button:0,pointerId:1,screenX:5,screenY:5}));1`).catch((e) => console.log('click err', e.message));
+          for (let i = 0; i < 4; i++) {
+            await wait(1500);
+            const st = await towerWin.webContents.executeJavaScript(`JSON.stringify({stage:document.body.dataset.stage, sub:document.querySelector('#sub').textContent, card:document.querySelector('#card').hidden?'':document.querySelector('#card').innerText})`).catch((e) => e.message);
+            console.log('TOWERCLICK', c.name, i, st);
+            fs.writeFileSync(`${SP}/deck/${c.name}-click-${i}.png`, (await towerWin.webContents.capturePage()).toPNG());
+          }
+        }
       }
     } catch (e) { console.log('SMOKE ERR', e.message); }
     app.exit(0);

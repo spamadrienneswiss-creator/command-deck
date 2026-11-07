@@ -83,6 +83,16 @@ Assign groceries to Alex            Delete book flights   (it asks "Confirm?" fi
 
 The **quick-add line** at the bottom of the task queue understands the same phrasing when typed.
 
+### Comm Tower 1 (talk from any screen)
+
+A small chip sits in the bottom-right corner of your main monitor, above everything else, so you can talk to the deck without going to it.
+
+- **Click it and talk.** It stops listening when you pause (or click again to finish). Your words show on a card above it, then **Comm Tower 1** answers you by name: *"Copy that, Nick. Task logged: Renew the car registration, due Friday, November 20th."* The card shows the due date and category, and fades a few seconds later (click it to put it away sooner).
+- It understands everything the Computer does (tasks, events, notes, timers, "what's next"), plus *"remember to …"* and *"don't let me forget to …"*. Everything lands in the deck like any other task.
+- **Drag** the chip to move it; it remembers where you put it.
+- **Settings › System › COMM TOWER 1:** show or hide it, rename it (call it whatever you like), and **BACK TO CORNER**. The tray menu can show or hide it too.
+- The listening still happens on this computer, through the deck, so the deck needs to be running (it can be hidden in the tray).
+
 ---
 
 ## 3 · Everyday use

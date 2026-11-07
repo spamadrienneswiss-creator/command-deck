@@ -13,7 +13,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.23.2';
+const VERSION = 'v1.24.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -1721,7 +1721,7 @@ function editItem(r) {
   return { reply, kind: 'ok' };
 }
 
-async function handleCommand(text, { fromVoice = false, noEdit = false, skipLog = false } = {}) {
+async function handleCommand(text, { fromVoice = false, noEdit = false, skipLog = false, onReply = null } = {}) {
   if (!skipLog) pushLog('u', text);
   const ctx = { pageNames: pageSettings().names, categories: S.settings.categories, people: S.settings.people, defaultReminder: S.settings.defaultReminder, noEdit, projects: S.projects.filter((p) => p.status !== 'done').map((p) => ({ id: p.id, name: p.name })) };
   let r;
@@ -1732,11 +1732,12 @@ async function handleCommand(text, { fromVoice = false, noEdit = false, skipLog 
   }
   // An edit that matches no existing task may really be a new task ("make dinner reservations, high priority").
   if (r.intent === 'edit-task' && r.fallback && !findTask(r.query) && !findLocalEvent(r.query)) {
-    return handleCommand(text, { fromVoice, noEdit: true, skipLog: true });
+    return handleCommand(text, { fromVoice, noEdit: true, skipLog: true, onReply });
   }
   let reply = '';
   let kind = 'c';
   let followUp = false;
+  let made = null; // the task this command filed, for Comm Tower 1's card
   const now = new Date();
   // Voice commands get a spoken confirmation, so their chimes stay silent.
   if (fromVoice) sounds.setSuppressed(true);
@@ -1748,6 +1749,7 @@ async function handleCommand(text, { fromVoice = false, noEdit = false, skipLog 
       if (!fields.projectId && projectName) { started = newProject(projectName); fields.projectId = started.id; }
       const t = { ...blankTask(), ...fields };
       upsertTask(t, true);
+      made = t;
       const proj = t.projectId && S.projects.find((p) => p.id === t.projectId);
       reply = withQuip(`${started ? `New project started: ${started.name}. ` : ''}${taskConfirmation(t)}${proj && !started ? ` Filed under ${proj.name}.` : ''}`, t.priority === 'high' ? 'taskHigh' : 'task');
       kind = 'ok';
@@ -1899,7 +1901,10 @@ async function handleCommand(text, { fromVoice = false, noEdit = false, skipLog 
   } finally {
     sounds.setSuppressed(false);
   }
+  // Comm Tower 1 answers you by name when something was done.
+  if (onReply && kind === 'ok') reply = `Copy that, ${S.settings.operatorName}. ${reply}`;
   pushLog(kind, reply);
+  if (onReply) onReply({ reply, kind, task: made, intent: r.intent });
   const isQuery = !['add-task', 'add-event', 'complete-task', 'edit-task', 'confirm', 'set-timer', 'set-alarm', 'cancel-timer'].includes(r.intent);
   if (fromVoice || isQuery || followUp) await speak(reply);
   return { reply, followUp: fromVoice && followUp };
@@ -2023,6 +2028,106 @@ async function listenTurn() {
     return null;
   }
   return handleCommand(text, { fromVoice: true });
+}
+
+// ---------------------------------------------------------------- Comm Tower 1
+// The chip on the main monitor (its own small window). Clicking it lands here: the deck
+// listens, transcribes and files, the same as hailing the Computer but with no greeting,
+// and reports each step back so the chip can show it.
+let towerIdleTimer = null;
+function towerSend(st) {
+  if (deck.tower) deck.tower.state(st);
+}
+function towerTags(t) {
+  if (!t) return [];
+  const tags = [];
+  if (t.due) {
+    const d = new Date(t.due);
+    tags.push({ t: `DUE ${U.DAY_FULL[d.getDay()].slice(0, 3)} ${U.MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}${t.dueHasTime ? ` · ${U.fmtTimeShort(d, S.settings.clock24)}` : ''}`.toUpperCase(), k: 'due' });
+  }
+  const cat = categoryById(t.category);
+  if (cat) tags.push({ t: cat.name.toUpperCase(), k: 'cat' });
+  if (t.priority === 'high') tags.push({ t: 'HIGH', k: 'hi' });
+  if (t.repeat && t.repeat.type !== 'none') tags.push({ t: 'REPEATS', k: '' });
+  if (t.reminder != null) tags.push({ t: 'REMINDER', k: '' });
+  return tags;
+}
+function towerSettle(ms = 7000) {
+  clearTimeout(towerIdleTimer);
+  towerIdleTimer = setTimeout(() => { if (S.voice === 'idle') towerSend({ stage: 'idle' }); }, ms);
+}
+function towerSay(text, kind = 'c') {
+  towerSend({ stage: 'reply', text, kind, speaking: true });
+  return speak(text).finally(() => { towerSend({ stage: 'reply', text, kind, speaking: false }); towerSettle(); });
+}
+async function towerTalk() {
+  clearTimeout(towerIdleTimer);
+  if (S.voice === 'listening' && rec) { rec.stop(); return; }
+  if (S.voice === 'speaking' || S.voice === 'greeting') {
+    stopSpeaking();
+    setVoiceState('idle');
+    towerSend({ stage: 'idle' });
+    return;
+  }
+  if (S.voice !== 'idle') return;
+  if (voiceStatus().state !== 'ready' && voiceStatus().state !== 'loading') loadModel().catch(() => {});
+  if (S.alert && S.alert.ringing) stopRinging();
+  try {
+    setVoiceState('listening');
+    sounds.micOn();
+    levels = new Array(WAVE_N).fill(0);
+    towerSend({ stage: 'open' });
+    const patience = { short: 1500, normal: 2200, long: 3500 }[S.settings.micPatience] || 2200;
+    rec = await record({ onLevel: (v) => { onLevel(v); towerSend({ stage: 'open', level: v }); }, silenceMs: patience });
+  } catch (e) {
+    rec = null;
+    setVoiceState('idle');
+    sounds.error();
+    const msg = "I can't reach the microphone. Check that one is connected and that microphone access is allowed in Windows privacy settings.";
+    pushLog('err', msg);
+    towerSay(msg, 'err');
+    return;
+  }
+  const { audio, heard } = await rec.done;
+  rec = null;
+  sounds.micOff();
+  if (!heard) {
+    setVoiceState('idle');
+    pushLog('c', 'No input detected. Standing by.');
+    towerSend({ stage: 'reply', text: 'Nothing came through. Standing by.', kind: 'c' });
+    towerSettle(4000);
+    return;
+  }
+  setVoiceState('thinking');
+  towerSend({ stage: 'thinking' });
+  let text = '';
+  try {
+    text = await transcribe(audio);
+  } catch (e) {
+    setVoiceState('idle');
+    sounds.error();
+    const msg = navigator.onLine
+      ? 'The voice core failed to load. Typed commands still work in the quick-add line.'
+      : 'The voice core needs an internet connection the first time it loads. Typed commands still work.';
+    pushLog('err', msg);
+    towerSay(msg, 'err');
+    return;
+  }
+  setVoiceState('idle');
+  if (!text) {
+    pushLog('c', "I didn't catch that.");
+    towerSay("I didn't catch that. Try me again.", 'err');
+    return;
+  }
+  towerSend({ stage: 'heard', you: text });
+  await new Promise((r) => setTimeout(r, 650)); // a beat to read your own words
+  let shown = null;
+  await handleCommand(text, {
+    fromVoice: true,
+    onReply: (res) => { shown = res; towerSend({ stage: 'reply', text: res.reply, kind: res.kind, tags: towerTags(res.task), speaking: true }); }
+  });
+  if (shown) towerSend({ stage: 'reply', text: shown.reply, kind: shown.kind, tags: towerTags(shown.task), speaking: false });
+  towerSettle();
 }
 
 // ---------------------------------------------------------------- timers & alarms
@@ -2985,6 +3090,7 @@ async function start() {
   buildWave();
   Motion.start();
   if (deck.onAway) deck.onAway((away) => { Motion.setAway(away); voicesAway(away); });
+  if (deck.tower) deck.tower.onTalk(() => towerTalk());
   wireUpdates();
   wireLights();
   applySettings();

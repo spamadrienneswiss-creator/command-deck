@@ -10,7 +10,7 @@ const NUM_WORDS = {
 };
 const DAY_PREFIX = [['sun', 0], ['mon', 1], ['tue', 2], ['wed', 3], ['thu', 4], ['fri', 5], ['sat', 6]];
 const DAY_ALT = '(?:mon|tues?|wed(?:nes)?|thu(?:rs?)?|fri|sat(?:ur)?|sun)(?:day)?s?';
-const CREATE_START = /^(?:add|create|make|log|put|new|set up|set|schedule|book|remind me|i need to|i have to|i've got to|i gotta|don't forget|need to|gotta)\b/i;
+const CREATE_START = /^(?:add|create|make|log|put|new|set up|set|schedule|book|remind me|remember to|don't let me forget|i need to|i have to|i've got to|i gotta|don't forget|need to|gotta)\b/i;
 const EVENING_WORDS = /\b(?:dinner|supper|tonight|night|evening|party|drinks|movie|show|concert|date night|game night)\b/i;
 
 function clean(s) {
@@ -262,7 +262,7 @@ function parseTask(body, ctx, ref) {
   t = t.replace(/^(?:add|create|make|log|put|new|set up|set)\s+/i, '');
   t = t.replace(/^(?:me\s+)?(?:a|an)?\s*(?:new\s+)?(?:task|to-?do|todo|reminder|item)s?\b\s*/i, '');
   t = t.replace(/^(?::|to\s+(?=\w)|called\s+|named\s+|that says\s+|saying\s+)/i, '');
-  t = t.replace(/^(?:i need to|i have to|i've got to|i gotta|i must|don't forget to|need to|gotta)\s+/i, '');
+  t = t.replace(/^(?:i need to|i have to|i've got to|i gotta|i must|don't forget to|don't let me forget to|remember to|need to|gotta)\s+/i, '');
   t = t.replace(/\s+(?:to|on|onto)\s+(?:my|the)\s+(?:task\s+|to-?do\s+)?(?:list|tasks|queue)\b/i, '');
   t = clean(t);
 

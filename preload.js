@@ -43,5 +43,10 @@ contextBridge.exposeInMainWorld('deck', {
     install: () => ipcRenderer.invoke('update:install'),
     onState: (fn) => ipcRenderer.on('update:state', (_e, s) => fn(s))
   },
+  tower: {
+    state: (st) => ipcRenderer.send('tower:state', st),
+    home: () => ipcRenderer.send('tower:home'),
+    onTalk: (fn) => ipcRenderer.on('tower:talk', () => fn())
+  },
   onSettingsChanged: (fn) => ipcRenderer.on('deck:settings-changed', (_e, s) => fn(s))
 });

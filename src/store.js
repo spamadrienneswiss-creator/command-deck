@@ -10,6 +10,7 @@ const DEFAULTS = {
     chipName: '', // your name chip on shared schedules (blank: from operatorName)
     chipColor: '#F4B6A0',
     consoleName: 'Command Deck',
+    tower: { on: true, name: 'COMM TOWER 1' }, // Comm Tower 1: the talk-to-capture chip on the main monitor
     location: { name: 'Los Angeles, California', lat: 34.0522, lon: -118.2437 },
     calendars: [], // { id, name, url, color, enabled }
     localCalendarName: 'Local',
@@ -82,6 +83,7 @@ const DEFAULTS = {
   layoutEdgeP2: null, // page 2 panel positions, Edge layout
   layoutMine: null, // retired (v1.23): your page 1 arrangement from while Open Window was on; restored once, then cleared
   window: { bounds: null },
+  towerPos: null, // Comm Tower 1 chip window position { x, y } (null: bottom-right of the main monitor)
   meta: { lastBriefingDate: null, lastLaunch: null, page: 1 },
   push: { publicKey: null, privateKey: null }
 };

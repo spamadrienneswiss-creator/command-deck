@@ -13,7 +13,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.25.0';
+const VERSION = 'v1.26.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -1746,7 +1746,9 @@ async function handleCommand(text, { fromVoice = false, noEdit = false, skipLog 
   // Voice commands get a spoken confirmation, so their chimes stay silent.
   if (fromVoice) sounds.setSuppressed(true);
   try {
-  switch (r.intent) {
+  const dcmd = discordCommand(text);
+  if (dcmd) { r = { intent: 'discord' }; ({ reply, kind } = await discordDo(dcmd)); }
+  else switch (r.intent) {
     case 'add-task': {
       const { projectName, ...fields } = r.task;
       let started = null;
@@ -1909,7 +1911,7 @@ async function handleCommand(text, { fromVoice = false, noEdit = false, skipLog 
   if (onReply && kind === 'ok') reply = `Copy that, ${S.settings.operatorName}. ${reply}`;
   pushLog(kind, reply);
   if (onReply) onReply({ reply, kind, task: made, intent: r.intent });
-  const isQuery = !['add-task', 'add-event', 'complete-task', 'edit-task', 'confirm', 'set-timer', 'set-alarm', 'cancel-timer'].includes(r.intent);
+  const isQuery = !['add-task', 'add-event', 'complete-task', 'edit-task', 'confirm', 'set-timer', 'set-alarm', 'cancel-timer', 'discord'].includes(r.intent);
   if ((fromVoice || isQuery || followUp) && !quiet) await speak(reply);
   return { reply, followUp: fromVoice && followUp };
 }
@@ -2207,10 +2209,67 @@ async function towerRespond(text) {
   await run(text);
   if (!built) return say("I didn't catch that. Try me again.", 'err', [], 'built-in');
   const tags = towerTags(made);
+  // Mute / deafen should be instant: no wording pass.
+  if (built.intent === 'discord') return say(built.reply, built.kind, [], 'built-in');
   // Built-in queries already read well and are factual; Gemini still smooths them out.
   const g = await towerWord(text, { reply: built.reply.replace(/^Copy that, [^.]+\.\s*/, ''), kind: built.kind, intent: built.intent });
   if (g) return say(g.reply, built.kind, tags, 'gemini');
   return say(built.reply, built.kind, tags, 'built-in');
+}
+
+// ---------------------------------------------------------------- Discord voice
+// Mic and headset beside Hail, following Discord live (src/discord.js in the main process).
+let DV = { status: 'off', mute: false, deaf: false };
+function renderDiscord(st) {
+  DV = { ...DV, ...(st || {}) };
+  const box = $('#dv');
+  if (!box) return;
+  box.hidden = DV.status === 'off';
+  box.dataset.status = DV.status;
+  const live = DV.status === 'live';
+  const mic = $('#dvMic');
+  const hs = $('#dvDeaf');
+  mic.classList.toggle('off', live && (DV.mute || DV.deaf));
+  hs.classList.toggle('off', live && DV.deaf);
+  mic.setAttribute('aria-label', !live ? 'Discord microphone' : DV.mute || DV.deaf ? 'Unmute in Discord' : 'Mute in Discord');
+  hs.setAttribute('aria-label', !live ? 'Discord sound' : DV.deaf ? 'Undeafen in Discord' : 'Deafen in Discord');
+  mic.title = mic.getAttribute('aria-label');
+  hs.title = hs.getAttribute('aria-label');
+  const lab = !live ? ({ waiting: 'DISCORD OFF', authorize: 'AUTHORIZE IN DISCORD', error: 'DISCORD · CHECK SETTINGS' }[DV.status] || 'DISCORD OFF') : DV.deaf ? 'DEAFENED' : DV.mute ? 'MIC MUTED' : 'DISCORD · LIVE';
+  $('#dvLab').textContent = lab;
+  box.classList.toggle('alert', live && (DV.mute || DV.deaf));
+  if (DV.status === 'error' && DV.error) box.title = DV.error; else box.removeAttribute('title');
+}
+// "mute me", "unmute", "deafen me", "undeafen" (Discord), by voice or typed.
+function discordCommand(text) {
+  const t = String(text || '').toLowerCase().replace(/[.!?]+$/, '').trim();
+  if (/^(?:un-?deafen|undeafen)(?: me)?(?: (?:in|on) discord)?$|^(?:turn|switch) (?:my )?(?:sound|audio|headset) (?:back )?on(?: (?:in|on) discord)?$/.test(t)) return { deaf: false };
+  if (/^deafen(?: me)?(?: (?:in|on) discord)?$|^(?:turn|switch) (?:my )?(?:sound|audio|headset) off(?: (?:in|on) discord)?$/.test(t)) return { deaf: true };
+  if (/^(?:un-?mute)(?: me| (?:my )?mic(?:rophone)?)?(?: (?:in|on) discord)?$|^(?:turn|switch) (?:my )?mic(?:rophone)? (?:back )?on(?: (?:in|on) discord)?$/.test(t)) return { mute: false, deaf: DV.deaf ? false : undefined };
+  if (/^mute(?: me| (?:my )?mic(?:rophone)?)?(?: (?:in|on) discord)?$|^(?:turn|switch) (?:my )?mic(?:rophone)? off(?: (?:in|on) discord)?$/.test(t)) return { mute: true };
+  return null;
+}
+async function discordDo(patch) {
+  const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => typeof v === 'boolean'));
+  if (!deck.discord) return { reply: "Discord isn't available here.", kind: 'err' };
+  const res = await deck.discord.set(clean).catch((e) => ({ ok: false, error: e.message }));
+  if (!res.ok) return { reply: res.error || "Discord didn't answer.", kind: 'err' };
+  renderDiscord(res);
+  if ('deaf' in clean) return { reply: clean.deaf ? 'Deafened. Mic and sound are off in Discord.' : 'Sound is back on in Discord.', kind: 'ok' };
+  return { reply: clean.mute ? 'Mic muted in Discord.' : "Mic's live in Discord.", kind: 'ok' };
+}
+function wireDiscord() {
+  if (!deck.discord) return;
+  deck.discord.onState(renderDiscord);
+  deck.discord.get().then(renderDiscord).catch(() => {});
+  $('#dvMic').addEventListener('click', () => {
+    if (DV.status !== 'live') return;
+    discordDo(DV.mute || DV.deaf ? { mute: false, deaf: DV.deaf ? false : undefined } : { mute: true }).then((r) => { if (r.kind === 'err') toast(r.reply); });
+  });
+  $('#dvDeaf').addEventListener('click', () => {
+    if (DV.status !== 'live') return;
+    discordDo({ deaf: !DV.deaf }).then((r) => { if (r.kind === 'err') toast(r.reply); });
+  });
 }
 
 // ---------------------------------------------------------------- timers & alarms
@@ -3174,6 +3233,8 @@ async function start() {
   Motion.start();
   if (deck.onAway) deck.onAway((away) => { Motion.setAway(away); voicesAway(away); });
   if (deck.tower) deck.tower.onTalk(() => towerTalk());
+  wireDiscord();
+  window.__discordState = (st) => renderDiscord(st); // test hook: tools/deck-shots.js shows the icon states
   window.__towerRespond = (t) => towerRespond(t); // test hook: tools/deck-shots.js drives the reply flow without a microphone
   wireUpdates();
   wireLights();

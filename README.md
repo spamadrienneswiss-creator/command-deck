@@ -83,6 +83,18 @@ Assign groceries to Alex            Delete book flights   (it asks "Confirm?" fi
 
 The **quick-add line** at the bottom of the task queue understands the same phrasing when typed.
 
+### Discord mute and deafen (beside Hail)
+
+Two small icons at the right end of the Ship Computer's Hail row show your Discord **mic** and **sound**, live: grey when you're live, coral with a slash when you're muted (MIC MUTED) or deafened (DEAFENED), faint outlines when Discord isn't running. They follow Discord however you change it (Discord itself, your Stream Deck, or here). Click the mic to mute or unmute, the headset to deafen or undeafen, or say *"mute me"*, *"unmute"*, *"deafen me"*, *"undeafen"* (to the Computer or Comm Tower 1).
+
+**One-time setup** (Settings › System › DISCORD): Discord only lets apps you own use this, so make your own free one:
+1. Open the [Discord Developer Portal](https://discord.com/developers/applications) › **New Application** (any name).
+2. In **OAuth2**, copy the **Client ID**, then **Reset Secret** and copy the **Client Secret**.
+3. Still in OAuth2, under **Redirects**, add `http://localhost` and save.
+4. Paste both into Settings, press **CONNECT**, then click **Authorize** in the box Discord shows. The deck remembers it from then on. **FORGET** removes it.
+
+The icons stay hidden until Discord is set up.
+
 ### Comm Tower 1 (talk from any screen)
 
 A small chip sits in the bottom-right corner of your main monitor, above everything else, so you can talk to the deck without going to it.

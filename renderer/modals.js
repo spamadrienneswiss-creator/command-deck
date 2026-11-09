@@ -1057,6 +1057,14 @@ export function openSettings(welcome = false) {
           <div class="toggle-row"><span>Talk back conversationally (Gemini)</span>${switchHtml('swTowerTalk', (draft.tower || {}).talk !== false, 'Conversational replies')}</div>
           <div class="inline" style="flex:none;margin-top:6px"><input id="sTowerName" class="in" maxlength="20" aria-label="Comm Tower name" value="${esc((draft.tower || {}).name || 'COMM TOWER 1')}" placeholder="COMM TOWER 1" style="flex:1"><button type="button" class="btn line" id="sTowerHome">BACK TO CORNER</button></div>
           <div class="f-hint">Click the chip and talk; it files tasks, events, notes and timers the same as the Computer, then answers you by name. Drag it to move it. The name is whatever you call it.<br>Talking back uses the Gemini key from Field Unit › DATA RECAP: the deck still does the filing, Gemini words the reply and answers questions about your day from your tasks and schedule (they're sent to Gemini for that). No key or no signal: the deck's own replies.</div></div>
+        <div class="f"><span class="f-label">DISCORD · MUTE AND DEAFEN BESIDE HAIL</span>
+          <div class="f-hint" style="margin-top:0">Shows whether you're muted or deafened in Discord, live, and toggles them (click the icons, or say "mute me" / "deafen me"). One-time setup with your own free Discord app:<br>
+          1. Open the <a href="#" id="dcPortal" style="color:var(--amber)">Discord Developer Portal</a> › <b>New Application</b> (any name, e.g. Command Deck).<br>
+          2. In <b>OAuth2</b>: copy the <b>Client ID</b>, then <b>Reset Secret</b> and copy the <b>Client Secret</b>.<br>
+          3. Still in OAuth2, under <b>Redirects</b>, add <b>http://localhost</b> and save.<br>
+          4. Paste both below, press CONNECT, then click <b>Authorize</b> in the box Discord shows.</div>
+          <div class="inline" style="flex:none;margin-top:8px;gap:8px"><input id="dcId" class="in" placeholder="CLIENT ID" aria-label="Discord Client ID" style="flex:1" autocomplete="off" spellcheck="false"><input id="dcSecret" class="in" type="password" placeholder="CLIENT SECRET" aria-label="Discord Client Secret" style="flex:1" autocomplete="off"></div>
+          <div class="inline" style="flex:none;margin-top:8px;gap:8px;align-items:center"><button type="button" class="btn" id="dcConnect">CONNECT</button><button type="button" class="btn line" id="dcForget">FORGET</button><span class="f-hint" id="dcStatus" style="margin:0"></span></div></div>
         <div class="f"><label class="f-label" for="sHumor" style="display:flex;justify-content:space-between"><span>HUMOR SETTING</span><span id="sHumorVal" class="amber-t">${draft.humor ?? 40}%</span></label>
           <input id="sHumor" class="range" type="range" min="0" max="100" step="5" value="${draft.humor ?? 40}">
           <div class="f-hint">0% is strictly professional; higher settings add dry, deadpan remarks. You can also just say "set humor to 75 percent."</div></div>
@@ -1487,6 +1495,7 @@ export function openSettings(welcome = false) {
       wireSwitch($('#swAuto', body), (on) => { draft.autoStart = on; });
       wireSwitch($('#swTower', body), (on) => { draft.tower = { ...(draft.tower || {}), on }; });
       wireSwitch($('#swTowerTalk', body), (talk) => { draft.tower = { ...(draft.tower || {}), talk }; });
+      wireDiscordSettings(body);
       $('#sTowerName', body).addEventListener('input', (e) => { draft.tower = { ...(draft.tower || {}), name: e.target.value.trim().toUpperCase() || 'COMM TOWER 1' }; });
       $('#sTowerHome', body).addEventListener('click', () => { if (window.deck.tower && window.deck.tower.home) window.deck.tower.home(); app.toast('Back in the corner.', 1800); });
       wireSwitch($('#swBrief', body), (on) => { draft.morningBriefing = on; });
@@ -1718,4 +1727,47 @@ export function openSettings(welcome = false) {
     render();
   });
   render();
+}
+
+// Settings › System › DISCORD: the codes live in the main process (store key 'discord'),
+// not in settings, and take effect on CONNECT rather than SAVE.
+function wireDiscordSettings(body) {
+  const D = window.deck.discord;
+  const st = $('#dcStatus', body);
+  if (!D || !st) return;
+  const WORDS = {
+    off: 'Not set up.',
+    waiting: 'Saved. Waiting for Discord to be running…',
+    authorize: 'Look in Discord: click Authorize.',
+    live: 'Connected.',
+    error: ''
+  };
+  const show = (s) => {
+    const live = s.status === 'live' ? ` ${s.deaf ? 'Deafened.' : s.mute ? 'Mic muted.' : 'Mic and sound on.'}` : '';
+    st.textContent = s.status === 'error' ? (s.error || 'Something went wrong.') : (WORDS[s.status] || '') + live;
+    st.style.color = s.status === 'live' ? 'var(--lime)' : s.status === 'error' ? 'var(--coral)' : '';
+  };
+  D.get().then((s) => {
+    $('#dcId', body).value = s.clientId || '';
+    $('#dcSecret', body).placeholder = s.hasSecret ? 'SECRET SAVED · PASTE TO CHANGE' : 'CLIENT SECRET';
+    show(s);
+  });
+  D.onState((s) => { if (document.body.contains(st)) show(s); });
+  $('#dcPortal', body).addEventListener('click', (e) => { e.preventDefault(); window.deck.openExternal('https://discord.com/developers/applications'); });
+  $('#dcConnect', body).addEventListener('click', async () => {
+    const clientId = $('#dcId', body).value.trim();
+    const clientSecret = $('#dcSecret', body).value.trim();
+    if (!/^\d{15,22}$/.test(clientId)) { st.textContent = 'The Client ID is a long number (OAuth2 › Client ID).'; st.style.color = 'var(--coral)'; return; }
+    st.textContent = 'Connecting…';
+    st.style.color = '';
+    await D.config({ clientId, clientSecret });
+    $('#dcSecret', body).value = '';
+    $('#dcSecret', body).placeholder = 'SECRET SAVED · PASTE TO CHANGE';
+  });
+  $('#dcForget', body).addEventListener('click', async () => {
+    await D.forget();
+    $('#dcId', body).value = '';
+    $('#dcSecret', body).placeholder = 'CLIENT SECRET';
+    show({ status: 'off' });
+  });
 }

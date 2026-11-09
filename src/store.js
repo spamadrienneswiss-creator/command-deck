@@ -83,6 +83,7 @@ const DEFAULTS = {
   layoutEdgeP2: null, // page 2 panel positions, Edge layout
   layoutMine: null, // retired (v1.23): your page 1 arrangement from while Open Window was on; restored once, then cleared
   window: { bounds: null },
+  discord: { clientId: '', clientSecret: '', accessToken: '', refreshToken: '', expiresAt: 0 }, // Discord voice (mute / deafen icons): your own Discord app's codes + its token
   towerPos: null, // Comm Tower 1 chip window position { x, y } (null: bottom-right of the main monitor)
   meta: { lastBriefingDate: null, lastLaunch: null, page: 1 },
   push: { publicKey: null, privateKey: null }

@@ -43,6 +43,13 @@ contextBridge.exposeInMainWorld('deck', {
     install: () => ipcRenderer.invoke('update:install'),
     onState: (fn) => ipcRenderer.on('update:state', (_e, s) => fn(s))
   },
+  discord: {
+    get: () => ipcRenderer.invoke('discord:get'),
+    config: (cfg) => ipcRenderer.invoke('discord:config', cfg),
+    forget: () => ipcRenderer.invoke('discord:forget'),
+    set: (patch) => ipcRenderer.invoke('discord:set', patch),
+    onState: (fn) => ipcRenderer.on('discord:state', (_e, st) => fn(st))
+  },
   tower: {
     state: (st) => ipcRenderer.send('tower:state', st),
     home: () => ipcRenderer.send('tower:home'),

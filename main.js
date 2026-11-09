@@ -31,7 +31,8 @@ const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
 
 let win = null;
-let tower = null; // Comm Tower 1: the talk-to-capture chip on the main monitor
+let tower = null;
+let discord = null; // Discord voice: live mute / deafen (src/discord.js) // Comm Tower 1: the talk-to-capture chip on the main monitor
 let tray = null;
 const ICON = path.join(__dirname, 'assets', 'icon.png');
 
@@ -508,6 +509,44 @@ function registerTowerIpc() {
   ipcMain.on('tower:state', (_e, st) => sendTower('tower:state', st));
 }
 
+// ---------------------------------------------------------------- Discord voice
+// The mute / deafen icons beside Hail. Runs here (the pipe to Discord is a local socket);
+// the deck window gets each change as 'discord:state'.
+function startDiscord() {
+  const { DiscordVoice } = require('./src/discord');
+  discord = new DiscordVoice({
+    load: () => store.get().discord || {},
+    save: (patch) => store.set('discord', { ...(store.get().discord || {}), ...patch }),
+    fetch: (u, o) => net.fetch(u, o)
+  });
+  discord.on('state', (st) => { if (win && !win.isDestroyed()) win.webContents.send('discord:state', st); });
+  discord.start();
+}
+function registerDiscordIpc() {
+  ipcMain.handle('discord:get', () => {
+    const d = store.get().discord || {};
+    return { ...(discord ? discord.state : { status: 'off', mute: false, deaf: false }), clientId: d.clientId || '', hasSecret: !!d.clientSecret };
+  });
+  ipcMain.handle('discord:config', (_e, cfg) => {
+    const d = store.get().discord || {};
+    const clientId = String((cfg && cfg.clientId) || '').trim();
+    const secretIn = String((cfg && cfg.clientSecret) || '').trim();
+    const clientSecret = secretIn || (clientId === d.clientId ? d.clientSecret : '');
+    const changed = clientId !== d.clientId || clientSecret !== d.clientSecret;
+    store.set('discord', changed ? { clientId, clientSecret, accessToken: '', refreshToken: '', expiresAt: 0 } : d);
+    if (discord) { if (changed) discord.restart(); else discord.start(); }
+    return { ok: true };
+  });
+  ipcMain.handle('discord:forget', () => {
+    store.set('discord', { clientId: '', clientSecret: '', accessToken: '', refreshToken: '', expiresAt: 0 });
+    if (discord) discord.stop();
+    return { ok: true };
+  });
+  ipcMain.handle('discord:set', async (_e, patch) => {
+    try { return { ok: true, ...(await discord.set(patch || {})) }; } catch (e) { return { ok: false, ...(discord ? discord.state : {}), error: e.message }; }
+  });
+}
+
 // ---------------------------------------------------------------- rest when away
 // Tells the console to freeze its looping animations while nobody's at the PC
 // (no mouse or keyboard for 5 minutes, screen locked) or while it's hidden.
@@ -587,9 +626,11 @@ app.whenReady().then(() => {
   serveFiles();
   registerIpc();
   registerTowerIpc();
+  registerDiscordIpc();
   allowFirebaseFromApp();
   createWindow();
   applyTower();
+  startDiscord();
   watchAway();
   createTray();
   applyAutoStart();
@@ -602,6 +643,7 @@ app.whenReady().then(() => {
 app.on('before-quit', () => {
   app.isQuitting = true;
   if (lights) lights.shutdown(); // hand the lights back to iCUE
+  if (discord) discord.stop();
   store.flush();
 });
 

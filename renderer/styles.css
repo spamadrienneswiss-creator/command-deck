@@ -263,16 +263,19 @@ body[data-voice="listening"] .hail { background: radial-gradient(circle at 50% 4
 body[data-voice="thinking"] .hail, body[data-voice="greeting"] .hail, body[data-voice="speaking"] .hail { box-shadow: inset 0 0 0 1.5px var(--lav); }
 .cmp-side { flex: 1; min-width: 0; }
 /* Discord voice: mute / deafen beside Hail (v1.26). Grey when live, coral when off, outlines when Discord is closed. */
-.dv { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+/* Sized from the Hail row's width: about 72 px on a wide panel, 44 px on a narrow one. */
+.cmp-row { container-type: inline-size; }
+.dv { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: clamp(5px, 0.8cqw, 9px); }
 .dv[hidden] { display: none; }
-.dv-pair { display: flex; gap: 6px; }
-.dv-ic { width: 40px; height: 40px; padding: 0; border: 0; cursor: pointer; display: grid; place-items: center; color: var(--text-2); background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px var(--line-3); clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 9px, 100% calc(100% - 9px), calc(100% - 9px) 100%, 9px 100%, 0 calc(100% - 9px), 0 9px); transition: background 0.15s, color 0.15s; }
-.dv-ic:hover { background: rgba(255, 255, 255, 0.09); color: var(--text-hi); }
+.dv-pair { display: flex; gap: clamp(6px, 0.9cqw, 10px); }
+.dv-ic { --dv: clamp(44px, 7.2cqw, 76px); width: var(--dv); height: var(--dv); padding: 0; border: 0; cursor: pointer; display: grid; place-items: center; color: var(--text-2); background: color-mix(in srgb, currentColor 9%, transparent); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, currentColor 35%, transparent); clip-path: polygon(22% 0, 78% 0, 100% 22%, 100% 78%, 78% 100%, 22% 100%, 0 78%, 0 22%); transition: background 0.15s, color 0.15s; }
+.dv-ic svg { width: 52%; height: 52%; }
+.dv-ic:hover { background: color-mix(in srgb, currentColor 16%, transparent); color: var(--text-hi); }
 .dv-ic .dv-x { display: none; }
 .dv-ic.off { color: var(--coral-hi); background: rgba(var(--coral-rgb), 0.22); box-shadow: inset 0 0 0 1.5px var(--coral); }
 .dv-ic.off .dv-x { display: inline; }
 .dv-ic.off:hover { background: rgba(var(--coral-rgb), 0.32); }
-.dv-lab { font: 500 8.5px/1 var(--mono); letter-spacing: 0.16em; color: var(--muted-2); white-space: nowrap; }
+.dv-lab { font: 500 clamp(8.5px, 1.05cqw, 11.5px)/1 var(--mono); letter-spacing: 0.16em; color: var(--muted-2); white-space: nowrap; }
 .dv.alert .dv-lab { color: var(--coral); }
 .dv:not([data-status="live"]) .dv-ic { color: var(--dim); background: transparent; box-shadow: inset 0 0 0 1px var(--line); cursor: default; }
 .dv:not([data-status="live"]) .dv-ic .dv-x { display: none; }

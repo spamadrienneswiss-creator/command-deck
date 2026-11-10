@@ -47,8 +47,9 @@ Read this first in any new thread. It's the handoff from earlier work, so a fres
   4. Watch it with `tools/watch-release.sh Release <sha>`.
 - Commit as `Claude <noreply@anthropic.com>`. Keep the README and FIELD-UNIT-SETUP.md in step with features.
 
-## Where things stand (v1.28.0, Nov 2026)
+## Where things stand (v1.28.1, Nov 2026)
 Shipped recently:
+- v1.28.1: recap summaries survive a busy Gemini: on a 5xx / no answer they wait and retry, then try other Flash models; each call times out after 3 min (`SUMMARY_MS` in src/gemini.js), and a failed job never leaves a recap stuck on a step (`pump()` in recap.js). Nick's first test meeting hit a Gemini 5xx with `gemini-3.8-flash`.
 - v1.28: record a meeting from Comm Tower 1 into Data Recap; the pop-up lines up with the button's left edge (see the code map). Nick does a lot of Zoom meetings. Board: "Record a meeting" (archived once shipped).
 - v1.27: voice input off; the deck and Comm Tower 1 get Field Unit-style typing terminals (see the code map). Board: "Type, don't talk" (archived once shipped). The earlier "Comm Tower 1 · talks back" board is superseded.
 - v1.26: Discord mute / deafen icons beside Hail (see the code map). Nick asked Nov 8; he has a (virtual) Stream Deck with Discord buttons too. Board: "Ship Computer · Discord mute and deafen icons" (archived once shipped).

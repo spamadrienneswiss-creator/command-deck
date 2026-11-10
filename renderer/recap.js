@@ -174,6 +174,12 @@ async function pump() {
     else if (job.kind === 'summary') await summarize(job.noteId);
   } catch (e) {
     console.error('Data Recap:', e);
+    // Never leave a recap showing a step that has stopped (v1.28.1).
+    const n = job.noteId && findNote(job.noteId);
+    if (n && n.recap && !['ready', 'error'].includes(n.recap.status)) {
+      if (n.recap.status === 'summarizing') patch(n.id, { status: 'ready', progress: 100, summaryError: friendlyError(e) }, { force: true });
+      else patch(n.id, { status: 'error', error: friendlyError(e) }, { force: true });
+    }
   } finally {
     R.busy = false;
     setTimeout(pump, 50);
@@ -249,7 +255,7 @@ async function summarize(id, { chained = false } = {}) {
   } else if (!(rc.transcript || []).length) {
     fields.summaryError = 'No speech was found in the recording.';
   } else {
-    const r = await H.deck.recap.summarize({ key: s.geminiKey, model: s.model || '', transcript: rc.transcript, title: n.title, include: inc });
+    const r = await H.deck.recap.summarize({ key: s.geminiKey, model: s.model || '', transcript: rc.transcript, title: n.title, include: inc }).catch((e) => ({ ok: false, error: friendlyError(e) }));
     if (r && r.ok) {
       fields = {
         summary: inc.summary ? r.summary : '',

@@ -109,6 +109,21 @@ await ok('summarize: a bad key and a used-up free limit say so plainly', async (
   await assert.rejects(gemini.summarize({ key: 'K', transcript: [] }, busy), /no speech/);
 });
 
+await ok('summarize: a busy model gets a second try, then another model takes over', async () => {
+  const f = fakeFetch([
+    [/gemini-3\.8-flash:generateContent/, () => ({ status: 503, json: { error: { message: 'The model is overloaded.' } } })],
+    [/gemini-flash-latest:generateContent/, () => reply({ summary: 'Done.', points: [], actions: [] })]
+  ]);
+  const r = await gemini.summarize({ key: 'K', model: 'gemini-3.8-flash', transcript, retryMs: 0 }, f);
+  assert.equal(r.model, 'gemini-flash-latest');
+  assert.equal(f.calls.filter((c) => /3\.8-flash/.test(c.url)).length, 2);
+});
+
+await ok('summarize: an answer that never comes times out in plain words', async () => {
+  const hang = async (url, init) => new Promise((_, no) => init.signal.addEventListener('abort', () => no(new Error('aborted'))));
+  await assert.rejects(gemini.summarize({ key: 'K', model: 'm', transcript, timeoutMs: 20, retryMs: 0 }, hang), /took too long/);
+});
+
 await ok('summarize: a blocked or empty reply is an error, not a blank recap', async () => {
   const f = fakeFetch([[/generateContent/, () => ({ json: { candidates: [{ finishReason: 'SAFETY', content: { parts: [] } }] } })]]);
   await assert.rejects(gemini.summarize({ key: 'K', transcript }, f), /safety/);

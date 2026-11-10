@@ -6,6 +6,7 @@
 
 const API = 'https://generativelanguage.googleapis.com/v1beta';
 const PREFERRED = ['gemini-flash-latest', 'gemini-flash-lite-latest'];
+const SUMMARY_MS = 3 * 60 * 1000;
 
 const RECAP_SCHEMA = {
   type: 'OBJECT',
@@ -18,11 +19,12 @@ const RECAP_SCHEMA = {
   required: ['summary', 'points', 'actions']
 };
 
-async function call(fetchFn, path, key, body) {
+async function call(fetchFn, path, key, body, signal) {
   const res = await fetchFn(`${API}/${path}`, {
     method: body ? 'POST' : 'GET',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-    body: body ? JSON.stringify(body) : undefined
+    body: body ? JSON.stringify(body) : undefined,
+    signal
   });
   let json = null;
   try { json = await res.json(); } catch (e) { /* not JSON */ }
@@ -97,28 +99,43 @@ function parseRecap(text) {
  * Summarizes a transcript. Returns { model, title, summary, points, actions }.
  * `model` is the one that worked, so the caller can remember it for next time.
  */
-async function summarize({ key, model, transcript, title, include }, fetchFn = fetch) {
+async function summarize(opts, fetchFn = fetch) {
+  const { key, model, transcript, title, include } = opts || {};
   if (!key) throw new Error('Add a Gemini key in Settings › Field Unit › DATA RECAP to get summaries.');
   if (!transcript || !transcript.length) throw new Error('The recording had no speech to summarize.');
   const body = {
     contents: [{ role: 'user', parts: [{ text: buildPrompt(transcript, { title, ...(include || {}) }) }] }],
     generationConfig: { temperature: 0.3, responseMimeType: 'application/json', responseSchema: RECAP_SCHEMA }
   };
+  // v1.28.1: Google's servers sometimes answer "busy" (5xx) or hang. Wait a moment and try
+  // again, then try other Flash models, and never wait on one answer longer than SUMMARY_MS.
   const tried = new Set();
   const attempt = async (m) => {
     tried.add(m);
-    const r = await call(fetchFn, `models/${encodeURIComponent(m)}:generateContent`, key, body);
-    return { m, r };
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), opts.timeoutMs || SUMMARY_MS);
+    try {
+      return { m, r: await call(fetchFn, `models/${encodeURIComponent(m)}:generateContent`, key, body, ac.signal) };
+    } catch (e) {
+      return { m, r: { ok: false, status: 0, json: null, timedOut: ac.signal.aborted } };
+    } finally { clearTimeout(timer); }
   };
+  const missing = (r) => r.status === 404 || (r.status === 400 && /not found|not supported/i.test(JSON.stringify(r.json || {})));
+  const busy = (r) => r.status === 0 || r.status >= 500;
   let { m, r } = await attempt(model || PREFERRED[0]);
-  // The remembered model (or the alias) went away: find one this key can use.
-  if (!r.ok && (r.status === 404 || (r.status === 400 && /not found|not supported/i.test(JSON.stringify(r.json || {}))))) {
-    const options = [...PREFERRED, ...(await listModels(key, fetchFn).catch(() => []))].filter((x) => !tried.has(x));
+  if (!r.ok && busy(r)) {
+    await new Promise((ok) => setTimeout(ok, opts.retryMs == null ? 2500 : opts.retryMs));
+    ({ m, r } = await attempt(m));
+  }
+  // The remembered model went away or stays busy: try the others this key can use.
+  if (!r.ok && (missing(r) || busy(r))) {
+    const options = [...PREFERRED, ...(await listModels(key, fetchFn).catch(() => []))].filter((x, i, all) => !tried.has(x) && all.indexOf(x) === i).slice(0, 4);
     for (const next of options) {
       ({ m, r } = await attempt(next));
-      if (r.ok || !(r.status === 404 || r.status === 400)) break;
+      if (r.ok || !(missing(r) || busy(r))) break;
     }
   }
+  if (!r.ok && r.status === 0) throw new Error(r.timedOut ? 'Gemini took too long to answer. Try SUMMARIZE again in a bit.' : 'Couldn\'t reach Gemini. Check the internet, then try SUMMARIZE again.');
   if (!r.ok) throw new Error(friendly(r.status, r.json));
   const cand = r.json && r.json.candidates && r.json.candidates[0];
   const text = cand && cand.content && Array.isArray(cand.content.parts) ? cand.content.parts.map((p) => p.text || '').join('') : '';

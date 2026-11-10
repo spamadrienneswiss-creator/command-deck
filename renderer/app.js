@@ -8,12 +8,13 @@ import * as U from './util.js';
 import { initModals, openTaskEditor, openEventEditor, openNoteEditor, openRecap, openProject, openProjectEditor, openScheduleEditor, openScheduleShare, openSettings, closeModal, isModalOpen } from './modals.js';
 import * as FU from './fieldunit.js';
 import * as Recap from './recap.js';
+import * as Meet from './meeting.js';
 import * as Motion from './motion.js';
 import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ymd, parseYmd, typeOf, shortName, timeRange, parseTime, chipName } from '../shared/roster.js';
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.27.0';
+const VERSION = 'v1.28.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -806,7 +807,7 @@ function notesWide() {
 }
 
 const RC_STEP = {
-  uploading: 'SENDING FROM FIELD UNIT', queued: 'WAITING FOR COMMAND', receiving: 'RECEIVING', decoding: 'READING THE AUDIO',
+  recording: 'RECORDING NOW', uploading: 'SENDING FROM FIELD UNIT', queued: 'WAITING FOR COMMAND', receiving: 'RECEIVING', decoding: 'READING THE AUDIO',
   transcribing: 'TRANSCRIBING', summarizing: 'WRITING THE RECAP', error: 'NEEDS ATTENTION'
 };
 function fmtDur(sec) {
@@ -894,10 +895,10 @@ function recapHtml(n) {
   const tab = rcTab.get(n.id) || 'summary';
   const head = `<div class="np-head"><div class="np-title">${esc(n.title || 'Data Recap')}</div>
       <div class="np-tools">${rc.status === 'ready' && (rc.transcript || []).length ? `<span class="nt-views rc-views" role="tablist" aria-label="Recap view"><button type="button" role="tab" data-rc-tab="summary" class="${tab === 'summary' ? 'on' : ''}" aria-selected="${tab === 'summary'}">SUMMARY</button><button type="button" role="tab" data-rc-tab="transcript" class="${tab === 'transcript' ? 'on' : ''}" aria-selected="${tab === 'transcript'}">TRANSCRIPT</button></span>` : ''}</div></div>
-    <div class="np-meta"><span class="src rc-src">RECAP</span> FROM FIELD UNIT${rc.durationSec ? ` · ${esc(fmtDur(rc.durationSec))}` : ''}${rc.status === 'ready' ? ' · TRANSCRIBED ON THIS PC' : ''}</div>`;
+    <div class="np-meta"><span class="src rc-src">RECAP</span> ${rc.origin === 'deck' ? 'MEETING ON THIS PC' : 'FROM FIELD UNIT'}${rc.durationSec ? ` · ${esc(fmtDur(rc.durationSec))}` : ''}${rc.status === 'ready' ? ' · TRANSCRIBED ON THIS PC' : ''}</div>`;
   if (rc.status !== 'ready') {
-    const steps = [['receiving', 'Receiving the recording'], ['transcribing', 'Transcribing on Command'], ['summarizing', 'Writing the recap']];
-    const order = ['uploading', 'queued', 'receiving', 'decoding', 'transcribing', 'summarizing', 'ready'];
+    const steps = rc.origin === 'deck' ? [['recording', 'Recording the meeting'], ['transcribing', 'Transcribing on Command'], ['summarizing', 'Writing the recap']] : [['receiving', 'Receiving the recording'], ['transcribing', 'Transcribing on Command'], ['summarizing', 'Writing the recap']];
+    const order = ['recording', 'uploading', 'queued', 'receiving', 'decoding', 'transcribing', 'summarizing', 'ready'];
     const at = order.indexOf(rc.status === 'decoding' ? 'transcribing' : rc.status);
     return `${head}
       <div class="rc-steps">${steps.map(([k, label]) => {
@@ -1747,7 +1748,9 @@ async function handleCommand(text, { fromVoice = false, noEdit = false, skipLog 
   if (fromVoice) sounds.setSuppressed(true);
   try {
   const dcmd = discordCommand(text);
+  const mcmd = !dcmd && meetingCommand(text);
   if (dcmd) { r = { intent: 'discord' }; ({ reply, kind } = await discordDo(dcmd)); }
+  else if (mcmd) { r = { intent: 'meeting' }; ({ reply, kind } = await meetingDo(mcmd)); }
   else switch (r.intent) {
     case 'add-task': {
       const { projectName, ...fields } = r.task;
@@ -1911,7 +1914,7 @@ async function handleCommand(text, { fromVoice = false, noEdit = false, skipLog 
   if (onReply && kind === 'ok') reply = `Copy that, ${S.settings.operatorName}. ${reply}`;
   pushLog(kind, reply);
   if (onReply) onReply({ reply, kind, task: made, intent: r.intent });
-  const isQuery = !['add-task', 'add-event', 'complete-task', 'edit-task', 'confirm', 'set-timer', 'set-alarm', 'cancel-timer', 'discord'].includes(r.intent);
+  const isQuery = !['add-task', 'add-event', 'complete-task', 'edit-task', 'confirm', 'set-timer', 'set-alarm', 'cancel-timer', 'discord', 'meeting'].includes(r.intent);
   if ((fromVoice || isQuery || followUp) && !quiet) await speak(reply);
   return { reply, followUp: fromVoice && followUp };
 }
@@ -2143,7 +2146,7 @@ async function respond(text, sink) {
   if (!built) return say("I didn't catch that. Try it another way.", 'err');
   const card = built.kind === 'ok' ? termCard(built.intent, made) : null;
   // Mute / deafen should be instant: no wording pass.
-  if (built.intent === 'discord') return say(built.reply, built.kind);
+  if (built.intent === 'discord' || built.intent === 'meeting') return say(built.reply, built.kind);
   const g = await towerWord(text, { reply: built.reply.replace(/^Copy that, [^.]+\.\s*/, ''), kind: built.kind, intent: built.intent });
   return say(g ? g.reply : built.reply, built.kind, card);
 }
@@ -2245,6 +2248,71 @@ function wireTerm() {
     openTerm(e.key);
   });
   if (deck.onTermOpen) deck.onTermOpen(() => openTerm());
+}
+
+// ---------------------------------------------------------------- record a meeting (v1.28)
+// Computer audio + your mic into Data Recap (renderer/meeting.js). Driven from Comm Tower 1
+// (REC in its terminal) or typed: "record meeting [called …]", "stop / pause / resume / discard recording".
+function meetingCommand(text) {
+  const t = String(text || '').trim().replace(/[.!]+$/, '');
+  let m = t.match(/^(?:start\s+)?record(?:ing)?\s+(?:a\s+|the\s+|this\s+)?(?:meeting|call|zoom(?:\s+call)?)(?:\s+(?:called|named|titled)\s+(.+))?$/i) || t.match(/^start\s+recording(?:\s+(?:called|named|titled)\s+(.+))?$/i);
+  if (m) return { action: 'start', title: m[1] || '' };
+  const low = t.toLowerCase();
+  if (/^(?:stop|end|finish)\s+(?:the\s+)?(?:recording|meeting recording)$/.test(low)) return { action: 'stop' };
+  if (/^pause\s+(?:the\s+)?recording$/.test(low)) return { action: 'pause' };
+  if (/^(?:resume|continue|unpause)\s+(?:the\s+)?recording$/.test(low)) return { action: 'resume' };
+  if (/^(?:discard|cancel|scrap|delete)\s+(?:the\s+)?recording$/.test(low)) return { action: 'discard' };
+  return null;
+}
+async function meetingDo(c) {
+  const st = Meet.recState();
+  try {
+    if (c.action === 'start') {
+      if (Meet.isRecording()) return { reply: `Already recording ${st.title} (${Meet.clock()}).`, kind: 'c' };
+      const r = await Meet.start({ title: c.title, sys: c.sys, mic: c.mic });
+      const both = r.sources.sys && r.sources.mic ? 'computer audio and your mic' : r.sources.sys ? 'computer audio only' : 'your mic only';
+      return { reply: `Recording ${r.title}: ${both}.${r.error ? ` ${r.error}` : ''} Remember to let everyone know.`, kind: 'ok' };
+    }
+    if (!Meet.isRecording()) return { reply: 'Nothing is recording right now.', kind: 'c' };
+    if (c.action === 'pause') { Meet.pause(); return { reply: `Paused at ${Meet.clock()}.`, kind: 'ok' }; }
+    if (c.action === 'resume') { Meet.resume(); return { reply: 'Recording again.', kind: 'ok' }; }
+    if (c.action === 'discard') { await Meet.stop({ keep: false }); return { reply: 'Recording discarded. Nothing was kept.', kind: 'ok' }; }
+    const out = await Meet.stop({ keep: true });
+    const mins = Math.max(1, Math.round((out && out.ms ? out.ms : 0) / 60000));
+    return { reply: `Got it: ${mins} minute${mins === 1 ? '' : 's'}. Transcribing now; I'll tell you when the recap's ready.`, kind: 'ok' };
+  } catch (e) {
+    return { reply: e.message || 'The recording didn\'t start.', kind: 'err' };
+  }
+}
+function wireMeeting() {
+  Meet.initMeeting({
+    deck,
+    send: (st) => towerSend({ rec: st }),
+    createNote: (id, title, sources) => {
+      const now = new Date().toISOString();
+      S.notes.unshift({
+        id, title, body: '', pinned: false, src: 'recap', createdAt: now, editedAt: now, editedOn: 'command',
+        recap: { status: 'recording', origin: 'deck', progress: 0, fileName: 'meeting.webm', sizeBytes: 0, recordedAt: now, sources, include: {}, audio: { keep: (S.settings.recap && S.settings.recap.audioKeep) || 'd30' } }
+      });
+      saveNotes();
+      renderNotes();
+    },
+    recapIt: (id, ms) => Recap.recapLocal(id, ms),
+    discard: (id) => {
+      S.notes = S.notes.filter((n) => n.id !== id);
+      saveNotes();
+      renderNotes();
+      deck.recap.remove(id).catch(() => {});
+    }
+  });
+  // Comm Tower 1's REC controls.
+  if (deck.tower && deck.tower.onRec) {
+    deck.tower.onRec(async (a) => {
+      const res = await meetingDo(a || {});
+      towerSink.line(res.kind === 'err' ? 'err' : 'c', res.reply);
+    });
+  }
+  towerSend({ rec: Meet.recState() });
 }
 
 // ---------------------------------------------------------------- Discord voice
@@ -3408,8 +3476,17 @@ async function start() {
     saveRecapSettings: (recap) => saveSettings({ ...S.settings, recap }, { refetch: false }),
     newTask: ({ title, notes }) => { const t = { ...blankTask(), title, notes }; upsertTask(t, true); return t; },
     toast,
-    pushLog
+    pushLog,
+    isRecordingNow: (id) => Meet.isRecording() && Meet.recState().id === id,
+    onReady: (n) => {
+      if (!n.recap || n.recap.origin !== 'deck') return;
+      const acts = (n.recap.actions || []).length;
+      const line = `Recap ready: ${n.title}.${acts ? ` ${acts} action${acts === 1 ? '' : 's'} to look at in Notepad › RECAPS.` : ' It\'s in Notepad › RECAPS.'}`;
+      towerSink.line('ok', line);
+      if (termLines.length) deckSink.line('ok', line);
+    }
   });
+  wireMeeting();
   startTimers();
   checkRedAlert();
   renderFooter();

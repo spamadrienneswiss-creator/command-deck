@@ -108,11 +108,14 @@ Listening is switched off for now (v1.27): you type, and the deck answers, out l
 
 A small button sits in the bottom-right corner of your main monitor, above everything else.
 
-- **Click it** (or press **Ctrl + Alt + T** from any app) and a small terminal pops up above it. Type, press Enter, and the reply shows there (and is spoken, if voice replies are on). **Esc** closes it; it also closes itself after a minute untouched.
+- **Click it** (or press **Ctrl + Alt + T** from any app) and a small terminal pops up right on top of it, lined up with its left edge (or its right edge in the screen's corner, where there's no room). Type, press Enter, and the reply shows there (and is spoken, if voice replies are on). **Esc** closes it; it also closes itself after a minute untouched.
 - **Drag** the button to move it; it remembers where you put it.
 - **Settings › System › COMM TOWER 1:** show or hide it, rename it, and **BACK TO CORNER**. The tray menu can show or hide it too.
 - The deck does the work, so it needs to be running (it can be hidden in the tray).
 - **Gemini** (with a key in **Settings › Field Unit › DATA RECAP**) words replies and answers questions from your tasks, calendar and schedule, which are sent to Gemini for that. No key, no signal, or too slow: the deck's own replies.
+- **Record a meeting:** the red **● REC** in the terminal's header (or type *record meeting*, optionally *called …*). Name it if you like and pick the sources: **computer audio** (everyone else on Zoom, Teams, a browser call) and **my microphone** (you); both are on. While it records, the terminal shows the time and two level meters with **STOP + RECAP**, **PAUSE** and **DISCARD**, and the corner button turns red with the running time, so you can close the terminal and keep working. Typing works too: *stop recording*, *pause recording*, *resume recording*, *discard recording*.
+- When you stop, it goes through **Data Recap** like a phone recording: transcribed on this PC, then summarized by Gemini, and Comm Tower 1 tells you when the recap is ready in Notepad › RECAPS. The audio is saved every 10 seconds while it records, so if the deck closes mid-call, what was recorded is recapped the next time it starts.
+- **Heads-up:** in California (and some other places) everyone on a call has to agree to being recorded. This doesn't announce itself the way Zoom's recorder does, so mention it when you start.
 
 ### Projects
 

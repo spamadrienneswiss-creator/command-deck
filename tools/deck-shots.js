@@ -2,7 +2,7 @@ const { app } = require('electron');
 const fs = require('fs');
 // Screenshots the deck in given themes. Usage (Linux, headless):
 //   COMBOS='[{"name":"dusk","theme":"dusk"}]' SIZE=1280x800 xvfb-run -a npx electron --no-sandbox tools/deck-shots.js
-// Each combo: { name, theme, towerType?: [lines] (opens Comm Tower 1's pop-up, types each line, captures <name>-tower.png), wait? (ms after reload; the Signal load-up takes ~9 s on FULL), frame?, trim?, alert?, extra?: 'settings', seed?: js run before reload, js?: js string(s) run before capture }.
+// Each combo: { name, theme, towerType?: [lines] (opens Comm Tower 1's pop-up, types each line, captures <name>-tower.png), towerAfter?: [deck js, or '@'+tower js] run after typing, wait? (ms after reload; the Signal load-up takes ~9 s on FULL), frame?, trim?, alert?, extra?: 'settings', seed?: js run before reload, js?: js string(s) run before capture }.
 // Images land in tools/out/deck/. Uses its own settings folder, so your real deck data is never touched.
 const path = require('path');
 const SP = path.join(__dirname, 'out');
@@ -42,6 +42,7 @@ app.on('browser-window-created', (_e, win) => {
             await js(`window.__towerSend(${JSON.stringify(c.towerType[i])}).then(()=>1)`).catch((e) => console.log('type err', e.message));
             await wait(1500);
           }
+          for (const step of [].concat(c.towerAfter || [])) { console.log('TSTEP', c.name, String(await (step.startsWith('@') ? towerWin.webContents.executeJavaScript(step.slice(1)) : js(step)).catch((e) => 'err ' + e.message)).slice(0, 200)); await wait(900); }
           console.log('TOWER', c.name, JSON.stringify(towerWin.getBounds()), await towerWin.webContents.executeJavaScript(`document.querySelector('#log').innerText.replace(/\\n/g,' | ')`).catch((e) => e.message));
           fs.writeFileSync(`${SP}/deck/${c.name}-tower.png`, (await towerWin.webContents.capturePage()).toPNG());
         }

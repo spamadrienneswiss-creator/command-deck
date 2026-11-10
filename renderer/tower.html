@@ -13,7 +13,20 @@
 <body>
 <div class="tw">
   <div class="tw-pop" id="pop" hidden>
-    <div class="tw-phead"><span class="tw-ptitle" id="ptitle">COMM TOWER 1</span><button type="button" class="tw-esc" id="esc">ESC</button></div>
+    <div class="tw-phead"><span class="tw-ptitle" id="ptitle">COMM TOWER 1</span><button type="button" class="tw-hb tw-recb" id="recBtn" aria-label="Record a meeting"><i class="tw-dot"></i><span id="recBtnLab">REC</span></button><button type="button" class="tw-hb" id="esc">ESC</button></div>
+    <div class="tw-recbox" id="recSetup" hidden>
+      <div class="tw-cap">NEW RECORDING</div>
+      <input class="tw-rin" id="recTitle" maxlength="80" placeholder="Name it (optional)" aria-label="Recording name" spellcheck="false">
+      <label class="tw-chk"><input type="checkbox" id="recSys" checked><span class="tw-box"></span>Computer audio (everyone else)</label>
+      <label class="tw-chk"><input type="checkbox" id="recMic" checked><span class="tw-box"></span>My microphone (me)</label>
+      <div class="tw-rbtns"><button type="button" class="tw-btn r" id="recStart"><i class="tw-dot"></i>START</button><button type="button" class="tw-btn" id="recCancel">CANCEL</button></div>
+    </div>
+    <div class="tw-recbox" id="recLive" hidden>
+      <div class="tw-rtop"><i class="tw-dot blink"></i><span class="tw-rtitle" id="recName"></span><span class="tw-rtime" id="recTime">00:00</span></div>
+      <div class="tw-meter" id="mSys"><span>COMPUTER</span><span class="tw-bars"></span></div>
+      <div class="tw-meter" id="mMic"><span>MY MIC</span><span class="tw-bars"></span></div>
+      <div class="tw-rbtns"><button type="button" class="tw-btn r" id="recStop">■ STOP + RECAP</button><button type="button" class="tw-btn" id="recPause">PAUSE</button><button type="button" class="tw-btn" id="recDiscard">DISCARD</button></div>
+    </div>
     <div class="tw-log" id="log" aria-live="polite"></div>
     <div class="tw-foot">
       <div class="tw-chips" id="chips">

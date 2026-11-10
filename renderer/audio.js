@@ -253,7 +253,8 @@ async function decodeMp4(bytes, info, onProgress) {
 }
 
 async function decodeWhole(bytes) {
-  const ctx = new AudioContext();
+  // Decode straight at speech quality: an hour-long meeting stays around 230 MB instead of 700.
+  const ctx = new AudioContext({ sampleRate: TARGET_RATE });
   try {
     const buf = await ctx.decodeAudioData(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
     const ds = new Downsampler(buf.sampleRate, TARGET_RATE, buf.duration);

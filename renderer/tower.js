@@ -51,7 +51,7 @@ function add(e) {
 }
 function armIdle() {
   clearTimeout(idle);
-  if (isOpen()) idle = setTimeout(() => { if (!input.value && !busy) close(); }, IDLE_MS);
+  if (isOpen()) idle = setTimeout(() => { if (!input.value && !busy && recSetup.hidden) close(); }, IDLE_MS);
 }
 
 function open() {
@@ -91,6 +91,72 @@ T.onConfig((c) => {
 T.onState((st) => {
   if (st.line) add(st.line);
   if (typeof st.busy === 'boolean') { busy = st.busy; body.classList.toggle('busy', busy); render(); }
+  if (st.rec) showRec(st.rec);
+});
+T.onAlign((side) => body.classList.toggle('align-right', side === 'right'));
+
+// ---- record a meeting (v1.28): REC in the header → set up → recording → STOP + RECAP
+const recSetup = $('#recSetup');
+const recLive = $('#recLive');
+let rec = { state: 'idle' };
+let recTick = null;
+const two = (n) => String(n).padStart(2, '0');
+const hms = (ms) => { const t = Math.floor(ms / 1000); const h = Math.floor(t / 3600); return h ? `${h}:${two(Math.floor(t / 60) % 60)}:${two(t % 60)}` : `${two(Math.floor(t / 60))}:${two(t % 60)}`; };
+const BARS = 8;
+for (const m of ['#mSys', '#mMic']) { const b = $(`${m} .tw-bars`); for (let i = 0; i < BARS; i++) { const e = el('i'); e.style.height = `${4 + i}px`; b.appendChild(e); } }
+function meter(sel, v) { const n = Math.round(Math.min(1, v || 0) * BARS); [...$(`${sel} .tw-bars`).children].forEach((b, i) => b.classList.toggle('on', i < n)); }
+let recBase = { at: 0, elapsed: 0 };
+function recClock() { return rec.state === 'recording' ? recBase.elapsed + (Date.now() - recBase.at) : rec.elapsed || 0; }
+function showRec(r) {
+  const was = rec.state;
+  rec = { ...rec, ...r };
+  if (r.levels) { meter('#mSys', r.levels.sys); meter('#mMic', r.levels.mic); }
+  if (typeof r.elapsed === 'number') recBase = { at: Date.now(), elapsed: r.elapsed };
+  if (r.levels && !r.state) return;
+  const on = ['recording', 'paused', 'starting', 'stopping'].includes(rec.state);
+  body.classList.toggle('rec', on);
+  body.classList.toggle('paused', rec.state === 'paused');
+  pop.classList.toggle('rec', on);
+  recLive.hidden = !on;
+  if (on) recSetup.hidden = true;
+  $('#recName').textContent = rec.title || 'Meeting';
+  $('#mSys').classList.toggle('off', !(rec.sources && rec.sources.sys));
+  $('#mMic').classList.toggle('off', !(rec.sources && rec.sources.mic));
+  $('#recPause').textContent = rec.state === 'paused' ? 'RESUME' : 'PAUSE';
+  $('#recPause').disabled = !['recording', 'paused'].includes(rec.state);
+  clearInterval(recTick);
+  const paint = () => {
+    const t = hms(recClock());
+    $('#recTime').textContent = rec.state === 'starting' ? '…' : t;
+    $('#recBtnLab').textContent = on ? t : 'REC';
+    $('#sub').textContent = on ? `REC ${t} · ${rec.state === 'paused' ? 'PAUSED' : 'CLICK TO OPEN'}` : 'CLICK TO TYPE';
+  };
+  paint();
+  if (on) recTick = setInterval(paint, 500);
+  if (was !== rec.state) setTimeout(fit, 0);
+}
+$('#recBtn').addEventListener('click', () => {
+  if (body.classList.contains('rec')) { recLive.scrollIntoView({ block: 'nearest' }); return; }
+  recSetup.hidden = !recSetup.hidden;
+  if (!recSetup.hidden) { $('#recTitle').value = ''; setTimeout(() => $('#recTitle').focus(), 20); }
+  armIdle();
+});
+const startRec = () => {
+  T.rec('start', { title: $('#recTitle').value.trim(), sys: $('#recSys').checked, mic: $('#recMic').checked });
+  recSetup.hidden = true;
+  input.focus();
+};
+$('#recStart').addEventListener('click', startRec);
+$('#recTitle').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); startRec(); } if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); recSetup.hidden = true; input.focus(); } });
+$('#recCancel').addEventListener('click', () => { recSetup.hidden = true; input.focus(); });
+$('#recStop').addEventListener('click', () => T.rec('stop'));
+$('#recPause').addEventListener('click', () => T.rec(rec.state === 'paused' ? 'resume' : 'pause'));
+$('#recDiscard').addEventListener('click', () => {
+  const b = $('#recDiscard');
+  if (b.dataset.sure) { T.rec('discard'); delete b.dataset.sure; b.textContent = 'DISCARD'; return; }
+  b.dataset.sure = '1';
+  b.textContent = 'SURE? DISCARD';
+  setTimeout(() => { delete b.dataset.sure; b.textContent = 'DISCARD'; }, 4000);
 });
 T.onOpen(() => (isOpen() ? input.focus() : open()));
 

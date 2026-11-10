@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('deck', {
   memory: () => ipcRenderer.invoke('sys:memory'),
   recap: {
     save: (id, ext, bytes) => ipcRenderer.invoke('recap:save', id, ext, bytes),
+    append: (id, ext, bytes) => ipcRenderer.invoke('recap:append', id, ext, bytes),
     read: (id) => ipcRenderer.invoke('recap:read', id),
     remove: (id) => ipcRenderer.invoke('recap:delete', id),
     info: (id) => ipcRenderer.invoke('recap:info', id),
@@ -54,7 +55,8 @@ contextBridge.exposeInMainWorld('deck', {
     state: (st) => ipcRenderer.send('tower:state', st),
     home: () => ipcRenderer.send('tower:home'),
     word: (opts) => ipcRenderer.invoke('tower:word', opts),
-    onText: (fn) => ipcRenderer.on('tower:text', (_e, t) => fn(t))
+    onText: (fn) => ipcRenderer.on('tower:text', (_e, t) => fn(t)),
+    onRec: (fn) => ipcRenderer.on('tower:rec', (_e, a) => fn(a))
   },
   onTermOpen: (fn) => ipcRenderer.on('term:open', () => fn()),
   onSettingsChanged: (fn) => ipcRenderer.on('deck:settings-changed', (_e, s) => fn(s))

@@ -2,8 +2,7 @@
 // Owns the window, tray, storage, calendar fetching and command parsing.
 const {
   app, BrowserWindow, Tray, Menu, ipcMain, protocol, net, nativeImage,
-  session, globalShortcut, screen, shell, dialog, clipboard, powerMonitor
-} = require('electron');
+  session, globalShortcut, screen, shell, dialog, clipboard, powerMonitor, desktopCapturer } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
@@ -318,6 +317,15 @@ function registerIpc() {
     fs.writeFileSync(file, Buffer.from(bytes));
     return { size: fs.statSync(file).size };
   });
+  // A meeting recording arrives in pieces while it records, so a crash loses at most a few seconds.
+  ipcMain.handle('recap:append', (_e, id, ext, bytes) => {
+    const f = recapFile(id);
+    if (!f || !bytes) return null;
+    fs.mkdirSync(f.dir, { recursive: true });
+    const file = f.path || path.join(f.dir, `${f.safe}.${String(ext || 'webm').replace(/[^a-z0-9]/gi, '').slice(0, 5) || 'webm'}`);
+    fs.appendFileSync(file, Buffer.from(bytes));
+    return { size: fs.statSync(file).size };
+  });
   ipcMain.handle('recap:read', (_e, id) => {
     const f = recapFile(id);
     if (!f || !f.path) return null;
@@ -434,31 +442,53 @@ function towerSettings() {
   const t = settings().tower || {};
   return { on: t.on !== false, name: String(t.name || 'COMM TOWER 1').trim().toUpperCase() || 'COMM TOWER 1', operator: settings().operatorName || '' };
 }
-// Where the window's bottom-right corner goes: saved, or the main monitor's corner.
-function towerCorner() {
+// Where the button sits: its left edge and bottom (window coordinates, glow included).
+// Saved as towerPos { l, b }; older { r, b } (bottom-right) is converted.
+let towerSide = 'left';
+function towerAnchor() {
   const p = store.get().towerPos;
-  if (p && Number.isFinite(p.r) && Number.isFinite(p.b)) {
-    const on = screen.getAllDisplays().some((d) => { const a = d.bounds; return p.r - 120 >= a.x && p.r - 120 < a.x + a.width && p.b - 40 >= a.y && p.b - 40 < a.y + a.height; });
-    if (on) return { r: p.r, b: p.b };
+  let l = null;
+  let b = null;
+  if (p && Number.isFinite(p.l) && Number.isFinite(p.b)) { l = p.l; b = p.b; }
+  else if (p && Number.isFinite(p.r) && Number.isFinite(p.b)) { l = p.r - TOWER_CHIP.w; b = p.b; }
+  if (l != null) {
+    const on = screen.getAllDisplays().some((d) => { const a = d.bounds; return l + 120 >= a.x && l + 120 < a.x + a.width && b - 40 >= a.y && b - 40 < a.y + a.height; });
+    if (on) return { l, b };
   }
   const wa = screen.getPrimaryDisplay().workArea;
-  return { r: wa.x + wa.width - TOWER_GAP, b: wa.y + wa.height - TOWER_GAP };
+  return { l: wa.x + wa.width - TOWER_GAP - TOWER_CHIP.w, b: wa.y + wa.height - TOWER_GAP };
+}
+// Bounds for content w × h: the terminal's left edge lines up with the button's; when that
+// would run off the screen (the default corner), it lines up on the right edges instead.
+function towerBounds(w, h, anchor = towerAnchor()) {
+  const wa = screen.getDisplayNearestPoint({ x: Math.round(anchor.l + 60), y: Math.round(anchor.b - 30) }).workArea;
+  let side = 'left';
+  let x = anchor.l;
+  if (x + w > wa.x + wa.width) { side = 'right'; x = anchor.l + TOWER_CHIP.w - w; }
+  return { bounds: { x: Math.round(x), y: Math.round(anchor.b - h), width: w, height: h }, side };
+}
+// The button's anchor from where the window is now (so a drag sticks).
+function towerLive() {
+  if (!tower || tower.isDestroyed()) return towerAnchor();
+  const bb = tower.getBounds();
+  return { l: towerSide === 'right' ? bb.x + bb.width - TOWER_CHIP.w : bb.x, b: bb.y + bb.height };
 }
 function towerFit(w, h) {
   if (!tower || tower.isDestroyed()) return;
-  const cur = tower.getBounds();
-  const r = cur.x + cur.width;
-  const b = cur.y + cur.height;
   w = Math.max(TOWER_CHIP.w, Math.min(460, Math.round(w)));
-  h = Math.max(TOWER_CHIP.h, Math.min(600, Math.round(h)));
-  if (w === cur.width && h === cur.height) return;
-  tower.setBounds({ x: r - w, y: b - h, width: w, height: h });
+  h = Math.max(TOWER_CHIP.h, Math.min(640, Math.round(h)));
+  const { bounds, side } = towerBounds(w, h, towerLive());
+  if (side !== towerSide) { towerSide = side; sendTower('tower:align', side); }
+  const cur = tower.getBounds();
+  if (cur.x === bounds.x && cur.y === bounds.y && cur.width === bounds.width && cur.height === bounds.height) return;
+  tower.setBounds(bounds);
 }
 function createTower() {
   if (tower && !tower.isDestroyed()) return;
-  const c = towerCorner();
+  const c = towerAnchor();
+  towerSide = 'left';
   tower = new BrowserWindow({
-    x: c.r - TOWER_CHIP.w, y: c.b - TOWER_CHIP.h, width: TOWER_CHIP.w, height: TOWER_CHIP.h,
+    x: Math.round(c.l), y: Math.round(c.b - TOWER_CHIP.h), width: TOWER_CHIP.w, height: TOWER_CHIP.h,
     frame: false, transparent: true, resizable: false, movable: true, hasShadow: false,
     skipTaskbar: true, show: false, focusable: false, alwaysOnTop: true, minimizable: false, maximizable: false,
     backgroundColor: '#00000000', title: 'Comm Tower 1',
@@ -467,7 +497,7 @@ function createTower() {
   tower.setAlwaysOnTop(true, 'floating');
   tower.loadURL('deck://app/renderer/tower.html');
   tower.once('ready-to-show', () => { if (tower && !tower.isDestroyed()) tower.showInactive(); });
-  tower.webContents.on('did-finish-load', () => sendTower('tower:config', towerSettings()));
+  tower.webContents.on('did-finish-load', () => { sendTower('tower:config', towerSettings()); sendTower('tower:align', towerSide); });
   tower.webContents.on('will-navigate', (e) => e.preventDefault());
   tower.on('closed', () => { tower = null; });
 }
@@ -489,21 +519,29 @@ function registerTowerIpc() {
     if (!dragFrom) return;
     tower.setBounds({ x: Math.round(dragFrom.x + sx - dragFrom.sx), y: Math.round(dragFrom.y + sy - dragFrom.sy), width: dragFrom.width, height: dragFrom.height });
     if (phase === 'end') {
-      const bb = tower.getBounds();
-      store.set('towerPos', { r: bb.x + bb.width, b: bb.y + bb.height });
+      const a = towerLive();
+      store.set('towerPos', { l: a.l, b: a.b });
       dragFrom = null;
+      const bb = tower.getBounds();
+      towerFit(bb.width, bb.height); // flips sides if it now fits (or doesn't)
     }
   });
   ipcMain.on('tower:home', () => {
     store.set('towerPos', null);
     if (!tower || tower.isDestroyed()) return;
-    const c = towerCorner();
     const bb = tower.getBounds();
-    tower.setBounds({ x: c.r - bb.width, y: c.b - bb.height, width: bb.width, height: bb.height });
+    const { bounds, side } = towerBounds(bb.width, bb.height, towerAnchor());
+    towerSide = side;
+    sendTower('tower:align', side);
+    tower.setBounds(bounds);
   });
   // The pop-up terminal: what you type goes to the deck, which does the work.
   ipcMain.on('tower:send', (_e, text) => {
     if (win && !win.isDestroyed() && text) win.webContents.send('tower:text', String(text).slice(0, 500));
+  });
+  // REC controls in the pop-up (start / stop / pause / resume / discard a meeting recording).
+  ipcMain.on('tower:rec', (_e, a) => {
+    if (win && !win.isDestroyed() && a && a.action) win.webContents.send('tower:rec', { action: String(a.action), title: String(a.title || '').slice(0, 80), sys: a.sys !== false, mic: a.mic !== false });
   });
   // The window only takes keyboard focus while its terminal is open.
   ipcMain.on('tower:focus', (_e, on) => {
@@ -628,6 +666,13 @@ app.whenReady().then(() => {
   });
   session.defaultSession.setPermissionCheckHandler((_wc, permission) =>
     permission === 'media' || permission === 'notifications');
+  // Record a meeting (v1.28): the deck asks for the screen only to get what the computer
+  // plays ("loopback" audio); the picture is dropped right away and never saved.
+  session.defaultSession.setDisplayMediaRequestHandler((_req, callback) => {
+    desktopCapturer.getSources({ types: ['screen'] })
+      .then((sources) => callback(sources[0] ? { video: sources[0], audio: 'loopback' } : {}))
+      .catch(() => callback({}));
+  });
 
   serveFiles();
   registerIpc();

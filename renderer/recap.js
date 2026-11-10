@@ -277,6 +277,7 @@ async function summarize(id, { chained = false } = {}) {
     H.toast(`Data Recap ready: ${title}`, 4000);
     H.pushLog('ok', `Data Recap ready: ${title}.`);
     H.FU.notifyPhones({ title: 'Data Recap ready', body: title, tag: `recap-${id}`, recapId: id });
+    if (H.onReady && cur) H.onReady(cur);
   }
 }
 
@@ -374,6 +375,11 @@ export function initRecap(hooks) {
       else if (st === 'summarizing') enqueue({ kind: 'summary', noteId: n.id });
       // Saved here but not processed yet (the uplink copy is already gone): carry on from the file.
       else if (st === 'receiving' && (await audioInfo(n.id)).exists) enqueue({ kind: 'audio', noteId: n.id });
+      // A meeting recording cut off when the deck closed: recap what was saved.
+      else if (st === 'recording' && !(H.isRecordingNow && H.isRecordingNow(n.id))) {
+        if ((await audioInfo(n.id)).exists) { patch(n.id, { status: 'queued', recovered: true }, { force: true }); enqueue({ kind: 'audio', noteId: n.id }); }
+        else patch(n.id, { status: 'error', error: 'The recording stopped before anything was saved.' }, { force: true });
+      }
       if (n.recap.audio && n.recap.audio.deleting) cancelDelete(n.id);
     }
     sweepAudio();
@@ -391,4 +397,10 @@ export function notesChanged() {
   known.clear();
   now.forEach((id) => known.add(id));
   sweepAudio();
+}
+
+/** A meeting recorded on this PC (meeting.js) is saved: start the recap. */
+export function recapLocal(id, ms) {
+  patch(id, { status: 'queued', progress: 0, durationSec: Math.round((ms || 0) / 1000), error: '' }, { force: true });
+  enqueue({ kind: 'audio', noteId: id });
 }

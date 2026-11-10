@@ -42,8 +42,8 @@ Paste as many as you like, give each a name and color, and use **Test links** to
 
 ### The voice
 
-- Tap the octagon mic button. The computer greets you, then listens. Speak, and pause when you're done (or tap again to finish).
-- The **first time**, it downloads two small AI models, needing internet once: the listening model (about 80 MB) and the neural voice (about 90 MB). After that both run entirely on the computer, so audio never leaves it. Until the neural voice finishes downloading, the built-in Windows voice fills in.
+- Since v1.27 the computer **doesn't listen**: you type to it in the terminal (below), and it can still answer out loud. Listening may come back once it's more reliable.
+- The **first time**, it downloads the neural voice (about 90 MB), needing internet once. After that it runs entirely on the computer. Until it finishes downloading, the built-in Windows voice fills in.
 - **Settings › System › Computer voice** picks the engine (Neural or Windows), the voice (Fenrir, a low American voice, is the default), and the speed, plus:
   - **Voice character:** *Robot companion* (a boxy built-in speaker with a faint metallic ring; the default), *Ship comms* (an intercom with a small room), *Radio* (a person on a two-way radio: thin, punchy, a little static, with a squelch click at each end), or *Off*.
   - **Depth:** lowers the pitch without slowing the voice down
@@ -95,46 +95,24 @@ Two small icons at the right end of the Ship Computer's Hail row show your Disco
 
 The icons stay hidden until Discord is set up.
 
-### Comm Tower 1 (talk from any screen)
+### The terminal (type to the ship computer)
 
-A small chip sits in the bottom-right corner of your main monitor, above everything else, so you can talk to the deck without going to it.
+Listening is switched off for now (v1.27): you type, and the deck answers, out loud too if you like.
 
-- **Click it and talk.** It stops listening when you pause (or click again to finish). Your words show on a card above it, then **Comm Tower 1** answers you by name: *"Copy that, Nick. Task logged: Renew the car registration, due Friday, November 20th."* The card shows the due date and category, and fades a few seconds later (click it to put it away sooner).
-- It understands everything the Computer does (tasks, events, notes, timers, "what's next"), plus *"remember to …"* and *"don't let me forget to …"*. Everything lands in the deck like any other task.
-- **Drag** the chip to move it; it remembers where you put it.
-- **Settings › System › COMM TOWER 1:** show or hide it, rename it (call it whatever you like), and **BACK TO CORNER**. The tray menu can show or hide it too.
-- The listening still happens on this computer, through the deck, so the deck needs to be running (it can be hidden in the tray).
-- **Talking back (Gemini):** with a Gemini key in **Settings › Field Unit › DATA RECAP**, Comm Tower 1 answers conversationally. The deck still does the filing instantly; Gemini words the reply (*"You got it, Nick. Registration's on for Friday the 20th."*) and answers questions about your day (*"Can I fit the dentist in before my shift Tuesday?"*) from your tasks, calendar and schedule, which are sent to Gemini for that. If it offers to add something, click the chip and say **yes** (or **no**). It never changes anything on its own. No key, no signal, or Gemini too slow: the deck's own replies, as before. The card shows **GEMINI** or **BUILT-IN** so you know which answered. Switch it off under **Settings › System › COMM TOWER 1**.
+- The Ship Computer's big button now reads **> _ OPEN TERMINAL**. Click it, or just **start typing anywhere on the deck**, and the terminal opens over the panels with what you typed already in it. It's the same as Field Unit's terminal: your lines in amber, replies below, a **✓ TASK LOGGED** card (or event, note, timer) when something's filed, and chips for Status report, What's next, Take a note, Add to calendar, Timer 10 min and Mute me (when Discord is connected).
+- **Enter** sends, **Esc** closes, **↑ / ↓** bring back earlier commands. **VOICE REPLIES** in the terminal's header turns the spoken replies on or off (the text always shows).
+- Everything the Computer understood by voice works typed: tasks, events, notes, timers and alarms, "what's next", "status report", "mute me".
+- With a Gemini key, replies are worded conversationally and questions about your day get answered. When it offers to add something, type **yes** or **no**.
 
----
+### Comm Tower 1 (type from any screen)
 
-## 3 · Everyday use
+A small button sits in the bottom-right corner of your main monitor, above everything else.
 
-- **Show / hide from anywhere:** `Ctrl` + `Alt` + `Space`
-- **Minimize** (the — button) or close: it goes to the system tray. Right-click the tray icon for *Always on top*, *Start with Windows*, or **Quit**.
-- **ON TOP / DESKTOP:** float above everything, or sit behind other windows like wallpaper.
-- **Rearrange panels:** click the lock icon, drag panels by their header, and pull the amber corner to resize. Click the lock again to save.
-- **Resize the whole console:** drag its bottom-right corner. Move it by dragging the header.
-- **Tasks:** click a task to edit every field. Check it off; repeating tasks roll forward to their next date. Completed tasks clear the next day (finished tasks that belong to a live project stay with the project).
-- **Calendar:** click a day to see events from that date; double-click a day to add an event.
-- **Weather:** click the weather panel for the full forecast on weather.com.
-- **Opacity:** Settings › System › Console opacity fades the whole console (30–100%) so the desktop shows through. It previews live as you drag.
-- **Background darkness:** Settings › System darkens just the space between and behind the panels, from see-through to near-black.
-- **Motion:** FULL (boot sequence, scan lines, pulses), SUBTLE (quieter), STILL (no animation). The boot sequence, *Signal*, is acid green on black in every theme: a self-test log of the deck's real systems, the CD mark, a systems array, an alignment readout, a radar sweep and **SIGNAL LOCKED** (about 8 seconds on FULL; SUBTLE plays just the log and the lock; STILL skips it). To stay light on the CPU, the looping animations run at an easy 10 frames a second (full speed while the computer is talking or listening), and they pause completely when nobody's at the PC: after 5 minutes without mouse or keyboard, when the screen is locked, or when the console is hidden. They pick up the moment you're back.
-- **Memory:** the listening model and the neural voice run on the computer, so they hold memory while loaded. Two minutes into being away they go to sleep and free it, then wake when you're back (an alarm that goes off meanwhile waits a few seconds for the voice). The Data Recap engine only runs while a recording is transcribed and shuts down about 90 seconds after. **Settings › System › Memory** shows what Command Deck is using right now.
-- **Sound:** FULL, KEY MOMENTS, or SILENT, in Settings › System.
-- **Color themes:** Settings › System › Color theme: *Dusk* (amber, default), *Deep Space* (cyan), *Red Alert* (crimson), *Terminal* (green), *Retro* (colorful 80s terminal with scan lines), *Moonbase '79* (white plastic modules with an orange stripe), *Blueprint* (navy drafting grid with registration marks), *Cryo* (frosted white and ice blue), *Freighter* (green phosphor, scan lines and a hazard stripe, after the ship in *Alien*), *Skydock* (sunlit white hull plating with a dark rim of running lights, lit sign labels and red stencil codes) and *Vector* (a modern ship cockpit: a canopy windshield onto space, glass flight displays, a Master Caution alert and a switch panel along the bottom; panels take pilot names like Flight Plan and Waypoints) *Horizon* (inspired by *Interstellar*: warm light from a black hole on deep black space, smoked-glass panels with one hairline edge, a black hole dial whose ring the seconds sweep around, a white-hot pulsing alert, and panels named Mission Clock, Conditions, Mission Calendar, Field Notes and Objectives) and *Hi-Vis* (inspired by *Marathon*: a printed spec sheet in negative, black panels with crisp white rules, a chalk-white header, footer and Voice panel, acid green and hot pink, huge wide numbers and a ghosted index number behind each panel, a hot pink Priority Override alert, and panels named Time, Atmos, Voice, Cycle, Next, Jobs and Memo).
-- **Your themes:** to shorten the list, press **+ MORE · EDIT LIST** (or **★ PICK YOUR THEMES**) under Color theme and tap ★ on the themes you use. Settings then shows only those, plus a button for the rest. Tap any card in ALL THEMES to try it. Nothing is removed: unstarred themes stay installed and come back with one tap. The list is shared with Field Unit, and the theme in use always shows.
-- **Typeface:** Settings › System › Typeface. *Theme default* lets each theme use its own (Moonbase: Michroma, Blueprint: Space Mono, Cryo: Exo 2, Freighter: B612 Mono, Skydock: Quantico, Vector: Tektur, Horizon: Jura, Hi-Vis: Anybody, the rest: Chakra Petch). Or pick any of Chakra, Michroma, Space Mono, Exo 2, B612 Mono, VT323, Orbitron, Oxanium, Rajdhani, Share Tech Mono, Major Mono, Quantico, Tektur, Jura or Anybody with any theme.
-- **Text color:** Settings › System › Text color: *Theme* (default), *Amber CRT*, *Phosphor*, *Ice*, *Arctic* or *Rose*. It recolors the main text only; accents, warnings and checkmarks stay with the theme. On the light themes each one switches to a deeper shade so it stays readable.
-- **Frame:** Settings › System › Frame: *Dark* (the theme's own tray), *Bone* (warm off-white), *Gunmetal* (brushed dark grey), *Olive Drab* (military green) or *Midnight Navy* (deep blue with a faint grid). Works with every color theme and typeface.
-- **Panel trim:** Settings › System › Panel trim adds a retro stripe across the top of every panel: *Sunset* (brick, orange, mustard), *Mission* (red-orange, cream, navy), *Arcade* (magenta, orange, yellow, teal), *Hazard* (yellow and black diagonal stripes), *Aurora* (teal, green, violet), *Gulf* (powder blue with an orange stripe) *Dock Lights* (a short lit bar in cyan, amber, pink or orange on each panel) or *Accretion* (a thin band of hot light, white in the middle cooling to copper, that drifts slowly along each panel's top edge) or *Label Tape* (a strip of acid-green tape stuck slightly crooked across each panel's top, printed with the panel's name). Field Unit has the same Frame and Panel trim options in its own Settings.
-- **Timers and alarms:** they appear as countdown chips in the ship computer panel; click × to cancel. When one finishes, it chimes, speaks, and shows an alert bar with **Snooze** and **Dismiss**. They survive a restart; alarms missed while the computer was off are noted in the log.
-- **Reminders** show the same alert bar, with **Snooze**, **Mark done** and **Dismiss**.
-- **Quiet hours** (Settings › Alerts, default 10 PM–7 AM): no speaking or sounds. Reminders still appear on screen, while timers, alarms and anything you ask for still make sound.
-- **Red alert** (Settings › Alerts): if a task is overdue by more than the set time (default 1 hour), a thick bright red edge with a deep glow breathes around the whole console, a hard double flash goes off once a minute, a red **OVERDUE** tag appears in the header (click it to jump to the queue), and the late task is lit red. With Motion set to STILL, the edge stays bright and steady with no flashing.
-
----
+- **Click it** (or press **Ctrl + Alt + T** from any app) and a small terminal pops up above it. Type, press Enter, and the reply shows there (and is spoken, if voice replies are on). **Esc** closes it; it also closes itself after a minute untouched.
+- **Drag** the button to move it; it remembers where you put it.
+- **Settings › System › COMM TOWER 1:** show or hide it, rename it, and **BACK TO CORNER**. The tray menu can show or hide it too.
+- The deck does the work, so it needs to be running (it can be hidden in the tray).
+- **Gemini** (with a key in **Settings › Field Unit › DATA RECAP**) words replies and answers questions from your tasks, calendar and schedule, which are sent to Gemini for that. No key, no signal, or too slow: the deck's own replies.
 
 ### Projects
 

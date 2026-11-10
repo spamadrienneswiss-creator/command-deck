@@ -2,7 +2,7 @@ const { app } = require('electron');
 const fs = require('fs');
 // Screenshots the deck in given themes. Usage (Linux, headless):
 //   COMBOS='[{"name":"dusk","theme":"dusk"}]' SIZE=1280x800 xvfb-run -a npx electron --no-sandbox tools/deck-shots.js
-// Each combo: { name, theme, tower?: [chip states] (sent to Comm Tower 1, each captured as <name>-tower-<i>.png), towerClick?: true (clicks the chip and captures what follows), wait? (ms after reload; the Signal load-up takes ~9 s on FULL), frame?, trim?, alert?, extra?: 'settings', seed?: js run before reload, js?: js string(s) run before capture }.
+// Each combo: { name, theme, towerType?: [lines] (opens Comm Tower 1's pop-up, types each line, captures <name>-tower.png), wait? (ms after reload; the Signal load-up takes ~9 s on FULL), frame?, trim?, alert?, extra?: 'settings', seed?: js run before reload, js?: js string(s) run before capture }.
 // Images land in tools/out/deck/. Uses its own settings folder, so your real deck data is never touched.
 const path = require('path');
 const SP = path.join(__dirname, 'out');
@@ -31,26 +31,19 @@ app.on('browser-window-created', (_e, win) => {
         console.log('THEME', c.name, await js(`deck.load().then(d=>JSON.stringify({t:d.settings&&d.settings.theme, body:document.body.dataset.theme, keys:Object.keys(d)}))`));
         if (c.alert) await js(`(()=>{const el=document.querySelector('#alertStrip'); el.dataset.type='${c.alert}'; el.innerHTML='<span class="al-dot"></span><div class="al-text"><div class="al-title">PAST DUE · PAY ELECTRIC BILL</div><div class="al-sub">Was due at 4:30 PM</div></div><div class="al-btns"><button type="button" class="al-btn">SNOOZE 10 MIN</button><button type="button" class="al-btn">MARK DONE</button><button type="button" class="al-btn ghost">DISMISS</button></div>'; el.hidden=false;})()`);
         if (c.extra === 'settings') { await js(`document.querySelector('#btnSettings').click()`); await wait(400); await js(`[...document.querySelectorAll('.modal [role=tab], .modal .tab, .modal button')].find(t=>/^\\s*LOOK|APPEARANCE|THEME/i.test(t.textContent))?.click()`); }
-        if (c.js) { for (const step of [].concat(c.js)) { console.log('STEP', c.name, String(await js(step).catch((e) => 'js err ' + e.message)).slice(0, 300)); await wait(500); if (towerWin) console.log('CHIP', c.name, await towerWin.webContents.executeJavaScript(`JSON.stringify({stage:document.body.dataset.stage, card:document.querySelector('#card').hidden?'':document.querySelector('#card').innerText.replace(/\\n/g,' | ')})`).catch((e) => e.message)); } }
+        if (c.js) { for (const step of [].concat(c.js)) { console.log('STEP', c.name, String(await js(step).catch((e) => 'js err ' + e.message)).slice(0, 300)); await wait(500);  } }
         await wait(600);
         fs.writeFileSync(`${SP}/deck/${c.name}.png`, (await win.webContents.capturePage()).toPNG());
-        if (c.tower && towerWin) {
-          for (let i = 0; i < c.tower.length; i++) {
-            await js(`deck.tower.state(${JSON.stringify(c.tower[i])})`);
-            await wait(700);
-            fs.writeFileSync(`${SP}/deck/${c.name}-tower-${i}.png`, (await towerWin.webContents.capturePage()).toPNG());
-            console.log('TOWERSTATE', c.name, i, c.tower[i].stage, JSON.stringify(towerWin.getBounds()));
-          }
-          console.log('TOWER', c.name, JSON.stringify(towerWin.getBounds()), towerWin.isVisible());
-        }
-        if (c.towerClick && towerWin) {
-          await towerWin.webContents.executeJavaScript(`document.querySelector('#chip').dispatchEvent(new PointerEvent('pointerdown',{button:0,pointerId:1,screenX:5,screenY:5}));document.querySelector('#chip').dispatchEvent(new PointerEvent('pointerup',{button:0,pointerId:1,screenX:5,screenY:5}));1`).catch((e) => console.log('click err', e.message));
-          for (let i = 0; i < 4; i++) {
+        if (c.towerType && towerWin) {
+          // Open Comm Tower 1's pop-up (a real click on the button), then type into it.
+          await towerWin.webContents.executeJavaScript(`(()=>{const c=document.querySelector('#chip');c.dispatchEvent(new PointerEvent('pointerdown',{button:0,pointerId:1,screenX:5,screenY:5}));c.dispatchEvent(new PointerEvent('pointerup',{button:0,pointerId:1,screenX:5,screenY:5}));return 1})()`).catch((e) => console.log('open err', e.message));
+          await wait(800);
+          for (let i = 0; i < c.towerType.length; i++) {
+            await js(`window.__towerSend(${JSON.stringify(c.towerType[i])}).then(()=>1)`).catch((e) => console.log('type err', e.message));
             await wait(1500);
-            const st = await towerWin.webContents.executeJavaScript(`JSON.stringify({stage:document.body.dataset.stage, sub:document.querySelector('#sub').textContent, card:document.querySelector('#card').hidden?'':document.querySelector('#card').innerText})`).catch((e) => e.message);
-            console.log('TOWERCLICK', c.name, i, st);
-            fs.writeFileSync(`${SP}/deck/${c.name}-click-${i}.png`, (await towerWin.webContents.capturePage()).toPNG());
           }
+          console.log('TOWER', c.name, JSON.stringify(towerWin.getBounds()), await towerWin.webContents.executeJavaScript(`document.querySelector('#log').innerText.replace(/\\n/g,' | ')`).catch((e) => e.message));
+          fs.writeFileSync(`${SP}/deck/${c.name}-tower.png`, (await towerWin.webContents.capturePage()).toPNG());
         }
       }
     } catch (e) { console.log('SMOKE ERR', e.message); }

@@ -54,7 +54,8 @@ contextBridge.exposeInMainWorld('deck', {
     state: (st) => ipcRenderer.send('tower:state', st),
     home: () => ipcRenderer.send('tower:home'),
     word: (opts) => ipcRenderer.invoke('tower:word', opts),
-    onTalk: (fn) => ipcRenderer.on('tower:talk', () => fn())
+    onText: (fn) => ipcRenderer.on('tower:text', (_e, t) => fn(t))
   },
+  onTermOpen: (fn) => ipcRenderer.on('term:open', () => fn()),
   onSettingsChanged: (fn) => ipcRenderer.on('deck:settings-changed', (_e, s) => fn(s))
 });

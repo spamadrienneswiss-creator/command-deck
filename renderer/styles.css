@@ -1794,3 +1794,41 @@ body[data-theme="hivis"] .trim-badge { display: none !important; }
 .pg-pill.on i { background: var(--amber); box-shadow: none; }
 .pg-mini { display: grid; gap: 3px; height: 92px; padding: 6px; background: rgba(0, 0, 0, 0.25); box-shadow: inset 0 0 0 1px var(--line-2); }
 .pg-mini b { display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; background: rgba(var(--accent-rgb), 0.14); box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.5); font: 500 8px/1 var(--mono); letter-spacing: 0.1em; color: var(--amber); white-space: nowrap; }
+
+/* ---- terminal (v1.27): typing replaces talking. Hail shows >_ and opens this. */
+.hail-term { font: 500 26px/1 var(--mono); letter-spacing: -0.04em; }
+.term { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(3px); }
+.term[hidden] { display: none; }
+.term-box { width: min(760px, 92vw); height: min(640px, 86vh); display: flex; flex-direction: column; background: radial-gradient(ellipse 100% 40% at 50% 0%, rgba(var(--accent-rgb), 0.08), transparent 70%), var(--panel-solid); box-shadow: inset 0 0 0 1px var(--line-3), 0 30px 80px rgba(0, 0, 0, 0.6); clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px); }
+.term-head { padding: 14px 18px 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px; box-shadow: inset 0 -1px 0 var(--line); }
+.term-title { font: 500 10px/1 var(--mono); letter-spacing: 0.24em; color: var(--amber); }
+.term-link { margin-top: 9px; display: flex; align-items: center; gap: 7px; font: 400 10px/1 var(--mono); letter-spacing: 0.14em; color: var(--muted); }
+.term-link i { width: 6px; height: 6px; background: var(--lime); }
+.term-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.term-btn { height: 28px; padding: 0 10px; border: 0; cursor: pointer; background: transparent; box-shadow: inset 0 0 0 1px var(--line-3); color: var(--text-2); font: 500 9.5px/1 var(--mono); letter-spacing: 0.16em; }
+.term-btn:hover { color: var(--text-hi); }
+.term-btn.on { color: var(--lime); }
+.term-log { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 18px 8px; display: flex; flex-direction: column; }
+.term-log > :first-child { margin-top: auto; }
+.tm-ln { font: 400 13px/1.6 var(--mono); color: var(--text); margin: 2px 0; overflow-wrap: anywhere; user-select: text; }
+.tm-pr { color: var(--dim); }
+.tm-you { color: var(--amber); margin-top: 10px; text-transform: lowercase; }
+.tm-you .tm-pr { color: var(--amber); }
+.tm-err { color: var(--coral); }
+.tm-sys { color: var(--lav); }
+.tm-busy { color: var(--muted); animation: tm-pulse 1s ease-in-out infinite alternate; }
+.tm-busy[hidden] { display: none; }
+@keyframes tm-pulse { from { opacity: 0.35; } to { opacity: 1; } }
+.tm-card { margin: 6px 0 8px; padding: 10px 12px; background: rgba(var(--ink-rgb), 0.04); box-shadow: inset 0 0 0 1px var(--line-2), inset 2px 0 0 var(--lime); }
+.tm-ck { font: 500 10px/1 var(--mono); letter-spacing: 0.2em; color: var(--lime); }
+.tm-kv { margin-top: 8px; display: grid; grid-template-columns: 70px 1fr; row-gap: 5px; font: 400 12px/1.25 var(--mono); color: var(--text); }
+.tm-kv span:nth-child(odd) { font-size: 9px; letter-spacing: 0.14em; color: var(--muted); padding-top: 2px; }
+.term-foot { padding: 10px 14px 14px; box-shadow: inset 0 1px 0 var(--line); }
+.term-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.tm-chip { flex-shrink: 0; height: 30px; padding: 0 11px; border: 0; cursor: pointer; background: rgba(var(--ink-rgb), 0.03); box-shadow: inset 0 0 0 1px var(--line-3); color: var(--text); font: 400 11.5px/1 var(--mono); white-space: nowrap; }
+.tm-chip:hover { box-shadow: inset 0 0 0 1px var(--amber); }
+.term-in { margin-top: 10px; display: flex; gap: 8px; align-items: center; }
+.term-field { flex: 1; height: 46px; display: flex; align-items: center; gap: 8px; padding: 0 12px; box-shadow: inset 0 0 0 1px var(--amber); background: rgba(var(--accent-rgb), 0.05); color: var(--amber); font: 500 15px/1 var(--mono); }
+.term-field input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; color: var(--text-hi); font: 400 15px/1 var(--mono); }
+.term-field input::placeholder { color: var(--dim); }
+.term-send { width: 46px; height: 46px; border: 0; cursor: pointer; display: grid; place-items: center; background: var(--amber); color: var(--panel-solid); clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }

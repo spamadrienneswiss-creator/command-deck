@@ -6,24 +6,31 @@
 <title>Comm Tower 1</title>
 <link rel="stylesheet" href="../node_modules/@fontsource/chakra-petch/latin-400.css">
 <link rel="stylesheet" href="../node_modules/@fontsource/chakra-petch/latin-600.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/ibm-plex-mono/latin-400.css">
 <link rel="stylesheet" href="../node_modules/@fontsource/ibm-plex-mono/latin-500.css">
 <link rel="stylesheet" href="tower.css">
 </head>
-<body data-stage="idle">
+<body>
 <div class="tw">
-  <div class="tw-card" id="card" hidden>
-    <span class="tw-hair" aria-hidden="true"></span>
-    <div class="tw-head"><span class="tw-dot" aria-hidden="true"></span><span class="tw-who" id="who">YOU</span><span class="tw-src" id="src"></span><span class="tw-time" id="time">LIVE</span></div>
-    <div class="tw-wave" id="wave" aria-hidden="true"></div>
-    <div class="tw-text" id="text" aria-live="polite"></div>
-    <div class="tw-tags" id="tags"></div>
+  <div class="tw-pop" id="pop" hidden>
+    <div class="tw-phead"><span class="tw-ptitle" id="ptitle">COMM TOWER 1</span><button type="button" class="tw-esc" id="esc">ESC</button></div>
+    <div class="tw-log" id="log" aria-live="polite"></div>
+    <div class="tw-foot">
+      <div class="tw-chips" id="chips">
+        <button type="button" class="tw-chipb" data-cmd="what's next">What's next</button>
+        <button type="button" class="tw-chipb" data-cmd="take a note: " data-fill="1">Take a note</button>
+        <button type="button" class="tw-chipb" data-cmd="status report">Status</button>
+      </div>
+      <form class="tw-in" id="form" autocomplete="off">
+        <label class="tw-field"><span aria-hidden="true">&gt;</span><input id="input" spellcheck="false" placeholder="Type a command" aria-label="Command"></label>
+        <button type="submit" class="tw-send" aria-label="Send"><svg width="16" height="16" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9 H14 M9 4 L14 9 L9 14" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+      </form>
+    </div>
   </div>
-  <span class="tw-link" id="link" aria-hidden="true" hidden></span>
-  <button type="button" class="tw-chip" id="chip" aria-label="Talk to Comm Tower 1">
+  <button type="button" class="tw-chip" id="chip" aria-label="Open Comm Tower 1">
     <span class="tw-chair" aria-hidden="true"></span>
-    <span class="tw-portrait" aria-hidden="true"><span class="tw-halo"></span><span class="tw-voice" id="voice"></span></span>
-    <span class="tw-names"><span class="tw-name" id="name">COMM TOWER 1</span><span class="tw-sub" id="sub">STANDING BY</span></span>
-    <span class="tw-side" aria-hidden="true"><span class="tw-live"></span><span class="tw-line">LINE 01</span></span>
+    <span class="tw-portrait" aria-hidden="true">&gt;_</span>
+    <span class="tw-names"><span class="tw-name" id="name">COMM TOWER 1</span><span class="tw-sub" id="sub">CLICK TO TYPE</span></span>
   </button>
 </div>
 <script type="module" src="tower.js"></script>

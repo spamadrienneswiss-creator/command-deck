@@ -1,98 +1,122 @@
-// Comm Tower 1: the chip on the main monitor. It only shows; the deck window does the
-// listening, transcribing and filing, and sends each step here through the main process.
-//   state.stage: idle | open (listening) | thinking | heard | reply
-//   state.level (0–1 while listening), state.you (what it heard), state.text (the reply),
-//   state.kind ('ok' | 'err' | 'c'), state.tags ([{ t, k }]), state.speaking (bool)
+// Comm Tower 1 (v1.27): click the button (or Ctrl + Alt + T) and a small terminal pops up
+// above it. What you type goes to the deck window, which does the work and sends the
+// reply lines back here. The window can take keyboard focus only while the terminal is open.
 
 const $ = (s) => document.querySelector(s);
 const T = window.tower;
 const body = document.body;
 const chip = $('#chip');
-const card = $('#card');
-const link = $('#link');
+const pop = $('#pop');
+const log = $('#log');
+const input = $('#input');
 
-const SUB = { idle: 'STANDING BY', open: 'LISTENING TO YOU', thinking: 'COPYING…', heard: 'COPYING…', reply: 'ON THE LINE' };
-const IDLE = [3, 4, 6, 9, 12, 14, 12, 9, 6, 4, 3];
-const SPEAK = [5, 12, 20, 28, 34, 24, 32, 26, 18, 10, 5];
 let name = 'COMM TOWER 1';
+let operator = '';
+const lines = [];
+let busy = false;
+let hist = [];
+let histAt = -1;
+let idle = null;
+const IDLE_MS = 60 * 1000;
 
-// Voiceprint bars in the portrait, and the live wave on the card.
-const voice = $('#voice');
-// Built with the DOM (not HTML strings) so no inline style attributes are needed.
-const bar = (host, k) => { const i = document.createElement('i'); i.style.setProperty('--k', String(k)); host.appendChild(i); return i; };
-const vbars = IDLE.map((_h, k) => bar(voice, k));
-const wave = $('#wave');
-const wbars = Array.from({ length: 32 }, (_x, k) => bar(wave, k));
-let hist = new Array(32).fill(0);
+const isOpen = () => !pop.hidden;
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 
-function setBars(list, heights) { list.forEach((b, i) => b.style.setProperty('--h', `${heights[i]}px`)); }
-function level(v) {
-  hist = hist.slice(1).concat(v);
-  wbars.forEach((b, i) => b.style.setProperty('--h', `${3 + Math.round(hist[i] * 23)}px`));
-  const mid = 5;
-  setBars(vbars, IDLE.map((_h, i) => 3 + Math.round(v * 30 * (1 - Math.abs(i - mid) / 7))));
+function render() {
+  const out = lines.map((e) => {
+    if (e.k === 'card') {
+      const c = el('div', 'card');
+      c.appendChild(el('div', 'ck', e.head));
+      if (e.fields && e.fields.length) {
+        const kv = el('div', 'kv');
+        for (const [k, v] of e.fields) { kv.appendChild(el('span', '', k)); kv.appendChild(el('span', '', v)); }
+        c.appendChild(kv);
+      }
+      return c;
+    }
+    const d = el('div', `ln ${e.k}`);
+    d.appendChild(el('span', 'pr', e.k === 'you' ? '> ' : '› '));
+    d.appendChild(document.createTextNode(e.t));
+    return d;
+  });
+  if (busy) { const b = el('div', 'ln busy'); b.appendChild(el('span', 'pr', '› ')); b.appendChild(document.createTextNode('…')); out.push(b); }
+  log.replaceChildren(...out);
+  log.scrollTop = log.scrollHeight;
 }
-const clock = () => { const d = new Date(); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
-
-function showCard(mode, who, time, text, tags = [], src = '') {
-  if (!mode) { card.hidden = true; link.hidden = true; return; }
-  card.hidden = false;
-  link.hidden = false;
-  card.className = `tw-card${mode === 'you' || mode === 'live' ? ' you' : ''}${mode === 'live' ? ' live' : ''}`;
-  link.className = `tw-link${mode === 'you' || mode === 'live' ? ' you' : ''}`;
-  $('#who').textContent = who;
-  $('#time').textContent = time;
-  $('#src').textContent = src === 'gemini' ? 'GEMINI' : src === 'built-in' ? 'BUILT-IN' : '';
-  $('#text').textContent = text || '';
-  const tg = $('#tags');
-  tg.replaceChildren(...tags.map((g) => { const sp = document.createElement('span'); if (g.k) sp.className = g.k; sp.textContent = g.t; return sp; }));
+function add(e) {
+  lines.push(e);
+  while (lines.length > 40) lines.shift();
+  render();
+  armIdle();
+}
+function armIdle() {
+  clearTimeout(idle);
+  if (isOpen()) idle = setTimeout(() => { if (!input.value && !busy) close(); }, IDLE_MS);
 }
 
-function render(st) {
-  const stage = st.stage || 'idle';
-  body.dataset.stage = stage;
-  body.dataset.kind = st.kind || '';
-  body.classList.toggle('speaking', !!st.speaking);
-  $('#sub').textContent = stage === 'reply' && st.speaking ? 'SPEAKING' : SUB[stage] || SUB.idle;
-  chip.setAttribute('aria-label', stage === 'open' ? 'Finish talking' : `Talk to ${name}`);
-  if (stage === 'open') {
-    if (typeof st.level === 'number') { level(st.level); return; }
-    hist = new Array(32).fill(0);
-    level(0);
-    showCard('live', 'YOU', 'LIVE', 'Go ahead…');
-  } else if (stage === 'thinking') {
-    setBars(vbars, IDLE);
-    showCard('you', 'YOU', clock(), st.you ? `“${st.you}”` : 'Copying that down…');
-  } else if (stage === 'heard') {
-    setBars(vbars, IDLE);
-    showCard('you', 'YOU', clock(), `“${st.you}”`);
-  } else if (stage === 'reply') {
-    setBars(vbars, SPEAK);
-    showCard('reply', name, clock(), st.text, st.tags || [], st.src || '');
-  } else {
-    setBars(vbars, IDLE);
-    showCard(null);
-  }
+function open() {
+  if (!lines.length) add({ k: 'c', t: `Go ahead${operator ? `, ${operator}` : ''}.` });
+  pop.hidden = false;
+  body.classList.add('open');
+  T.focus(true);
+  setTimeout(() => input.focus(), 30);
+  render();
+  armIdle();
+}
+function close() {
+  clearTimeout(idle);
+  pop.hidden = true;
+  body.classList.remove('open');
+  input.blur();
+  T.focus(false);
+}
+
+function send(text) {
+  text = String(text || '').trim();
+  if (!text) return;
+  hist = [text, ...hist.filter((h) => h !== text)].slice(0, 30);
+  histAt = -1;
+  T.send(text); // the deck echoes it back as a "you" line, then the reply
+  armIdle();
 }
 
 T.onConfig((c) => {
   name = c.name || 'COMM TOWER 1';
+  operator = c.operator || '';
   $('#name').textContent = name;
+  $('#ptitle').textContent = name;
   document.title = name;
-  if (!card.hidden && body.dataset.stage === 'reply') $('#who').textContent = name;
+  chip.setAttribute('aria-label', `Open ${name}`);
 });
-T.onState(render);
+T.onState((st) => {
+  if (st.line) add(st.line);
+  if (typeof st.busy === 'boolean') { busy = st.busy; body.classList.toggle('busy', busy); render(); }
+});
+T.onOpen(() => (isOpen() ? input.focus() : open()));
 
-// The window is sized to what's showing (chip, or chip + card) plus room for the glow,
-// so there's no see-through area covering whatever sits behind it.
+// The window is sized to what's showing, plus room for the glow.
 const PAD = 18;
-const tw = document.querySelector('.tw');
+const tw = $('.tw');
 const fit = () => { const r = tw.getBoundingClientRect(); T.size(Math.ceil(r.width) + PAD * 2, Math.ceil(r.height) + PAD * 2); };
 new ResizeObserver(fit).observe(tw);
-// Clicking the card puts it away.
-card.addEventListener('click', () => { if (body.dataset.stage === 'reply' || body.dataset.stage === 'idle') render({ stage: 'idle' }); });
 
-// Click to talk (or to finish); press and drag to move the chip.
+$('#form').addEventListener('submit', (e) => { e.preventDefault(); const v = input.value; input.value = ''; send(v); });
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+  if (e.key === 'ArrowUp' && hist.length) { e.preventDefault(); histAt = Math.min(hist.length - 1, histAt + 1); input.value = hist[histAt]; }
+  if (e.key === 'ArrowDown' && histAt >= 0) { e.preventDefault(); histAt -= 1; input.value = histAt >= 0 ? hist[histAt] : ''; }
+  armIdle();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && isOpen()) close(); });
+$('#esc').addEventListener('click', close);
+$('#chips').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-cmd]');
+  if (!b) return;
+  if (b.dataset.fill) { input.value = b.dataset.cmd; input.focus(); return; }
+  send(b.dataset.cmd);
+});
+
+// Click to open / close; press and drag to move.
 let press = null;
 chip.addEventListener('pointerdown', (e) => {
   if (e.button !== 0) return;
@@ -112,16 +136,11 @@ chip.addEventListener('pointerup', (e) => {
   if (!press) return;
   const p = press;
   press = null;
-  if (p.moved) {
-    T.drag('end', e.screenX, e.screenY);
-    body.classList.remove('dragging');
-  } else {
-    T.talk();
-  }
+  if (p.moved) { T.drag('end', e.screenX, e.screenY); body.classList.remove('dragging'); return; }
+  if (isOpen()) close(); else open();
 });
-chip.addEventListener('pointercancel', () => { if (press && press.moved) { body.classList.remove('dragging'); } press = null; });
-// Keyboard: Enter / Space on the focused chip also talks (pointer clicks are handled above).
-chip.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); T.talk(); } });
+chip.addEventListener('pointercancel', () => { if (press && press.moved) body.classList.remove('dragging'); press = null; });
+chip.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (isOpen()) close(); else open(); } });
 chip.addEventListener('click', (e) => e.preventDefault());
 
-render({ stage: 'idle' });
+render();

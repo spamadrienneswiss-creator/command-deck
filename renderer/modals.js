@@ -1049,14 +1049,11 @@ export function openSettings(welcome = false) {
           </div>
           <div class="inline" style="flex:none;margin-top:6px"><button type="button" class="btn line" id="sTest">TEST VOICE</button></div>
         </div>
-        <div class="f"><span class="f-label">MIC WAITS AFTER YOU STOP TALKING</span>
-          <div class="pills" data-key="micPatience">${pills([['short', 'SHORT · 1.5 S'], ['normal', 'NORMAL · 2.2 S'], ['long', 'LONG · 3.5 S']], draft.micPatience || 'normal')}</div>
-          <div class="f-hint">How long a pause ends your turn. Tapping the mic button again always finishes right away.</div></div>
-        <div class="f"><span class="f-label">COMM TOWER 1 · TALK FROM ANY SCREEN</span>
-          <div class="toggle-row"><span>Show the chip on the main monitor</span>${switchHtml('swTower', (draft.tower || {}).on !== false, 'Show Comm Tower 1')}</div>
-          <div class="toggle-row"><span>Talk back conversationally (Gemini)</span>${switchHtml('swTowerTalk', (draft.tower || {}).talk !== false, 'Conversational replies')}</div>
+        <div class="f"><span class="f-label">COMM TOWER 1 · TYPE FROM ANY SCREEN</span>
+          <div class="toggle-row"><span>Show the button on the main monitor</span>${switchHtml('swTower', (draft.tower || {}).on !== false, 'Show Comm Tower 1')}</div>
+          <div class="toggle-row"><span>Gemini words replies and answers questions</span>${switchHtml('swTowerTalk', (draft.tower || {}).talk !== false, 'Conversational replies')}</div>
           <div class="inline" style="flex:none;margin-top:6px"><input id="sTowerName" class="in" maxlength="20" aria-label="Comm Tower name" value="${esc((draft.tower || {}).name || 'COMM TOWER 1')}" placeholder="COMM TOWER 1" style="flex:1"><button type="button" class="btn line" id="sTowerHome">BACK TO CORNER</button></div>
-          <div class="f-hint">Click the chip and talk; it files tasks, events, notes and timers the same as the Computer, then answers you by name. Drag it to move it. The name is whatever you call it.<br>Talking back uses the Gemini key from Field Unit › DATA RECAP: the deck still does the filing, Gemini words the reply and answers questions about your day from your tasks and schedule (they're sent to Gemini for that). No key or no signal: the deck's own replies.</div></div>
+          <div class="f-hint">Click the button (or press Ctrl + Alt + T from any app) and a small terminal pops up: type a command, Enter sends, Esc closes. It files tasks, events, notes and timers like the deck's own terminal. Drag the button to move it. The name is whatever you call it.<br>With a Gemini key (Field Unit › DATA RECAP) replies are worded conversationally and questions about your day get answered from your tasks and schedule (they're sent to Gemini for that). No key or no signal: the deck's own replies. The deck's voice reads replies out loud unless you switch VOICE REPLIES off in the terminal.</div></div>
         <div class="f"><span class="f-label">DISCORD · MUTE AND DEAFEN BESIDE HAIL</span>
           <div class="f-hint" style="margin-top:0">Shows whether you're muted or deafened in Discord, live, and toggles them (click the icons, or say "mute me" / "deafen me"). One-time setup with your own free Discord app:<br>
           1. Open the <a href="#" id="dcPortal" style="color:var(--amber)">Discord Developer Portal</a> › <b>New Application</b> (any name, e.g. Command Deck).<br>

@@ -1,8 +1,10 @@
-// Comm Tower 1's bridge: the chip only talks to the main process (which relays to the deck).
+// Comm Tower 1's bridge: the button and its terminal only talk to the main process (which relays to the deck).
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('tower', {
-  talk: () => ipcRenderer.send('tower:talk'),
+  send: (text) => ipcRenderer.send('tower:send', String(text || '')),
+  focus: (on) => ipcRenderer.send('tower:focus', !!on),
+  onOpen: (fn) => ipcRenderer.on('tower:open', () => fn()),
   size: (w, h) => ipcRenderer.send('tower:size', w, h),
   drag: (phase, sx, sy) => ipcRenderer.send('tower:drag', phase, sx, sy),
   home: () => ipcRenderer.send('tower:home'),

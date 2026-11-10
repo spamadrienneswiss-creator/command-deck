@@ -10,7 +10,8 @@ const DEFAULTS = {
     chipName: '', // your name chip on shared schedules (blank: from operatorName)
     chipColor: '#F4B6A0',
     consoleName: 'Command Deck',
-    tower: { on: true, name: 'COMM TOWER 1', talk: true }, // Comm Tower 1: the talk-to-capture chip on the main monitor
+    tower: { on: true, name: 'COMM TOWER 1', talk: true },
+    termSpeak: true, // the terminal reads its replies out loud // Comm Tower 1: the talk-to-capture chip on the main monitor
     location: { name: 'Los Angeles, California', lat: 34.0522, lon: -118.2437 },
     calendars: [], // { id, name, url, color, enabled }
     localCalendarName: 'Local',

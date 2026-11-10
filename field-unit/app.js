@@ -10,7 +10,7 @@ import { bootScreen } from './boot.js';
 import * as P from './presence.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.26.1';
+const VERSION = 'v1.27.0';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;

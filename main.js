@@ -428,7 +428,7 @@ app.on('second-instance', () => {
 // each step back here so the chip can show it. The window is sized to what it shows
 // (just the chip, or the chip plus its card), grown and shrunk from its bottom-right
 // corner, so every click on it lands and nothing around it is covered.
-const TOWER_CHIP = { w: 340, h: 116 }; // the chip plus room for its glow
+const TOWER_CHIP = { w: 276, h: 100 }; // the button plus room for its glow
 const TOWER_GAP = 6; // from the screen's corner
 function towerSettings() {
   const t = settings().tower || {};
@@ -449,8 +449,8 @@ function towerFit(w, h) {
   const cur = tower.getBounds();
   const r = cur.x + cur.width;
   const b = cur.y + cur.height;
-  w = Math.max(TOWER_CHIP.w, Math.min(420, Math.round(w)));
-  h = Math.max(TOWER_CHIP.h, Math.min(420, Math.round(h)));
+  w = Math.max(TOWER_CHIP.w, Math.min(460, Math.round(w)));
+  h = Math.max(TOWER_CHIP.h, Math.min(600, Math.round(h)));
   if (w === cur.width && h === cur.height) return;
   tower.setBounds({ x: r - w, y: b - h, width: w, height: h });
 }
@@ -501,9 +501,15 @@ function registerTowerIpc() {
     const bb = tower.getBounds();
     tower.setBounds({ x: c.r - bb.width, y: c.b - bb.height, width: bb.width, height: bb.height });
   });
-  // Chip → deck: start or stop talking.
-  ipcMain.on('tower:talk', () => {
-    if (win && !win.isDestroyed()) win.webContents.send('tower:talk');
+  // The pop-up terminal: what you type goes to the deck, which does the work.
+  ipcMain.on('tower:send', (_e, text) => {
+    if (win && !win.isDestroyed() && text) win.webContents.send('tower:text', String(text).slice(0, 500));
+  });
+  // The window only takes keyboard focus while its terminal is open.
+  ipcMain.on('tower:focus', (_e, on) => {
+    if (!tower || tower.isDestroyed()) return;
+    tower.setFocusable(!!on);
+    if (on) { tower.focus(); tower.webContents.focus(); }
   });
   // Deck → chip: what's happening (listening, levels, what it heard, the reply).
   ipcMain.on('tower:state', (_e, st) => sendTower('tower:state', st));
@@ -638,6 +644,19 @@ app.whenReady().then(() => {
   setupLighting();
 
   globalShortcut.register('Control+Alt+Space', toggleWindow);
+  // Ctrl + Alt + T: Comm Tower 1's terminal from any app (or the deck's own, if the button is hidden).
+  globalShortcut.register('Control+Alt+T', () => {
+    if (tower && !tower.isDestroyed()) {
+      tower.setFocusable(true);
+      tower.showInactive();
+      tower.focus();
+      sendTower('tower:open');
+    } else if (win && !win.isDestroyed()) {
+      if (!win.isVisible()) win.show();
+      win.focus();
+      win.webContents.send('term:open');
+    }
+  });
 });
 
 app.on('before-quit', () => {

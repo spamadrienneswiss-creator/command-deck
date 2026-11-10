@@ -13,7 +13,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.26.1';
+const VERSION = 'v1.27.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -1940,11 +1940,11 @@ function onLevel(v) {
 }
 
 const VOICE_TEXT = {
-  idle: ['STANDBY', 'HAIL THE COMPUTER', 'Tap to speak · tasks, events, briefings'],
+  idle: ['STANDBY', 'OPEN TERMINAL', 'Click, or just start typing · tasks, events, notes'],
   greeting: ['HAILING', 'CHANNEL OPEN', 'Stand by…'],
   listening: ['LISTENING', 'GO AHEAD', 'Speak now · tap to finish'],
   thinking: ['PROCESSING', 'DECODING', 'Transcribing on this computer…'],
-  speaking: ['RESPONDING', 'TRANSMITTING', 'Tap to interrupt']
+  speaking: ['RESPONDING', 'TRANSMITTING', 'Click to open the terminal · Esc stops the voice']
 };
 
 function setVoiceState(state) {
@@ -2036,98 +2036,26 @@ async function listenTurn() {
   return handleCommand(text, { fromVoice: true });
 }
 
-// ---------------------------------------------------------------- Comm Tower 1
-// The chip on the main monitor (its own small window). Clicking it lands here: the deck
-// listens, transcribes and files, the same as hailing the Computer but with no greeting,
-// and reports each step back so the chip can show it.
-let towerIdleTimer = null;
+// ---------------------------------------------------------------- terminal (v1.27)
+// Listening is off: you type, the deck answers (and can still say it out loud). One
+// responder, two screens: the deck's own terminal over the panels, and Comm Tower 1's
+// pop-up (its own window; lines travel there through the main process).
 function towerSend(st) {
   if (deck.tower) deck.tower.state(st);
 }
-function towerTags(t) {
-  if (!t) return [];
-  const tags = [];
-  if (t.due) {
-    const d = new Date(t.due);
-    tags.push({ t: `DUE ${U.DAY_FULL[d.getDay()].slice(0, 3)} ${U.MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}${t.dueHasTime ? ` · ${U.fmtTimeShort(d, S.settings.clock24)}` : ''}`.toUpperCase(), k: 'due' });
+const CARD_HEAD = { 'add-task': '✓ TASK LOGGED', 'add-event': '✓ EVENT SCHEDULED', 'add-note': '✓ NOTE FILED', 'set-timer': '✓ TIMER SET', 'set-alarm': '✓ ALARM SET', 'add-project': '✓ PROJECT STARTED', 'complete-task': '✓ MARKED DONE' };
+function termCard(intent, t) {
+  const head = CARD_HEAD[intent];
+  if (!head) return null;
+  const fields = [];
+  if (t) {
+    fields.push(['TITLE', t.title]);
+    if (t.due) { const d = new Date(t.due); fields.push(['DUE', `${U.DAY_FULL[d.getDay()].slice(0, 3)} ${d.getDate()} ${U.MONTHS[d.getMonth()].slice(0, 3)}${t.dueHasTime ? ` · ${U.fmtTimeShort(d, S.settings.clock24)}` : ''}`.toUpperCase()]); }
+    const cat = categoryById(t.category);
+    const bits = [t.priority === 'high' ? 'HIGH' : '', cat ? cat.name.toUpperCase() : '', t.repeat && t.repeat.type !== 'none' ? 'REPEATS' : ''].filter(Boolean);
+    if (bits.length) fields.push(['TAGS', bits.join(' · ')]);
   }
-  const cat = categoryById(t.category);
-  if (cat) tags.push({ t: cat.name.toUpperCase(), k: 'cat' });
-  if (t.priority === 'high') tags.push({ t: 'HIGH', k: 'hi' });
-  if (t.repeat && t.repeat.type !== 'none') tags.push({ t: 'REPEATS', k: '' });
-  if (t.reminder != null) tags.push({ t: 'REMINDER', k: '' });
-  return tags;
-}
-function towerSettle(ms = 7000) {
-  clearTimeout(towerIdleTimer);
-  towerIdleTimer = setTimeout(() => { if (S.voice === 'idle') towerSend({ stage: 'idle' }); }, ms);
-}
-function towerSay(text, kind = 'c') {
-  towerSend({ stage: 'reply', text, kind, speaking: true });
-  return speak(text).finally(() => { towerSend({ stage: 'reply', text, kind, speaking: false }); towerSettle(); });
-}
-async function towerTalk() {
-  clearTimeout(towerIdleTimer);
-  if (S.voice === 'listening' && rec) { rec.stop(); return; }
-  if (S.voice === 'speaking' || S.voice === 'greeting') {
-    stopSpeaking();
-    setVoiceState('idle');
-    towerSend({ stage: 'idle' });
-    return;
-  }
-  if (S.voice !== 'idle') return;
-  if (voiceStatus().state !== 'ready' && voiceStatus().state !== 'loading') loadModel().catch(() => {});
-  if (S.alert && S.alert.ringing) stopRinging();
-  try {
-    setVoiceState('listening');
-    sounds.micOn();
-    levels = new Array(WAVE_N).fill(0);
-    towerSend({ stage: 'open' });
-    const patience = { short: 1500, normal: 2200, long: 3500 }[S.settings.micPatience] || 2200;
-    rec = await record({ onLevel: (v) => { onLevel(v); towerSend({ stage: 'open', level: v }); }, silenceMs: patience });
-  } catch (e) {
-    rec = null;
-    setVoiceState('idle');
-    sounds.error();
-    const msg = "I can't reach the microphone. Check that one is connected and that microphone access is allowed in Windows privacy settings.";
-    pushLog('err', msg);
-    towerSay(msg, 'err');
-    return;
-  }
-  const { audio, heard } = await rec.done;
-  rec = null;
-  sounds.micOff();
-  if (!heard) {
-    setVoiceState('idle');
-    pushLog('c', 'No input detected. Standing by.');
-    towerSend({ stage: 'reply', text: 'Nothing came through. Standing by.', kind: 'c' });
-    towerSettle(4000);
-    return;
-  }
-  setVoiceState('thinking');
-  towerSend({ stage: 'thinking' });
-  let text = '';
-  try {
-    text = await transcribe(audio);
-  } catch (e) {
-    setVoiceState('idle');
-    sounds.error();
-    const msg = navigator.onLine
-      ? 'The voice core failed to load. Typed commands still work in the quick-add line.'
-      : 'The voice core needs an internet connection the first time it loads. Typed commands still work.';
-    pushLog('err', msg);
-    towerSay(msg, 'err');
-    return;
-  }
-  setVoiceState('idle');
-  if (!text) {
-    pushLog('c', "I didn't catch that.");
-    towerSay("I didn't catch that. Try me again.", 'err');
-    return;
-  }
-  towerSend({ stage: 'heard', you: text });
-  await new Promise((r) => setTimeout(r, 650)); // a beat to read your own words
-  await towerRespond(text);
+  return { head, fields };
 }
 
 // Talking back (v1.25): the deck does anything that's a command, then Gemini words the
@@ -2167,54 +2095,156 @@ async function towerWord(heard, done) {
   const res = await deck.tower.word({ key: r.geminiKey, model: r.model || '', name: (S.settings.tower && S.settings.tower.name) || 'COMM TOWER 1', operator: S.settings.operatorName, humor: S.settings.humor ?? 40, heard, done, context: towerContext() }).catch(() => null);
   return res && res.ok ? res : null;
 }
-async function towerRespond(text) {
+async function respond(text, sink) {
+  text = String(text || '').trim();
+  if (!text) return;
+  if (S.alert && S.alert.ringing) stopRinging();
+  sink.line('you', text);
+  sink.busy(true);
   let made = null;
   let built = null;
-  const say = async (reply, kind, tags, src) => {
-    towerSend({ stage: 'reply', text: reply, kind, tags, src, speaking: true });
-    await speak(reply);
-    towerSend({ stage: 'reply', text: reply, kind, tags, src, speaking: false });
-    towerSettle();
+  const say = (reply, kind = 'c', card = null) => {
+    sink.busy(false);
+    sink.line(kind === 'err' ? 'err' : 'c', reply);
+    if (card) sink.card(card);
+    if (S.settings.termSpeak !== false) speak(reply).catch(() => {});
   };
-  const run = (cmd) => handleCommand(cmd, { fromVoice: true, quiet: true, onReply: (res) => { built = res; made = res.task; } });
+  const run = (cmd) => handleCommand(cmd, { quiet: true, onReply: (res) => { built = res; made = res.task; } });
 
-  // An answer to something Comm Tower 1 offered ("Want me to hold 10 AM? Say yes.")
+  // An answer to something it offered ("Want me to hold 10 AM? Type yes.")
   if (towerOffer && Date.now() - towerOffer.at < 5 * 60e3 && (YES.test(text) || NO.test(text))) {
     const offer = towerOffer;
     towerOffer = null;
-    if (NO.test(text)) { pushLog('u', text); pushLog('c', 'Understood. Leaving it off.'); return say(`Understood, ${S.settings.operatorName}. I'll leave it off.`, 'c', [], 'built-in'); }
+    if (NO.test(text)) { pushLog('u', text); pushLog('c', 'Understood. Leaving it off.'); return say(`Understood, ${S.settings.operatorName}. I'll leave it off.`); }
     pushLog('u', text);
     await run(offer.command);
-    if (!built) return say("That didn't go through. Try saying it the long way.", 'err', [], 'built-in');
+    if (!built) return say("That didn't go through. Try typing it out in full.", 'err');
     const plain = built.reply.replace(/^Copy that, [^.]+\.\s*/, '');
-    return say(built.kind === 'ok' ? `Done. ${plain}` : built.reply, built.kind, towerTags(made), 'built-in');
+    return say(built.kind === 'ok' ? `Done. ${plain}` : built.reply, built.kind, built.kind === 'ok' ? termCard(built.intent, made) : null);
   }
   towerOffer = null;
 
   let parsed = null;
   try { parsed = await deck.parse(text, commandCtx()); } catch (e) { parsed = { intent: 'empty' }; }
-  const question = (!parsed || ['add-task', 'empty'].includes(parsed.intent)) && looksLikeQuestion(text) && towerTalkOn();
+  // A question (that the parser would only file as a task) goes to Gemini; with no Gemini it's answered honestly, not filed.
+  const question = (!parsed || ['add-task', 'empty'].includes(parsed.intent)) && looksLikeQuestion(text);
 
   if (question) {
     pushLog('u', text);
-    towerSend({ stage: 'thinking', you: text });
     const g = await towerWord(text, null);
-    if (!g) { pushLog('c', "I can't answer that one offline."); return say("I can't answer that one right now, but I can file it, set a timer, or tell you what's next.", 'err', [], 'built-in'); }
+    if (!g) { pushLog('c', "I can't answer that one offline."); return say(towerTalkOn() ? "I can't answer that one right now. To file it as a task, start with \"add\"." : "Questions need Gemini (add a key in Settings › Field Unit › DATA RECAP). To file it as a task, start with \"add\".", 'err'); }
     pushLog('c', g.reply);
     if (g.command) towerOffer = { command: g.command, at: Date.now() };
-    return say(g.reply, 'ok', g.command ? [{ t: 'CLICK · SAY "YES" TO ADD', k: '' }] : [], 'gemini');
+    return say(g.reply);
   }
 
   // A command: the deck does it now, then the reply gets worded.
   await run(text);
-  if (!built) return say("I didn't catch that. Try me again.", 'err', [], 'built-in');
-  const tags = towerTags(made);
+  if (!built) return say("I didn't catch that. Try it another way.", 'err');
+  const card = built.kind === 'ok' ? termCard(built.intent, made) : null;
   // Mute / deafen should be instant: no wording pass.
-  if (built.intent === 'discord') return say(built.reply, built.kind, [], 'built-in');
-  // Built-in queries already read well and are factual; Gemini still smooths them out.
+  if (built.intent === 'discord') return say(built.reply, built.kind);
   const g = await towerWord(text, { reply: built.reply.replace(/^Copy that, [^.]+\.\s*/, ''), kind: built.kind, intent: built.intent });
-  if (g) return say(g.reply, built.kind, tags, 'gemini');
-  return say(built.reply, built.kind, tags, 'built-in');
+  return say(g ? g.reply : built.reply, built.kind, card);
+}
+
+// ---- the deck's terminal (over the panels)
+const termLines = [];
+let termHist = [];
+let termHistAt = -1;
+const termOpen = () => !$('#term').hidden;
+function termAdd(e) {
+  termLines.push(e);
+  while (termLines.length > 80) termLines.shift();
+  renderTerm();
+}
+function renderTerm() {
+  const box = $('#termLog');
+  if (!box) return;
+  box.innerHTML = termLines.map((e) => {
+    if (e.k === 'card') return `<div class="tm-card"><div class="tm-ck">${esc(e.head)}</div>${e.fields.length ? `<div class="tm-kv">${e.fields.map(([k, v]) => `<span>${esc(k)}</span><span>${esc(v)}</span>`).join('')}</div>` : ''}</div>`;
+    return `<div class="tm-ln tm-${e.k}"><span class="tm-pr">${e.k === 'you' ? '&gt; ' : '› '}</span>${esc(e.t)}</div>`;
+  }).join('') + `<div class="tm-ln tm-busy"${$('#term').classList.contains('busy') ? '' : ' hidden'}><span class="tm-pr">› </span>…</div>`;
+  box.scrollTop = box.scrollHeight;
+}
+const deckSink = {
+  line: (k, t) => termAdd({ k, t }),
+  card: (c) => termAdd({ k: 'card', ...c }),
+  busy: (b) => { $('#term').classList.toggle('busy', b); renderTerm(); }
+};
+const towerSink = {
+  line: (k, t) => towerSend({ line: { k, t } }),
+  card: (c) => towerSend({ line: { k: 'card', ...c } }),
+  busy: (b) => towerSend({ busy: b })
+};
+function termChips() {
+  const chips = [['Status report', 'status report'], ["What's next", "what's next"], ['Take a note', 'take a note: ', true], ['Add to calendar', 'schedule ', true], ['Timer 10 min', 'set a timer for 10 minutes']];
+  if (DV.status === 'live') chips.push(DV.mute || DV.deaf ? ['Unmute me', 'unmute me'] : ['Mute me', 'mute me']);
+  $('#termChips').innerHTML = chips.map(([l, c, fill]) => `<button type="button" class="tm-chip" data-cmd="${esc(c)}"${fill ? ' data-fill="1"' : ''}>${esc(l)}</button>`).join('');
+}
+function termVoiceLabel() {
+  const on = S.settings.termSpeak !== false;
+  $('#termVoice').textContent = on ? '◉ VOICE REPLIES ON' : '○ VOICE REPLIES OFF';
+  $('#termVoice').classList.toggle('on', on);
+}
+function openTerm(prefill = '') {
+  const t = $('#term');
+  if (!termLines.length) { termAdd({ k: 'sys', t: `${String(S.settings.consoleName || 'Ship computer').toUpperCase()} ONLINE.` }); termAdd({ k: 'c', t: `Go ahead, ${S.settings.operatorName}.` }); }
+  termChips();
+  termVoiceLabel();
+  t.hidden = false;
+  const inp = $('#termInput');
+  if (prefill) inp.value += prefill;
+  inp.focus();
+  renderTerm();
+}
+function closeTerm() {
+  $('#term').hidden = true;
+  $('#termInput').blur();
+}
+function sendTerm(text) {
+  text = String(text || '').trim();
+  if (!text) return;
+  termHist = [text, ...termHist.filter((h) => h !== text)].slice(0, 30);
+  termHistAt = -1;
+  respond(text, deckSink).then(() => termChips());
+}
+function wireTerm() {
+  $('#termForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = $('#termInput').value;
+    $('#termInput').value = '';
+    sendTerm(v);
+  });
+  $('#termInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeTerm(); return; }
+    if (e.key === 'ArrowUp' && termHist.length) { e.preventDefault(); termHistAt = Math.min(termHist.length - 1, termHistAt + 1); e.target.value = termHist[termHistAt]; }
+    if (e.key === 'ArrowDown' && termHistAt >= 0) { e.preventDefault(); termHistAt -= 1; e.target.value = termHistAt >= 0 ? termHist[termHistAt] : ''; }
+  });
+  $('#termChips').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-cmd]');
+    if (!b) return;
+    if (b.dataset.fill) { const i = $('#termInput'); i.value = b.dataset.cmd; i.focus(); return; }
+    sendTerm(b.dataset.cmd);
+  });
+  $('#termClear').addEventListener('click', () => { termLines.length = 0; termAdd({ k: 'sys', t: 'Screen cleared.' }); $('#termInput').focus(); });
+  $('#termClose').addEventListener('click', closeTerm);
+  $('#termVoice').addEventListener('click', () => {
+    saveSettings({ ...S.settings, termSpeak: S.settings.termSpeak === false }, { refetch: false });
+    if (S.settings.termSpeak === false) stopSpeaking();
+    termVoiceLabel();
+    $('#termInput').focus();
+  });
+  $('#term').addEventListener('mousedown', (e) => { if (e.target.id === 'term') closeTerm(); });
+  // Start typing anywhere on the deck (nothing else focused, no dialog open): the terminal opens with it.
+  document.addEventListener('keydown', (e) => {
+    if (termOpen() || e.ctrlKey || e.altKey || e.metaKey || e.key.length !== 1 || e.key === ' ' || isModalOpen()) return;
+    const a = document.activeElement;
+    if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
+    e.preventDefault();
+    openTerm(e.key);
+  });
+  if (deck.onTermOpen) deck.onTermOpen(() => openTerm());
 }
 
 // ---------------------------------------------------------------- Discord voice
@@ -3002,7 +3032,7 @@ function wire() {
   });
   $('#btnSettings').addEventListener('click', () => { sounds.click(); openSettings(false); });
   $('#btnMin').addEventListener('click', () => { sounds.click(); deck.minimize(); });
-  $('#btnHail').addEventListener('click', () => hail());
+  $('#btnHail').addEventListener('click', () => { if (S.voice === 'speaking') stopSpeaking(); openTerm(); });
 
   $('#wxOpen').addEventListener('click', () => {
     const { lat, lon } = S.settings.location;
@@ -3232,10 +3262,12 @@ async function start() {
   buildWave();
   Motion.start();
   if (deck.onAway) deck.onAway((away) => { Motion.setAway(away); voicesAway(away); });
-  if (deck.tower) deck.tower.onTalk(() => towerTalk());
+  if (deck.tower) deck.tower.onText((t) => respond(t, towerSink));
+  wireTerm();
   wireDiscord();
   window.__discordState = (st) => renderDiscord(st); // test hook: tools/deck-shots.js shows the icon states
-  window.__towerRespond = (t) => towerRespond(t); // test hook: tools/deck-shots.js drives the reply flow without a microphone
+  window.__termSend = (t) => { openTerm(); return respond(t, deckSink); }; // test hooks: tools/deck-shots.js types into the terminals
+  window.__towerSend = (t) => respond(t, towerSink);
   wireUpdates();
   wireLights();
   applySettings();
@@ -3403,7 +3435,7 @@ function warmUpVoices(delay) {
   setTimeout(() => {
     const s = S.settings;
     const synth = s.voiceEnabled && s.voiceEngine === 'neural' ? loadTts() : Promise.resolve();
-    synth.catch(() => {}).finally(() => loadModel().catch(() => {}));
+    synth.catch(() => {}); // listening is off (v1.27): the speech model no longer loads
   }, delay);
 }
 

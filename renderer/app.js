@@ -14,7 +14,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.28.1';
+const VERSION = 'v1.29.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -1924,9 +1924,15 @@ const WAVE_N = 28;
 const WAVE_BASE = [10, 18, 26, 14, 30, 22, 36, 16, 28, 12, 24, 34, 20, 30, 14, 26, 36, 18, 22, 12, 30, 24, 16, 28, 20, 10, 18, 14];
 let levels = new Array(WAVE_N).fill(0);
 
+// v1.29: with voice input off, the line above OPEN TERMINAL is an RX data stream: hex bytes
+// drifting slowly past (board: "Replacing the waveform", option D). It turns to TX while the
+// deck is answering. Bytes are made up once; the strip is doubled so the loop has no seam.
 function buildWave() {
-  $('#wave').innerHTML = WAVE_BASE.map((h, i) =>
-    `<i style="height:${h}px;--d:${(0.9 + (i % 7) * 0.13).toFixed(2)}s;--delay:${(i * 0.05).toFixed(2)}s"></i>`).join('');
+  const hex = () => Math.floor(Math.random() * 256).toString(16).toUpperCase().padStart(2, '0');
+  const bytes = Array.from({ length: 40 }, (_, i) => `<b${i % 9 === 4 ? ' class="hi"' : ''}>${hex()}</b>`).join('');
+  const w = $('#wave');
+  w.classList.add('hexs');
+  w.innerHTML = `<span class="hx-tag"></span><span class="hx-win"><span class="hx-track">${bytes}${bytes}</span></span><span class="hx-tail">··</span>`;
 }
 
 function resetWave() {

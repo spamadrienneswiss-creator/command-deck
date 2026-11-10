@@ -287,6 +287,21 @@ body[data-voice="thinking"] .hail, body[data-voice="greeting"] .hail, body[data-
 body.motion-still .wave i { opacity: 0.35; }
 body[data-voice="speaking"] .wave i, body[data-voice="greeting"] .wave i, body[data-voice="thinking"] .wave i { animation: bar 0.5s ease-in-out var(--delay, 0s) infinite; background: var(--lav); }
 body[data-voice="listening"] .wave i { background: var(--coral); }
+/* RX hex stream (v1.29) in place of the waveform */
+.wave.hexs { height: 22px; gap: 8px; font: 500 11px/1 var(--mono); letter-spacing: 0.08em; color: var(--dim); }
+.hexs .hx-tag { flex-shrink: 0; color: var(--amber); }
+.hexs .hx-tag::before { content: 'RX'; }
+.hexs .hx-win { flex: 1; min-width: 0; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 88%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 88%, transparent); }
+.hexs .hx-track { display: inline-flex; white-space: nowrap; animation: hxRun 90s linear infinite; }
+.hexs .hx-track b { font-weight: 500; padding-right: 0.9em; }
+.hexs .hx-track b.hi { color: var(--text-2); }
+.hexs .hx-tail { flex-shrink: 0; color: var(--line-3); }
+body.motion-still .hexs .hx-track { animation: none; }
+body[data-voice="speaking"] .hexs .hx-tag::before, body[data-voice="thinking"] .hexs .hx-tag::before, body[data-voice="greeting"] .hexs .hx-tag::before { content: 'TX'; }
+body[data-voice="speaking"] .hexs .hx-tag, body[data-voice="thinking"] .hexs .hx-tag, body[data-voice="greeting"] .hexs .hx-tag,
+body[data-voice="speaking"] .hexs .hx-track b.hi, body[data-voice="thinking"] .hexs .hx-track b.hi { color: var(--lav); }
+body[data-voice="speaking"] .hexs .hx-track, body[data-voice="thinking"] .hexs .hx-track, body[data-voice="greeting"] .hexs .hx-track { animation-duration: 18s; }
+@keyframes hxRun { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @keyframes bar { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
 .cmp-title { margin-top: 10px; font: 600 13px/1 var(--display); letter-spacing: 0.24em; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cmp-sub { margin-top: 6px; font: 400 10.5px/1.4 var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

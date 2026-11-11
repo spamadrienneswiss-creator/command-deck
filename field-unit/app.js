@@ -11,7 +11,7 @@ import * as P from './presence.js';
 import * as T from './terminal.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.31.1';
+const VERSION = 'v1.31.2';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;

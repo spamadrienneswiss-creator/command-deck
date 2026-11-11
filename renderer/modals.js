@@ -1059,11 +1059,13 @@ export function openSettings(welcome = false) {
           <div class="toggle-row"><span>Show the dial on screen</span>${switchHtml('swTower', (draft.tower || {}).on !== false, 'Show Comm Tower 1')}</div>
           <div class="toggle-row"><span>Gemini words replies and answers questions</span>${switchHtml('swTowerTalk', (draft.tower || {}).talk !== false, 'Conversational replies')}</div>
           <div class="inline" style="flex:none;margin-top:6px"><input id="sTowerName" class="in" maxlength="20" aria-label="Comm Tower name" value="${esc((draft.tower || {}).name || 'COMM TOWER 1')}" placeholder="COMM TOWER 1" style="flex:1"><button type="button" class="btn line" id="sTowerHome">BACK TO CORNER</button></div>
+          <span class="f-label" style="margin-top:12px">DIAL SITS</span>
+          <div class="pills" id="sTowerLayer">${[['top', 'ON TOP'], ['desktop', 'DESKTOP']].map(([v, l]) => `<button type="button" class="pill${((draft.tower || {}).layer === 'desktop' ? 'desktop' : 'top') === v ? ' on' : ''}" data-layer="${v}">${l}</button>`).join('')}</div>
           <span class="f-label" style="margin-top:12px">DIAL COLOR</span>
           <div class="pills" id="sTowerSkin">${DIAL_SKINS.map(([v, l, cs]) => `<button type="button" class="pill theme-pill${((draft.tower || {}).skin || 'eclipse') === v ? ' on' : ''}" data-skin="${v}" style="--pc:${cs[2] || '#888'}"><span class="theme-sw">${cs.map((c) => `<i style="background:${c}"></i>`).join('')}</span>${l}</button>`).join('')}</div>
           <span class="f-label" style="margin-top:12px">BROWSER KEY OPENS</span>
           <input id="sTowerUrl" class="in" maxlength="300" aria-label="Page the Browser key opens" value="${esc((draft.tower || {}).browserUrl || '')}" placeholder="https://www.google.com" spellcheck="false">
-          <div class="f-hint">Click the glowing core (or press Ctrl + Alt + T from any app) and it opens into a fan of keys: Record a meeting, the typing Terminal, your Browser, a Note, File Explorer, and + for your own shortcuts (a website, a program or a folder; up to 5). Esc closes it. Drag the closed core to move it; let go near any corner of any screen and it locks there, even if Windows shuffles the displays. The dial keeps its own colors whatever the deck's theme, unless you pick MATCH THEME. The name is whatever you call it.<br>With a Gemini key (Field Unit › DATA RECAP) replies are worded conversationally and questions about your day get answered from your tasks and schedule (they're sent to Gemini for that). No key or no signal: the deck's own replies. The deck's voice reads replies out loud unless you switch VOICE REPLIES off in the terminal.</div></div>
+          <div class="f-hint">Click the glowing core (or press Ctrl + Alt + T from any app) and it opens into a fan of keys: Record a meeting, the typing Terminal, your Browser, a Note, File Explorer, and + for your own shortcuts (a website, a program or a folder; up to 5). Esc closes it. ON TOP keeps it above every window; DESKTOP lets other windows cover it, and Ctrl + Alt + T brings it forward. Drag the closed core to move it; let go near any corner of any screen and it locks there, even if Windows shuffles the displays. The dial keeps its own colors whatever the deck's theme, unless you pick MATCH THEME. The name is whatever you call it.<br>With a Gemini key (Field Unit › DATA RECAP) replies are worded conversationally and questions about your day get answered from your tasks and schedule (they're sent to Gemini for that). No key or no signal: the deck's own replies. The deck's voice reads replies out loud unless you switch VOICE REPLIES off in the terminal.</div></div>
         <div class="f"><span class="f-label">DISCORD · MUTE AND DEAFEN BESIDE HAIL</span>
           <div class="f-hint" style="margin-top:0">Shows whether you're muted or deafened in Discord, live, and toggles them (click the icons, or say "mute me" / "deafen me"). One-time setup with your own free Discord app:<br>
           1. Open the <a href="#" id="dcPortal" style="color:var(--amber)">Discord Developer Portal</a> › <b>New Application</b> (any name, e.g. Command Deck).<br>
@@ -1504,6 +1506,12 @@ export function openSettings(welcome = false) {
       wireSwitch($('#swTowerTalk', body), (talk) => { draft.tower = { ...(draft.tower || {}), talk }; });
       wireDiscordSettings(body);
       $('#sTowerName', body).addEventListener('input', (e) => { draft.tower = { ...(draft.tower || {}), name: e.target.value.trim().toUpperCase() || 'COMM TOWER 1' }; });
+      $('#sTowerLayer', body).addEventListener('click', (e) => {
+        const b = e.target.closest('[data-layer]');
+        if (!b) return;
+        draft.tower = { ...(draft.tower || {}), layer: b.dataset.layer };
+        $('#sTowerLayer', body).querySelectorAll('[data-layer]').forEach((x) => x.classList.toggle('on', x === b));
+      });
       $('#sTowerSkin', body).addEventListener('click', (e) => {
         const b = e.target.closest('[data-skin]');
         if (!b) return;

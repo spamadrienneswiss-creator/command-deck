@@ -461,6 +461,7 @@ function towerSettings() {
     name: String(t.name || 'COMM TOWER 1').trim().toUpperCase() || 'COMM TOWER 1',
     operator: settings().operatorName || '',
     skin: TU.SKINS.includes(t.skin) ? t.skin : 'eclipse',
+    layer: t.layer === 'desktop' ? 'desktop' : 'top',
     shortcuts: TU.cleanShortcuts(t.shortcuts).map(({ id, name, kind }) => ({ id, name, kind })),
     max: TU.MAX_SHORTCUTS
   };
@@ -493,11 +494,11 @@ function createTower() {
   tower = new BrowserWindow({
     ...p.bounds,
     frame: false, transparent: true, resizable: false, movable: true, hasShadow: false,
-    skipTaskbar: true, show: false, focusable: false, alwaysOnTop: true, minimizable: false, maximizable: false,
+    skipTaskbar: true, show: false, focusable: false, alwaysOnTop: towerSettings().layer === 'top', minimizable: false, maximizable: false,
     backgroundColor: '#00000000', title: 'Comm Tower 1',
     webPreferences: { preload: path.join(__dirname, 'tower-preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false }
   });
-  tower.setAlwaysOnTop(true, 'floating');
+  towerLayer();
   tower.loadURL('deck://app/renderer/tower.html');
   tower.once('ready-to-show', () => { if (tower && !tower.isDestroyed()) tower.showInactive(); });
   tower.webContents.on('did-finish-load', () => {
@@ -516,9 +517,21 @@ function createTower() {
 function sendTower(ch, data) {
   if (tower && !tower.isDestroyed()) tower.webContents.send(ch, data);
 }
+// ON TOP: above every window. DESKTOP: an ordinary window that others cover; opening it
+// (a click on what shows, or Ctrl + Alt + T) brings it to the front until you use another window.
+function towerLayer() {
+  if (!tower || tower.isDestroyed()) return;
+  const top = towerSettings().layer === 'top';
+  tower.setAlwaysOnTop(top, top ? 'floating' : 'normal');
+}
+function towerFront() {
+  if (!tower || tower.isDestroyed()) return;
+  if (!tower.isVisible()) tower.showInactive();
+  tower.moveTop();
+}
 function applyTower() {
   const t = towerSettings();
-  if (t.on) { createTower(); sendTower('tower:config', t); }
+  if (t.on) { createTower(); towerLayer(); sendTower('tower:config', t); }
   else if (tower && !tower.isDestroyed()) tower.destroy();
 }
 function saveTowerSettings(patch) {
@@ -550,6 +563,7 @@ function registerTowerIpc() {
   ipcMain.on('tower:layout', (_e, state, popH) => {
     towerLay = { state: ['open', 'term'].includes(state) ? state : 'closed', popH: Math.max(200, Math.min(520, Number(popH) || 400)) };
     towerApply();
+    if (towerLay.state !== 'closed') towerFront();
   });
   // Press and drag the closed core to move it. Let go near a screen corner and it locks there.
   let dragFrom = null;
@@ -763,7 +777,7 @@ app.whenReady().then(() => {
   // Ctrl + Alt + T: opens Comm Tower 1's dial from any app (or the deck's terminal, if the dial is hidden).
   globalShortcut.register('Control+Alt+T', () => {
     if (tower && !tower.isDestroyed()) {
-      tower.showInactive();
+      towerFront();
       sendTower('tower:open');
     } else if (win && !win.isDestroyed()) {
       if (!win.isVisible()) win.show();

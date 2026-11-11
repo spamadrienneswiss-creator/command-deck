@@ -996,3 +996,102 @@ body[data-trim="tape"] .tabbar::before { height: 4px; background: #C6F432; }
 .th-star { width: 44px; height: 44px; border: 0; background: transparent; font-size: 19px; line-height: 1; cursor: pointer; color: var(--muted); }
 .th-row.fav .th-star { color: var(--amber, var(--accent)); }
 .th-star:disabled { cursor: default; opacity: 0.85; }
+
+/* ============================================================
+   LUMEN (v1.31): glass hologram. Frosted cards with a bright top edge over soft
+   ember and pale-blue light; thin Exo 2; ember for anything late.
+   ============================================================ */
+body[data-theme="lumen"] {
+  --bg: #050608;
+  --glow-bg: radial-gradient(70% 34% at 12% 18%, rgba(255, 120, 70, 0.3), transparent 70%), radial-gradient(70% 36% at 96% 30%, rgba(150, 205, 255, 0.26), transparent 70%), radial-gradient(80% 30% at 50% 100%, rgba(255, 255, 255, 0.1), transparent 70%), #050608;
+  --panel: rgba(255, 255, 255, 0.075); --panel-solid: #101216;
+  --line: #2C3037; --line-2: #24272D; --line-3: #4B5059;
+  --text: #F4F6F8; --text-hi: #FFFFFF; --text-2: #D5DAE0; --muted: #B4BBC4; --muted-2: #A2A9B2; --dim: #727983;
+  --amber: #FFFFFF; --accent-rgb: 255, 255, 255; --accent-hi: #FFFFFF;
+  --peach: #FF8A62; --lav: #A9CBEE; --coral: #FF6A3D; --coral-hi: #FFB199; --lime: #EEF2F6; --teal: #A9CBEE; --teal-rgb: 169, 203, 238;
+  --ink-rgb: 244, 246, 248;
+  --tab-bg: rgba(8, 9, 12, 0.9); --oct-bg: #0B0C10; --sheet-bg: #0E1014; --term-bg: #050608; --term-panel: rgba(20, 22, 27, 0.95); --term-foot: rgba(5, 6, 8, 0.92);
+  --chamfer: inset(0 round 18px); --oct: circle(50%);
+}
+body[data-theme="lumen"] .card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.04) 42%, rgba(255, 255, 255, 0.075));
+  -webkit-backdrop-filter: blur(20px) saturate(150%); backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+body[data-theme="lumen"] .card .br { display: none; }
+body[data-theme="lumen"] .eyebrow { color: #FF8A62; font-family: var(--display); font-weight: 600; letter-spacing: 0.26em; }
+body[data-theme="lumen"] .h1 { font-weight: 200; font-size: 30px; text-shadow: 0 0 22px rgba(255, 255, 255, 0.5); }
+body[data-theme="lumen"] .label, body[data-theme="lumen"] .group-h { font-family: var(--display); font-weight: 600; letter-spacing: 0.24em; }
+body[data-theme="lumen"] :is(.chip, .btn, .ct-send, .wx-chip, .tmr, .install, .seg, .seg button) { border-radius: 14px; }
+body[data-theme="lumen"] .chip.on { background: #FFFFFF; color: #0B0C0F; box-shadow: 0 0 16px rgba(255, 255, 255, 0.4); }
+body[data-theme="lumen"] .btn.primary, body[data-theme="lumen"] .ct-send { clip-path: none; color: #0B0C0F; }
+body[data-theme="lumen"] .tabbar { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
+body[data-theme="lumen"] .tab.on { color: #FFFFFF; text-shadow: 0 0 10px rgba(255, 255, 255, 0.7); }
+body[data-theme="lumen"] .hail-oct { color: #FFFFFF; background: radial-gradient(circle at 40% 30%, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.06) 70%), #0B0C10; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8), 0 0 18px rgba(255, 255, 255, 0.35); }
+body[data-theme="lumen"] .next .tm { color: #FF8A62; }
+body[data-theme="lumen"] .bar i { border-radius: 2px; background: rgba(255, 255, 255, 0.16); }
+body[data-theme="lumen"] .bar i.on { background: #FFFFFF; box-shadow: 0 0 8px rgba(255, 255, 255, 0.8); }
+body[data-theme="lumen"] .cmd-status i { border-radius: 50%; }
+body[data-theme="lumen"] .tbox i { border-radius: 7px; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.7); }
+body[data-theme="lumen"] .tbox.over i { box-shadow: inset 0 0 0 1.5px #FF6A3D, 0 0 12px rgba(255, 106, 61, 0.7); }
+body[data-theme="lumen"] .trow.done .tbox i { background: #FFFFFF; box-shadow: none; }
+body[data-theme="lumen"] .tmeta .over { padding: 3px 6px; border-radius: 6px; background: #FF6A3D; color: #1A0803; font-weight: 600; }
+body[data-theme="lumen"] .tmeta .tag { border-radius: 5px; }
+body[data-theme="lumen"] .tpri i { border-radius: 2px; }
+body[data-theme="lumen"] .cal-cell { font: 300 16px/1 var(--display); border-radius: 12px; }
+body[data-theme="lumen"] .cal-cell.today { background: transparent; box-shadow: none; color: #000; gap: 2px; }
+body[data-theme="lumen"] .cal-cell.today > span:first-child { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; font-weight: 600; background: radial-gradient(circle at 38% 30%, #FFFFFF, #D6DCE3); box-shadow: 0 0 20px rgba(255, 255, 255, 0.7); }
+body[data-theme="lumen"] .dots i { border-radius: 50%; }
+
+/* ============================================================
+   MERIDIAN (v1.31): monochrome geometric print. No card fills, thin white frames
+   with a solid square at one corner; construction lines behind; thin Jura.
+   ============================================================ */
+body[data-theme="meridian"] {
+  --bg: #0F1213;
+  --glow-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 390 844' preserveAspectRatio='xMidYMid slice'%3E%3Cg fill='none' stroke='%23FFFFFF' stroke-opacity='.13'%3E%3Ccircle cx='300' cy='150' r='190'/%3E%3Ccircle cx='300' cy='150' r='140' stroke-dasharray='1 7'/%3E%3Cpath d='M300 -80 L520 290 L80 290 Z'/%3E%3Cpath d='M0 150H390M300 0V844'/%3E%3Ccircle cx='90' cy='700' r='150'/%3E%3C/g%3E%3Cg fill='%23FFFFFF' fill-opacity='.7'%3E%3Ccircle cx='110' cy='150' r='2.5'/%3E%3Ccircle cx='300' cy='340' r='2.5'/%3E%3C/g%3E%3C/svg%3E") center / cover no-repeat, linear-gradient(100deg, #0B0D0E 0%, #15191A 45%, #2B3235 100%);
+  --panel: transparent; --panel-solid: #111516;
+  --line: #4A5153; --line-2: #363C3E; --line-3: #70787B;
+  --text: #F2F4F4; --text-hi: #FFFFFF; --text-2: #D4D9DA; --muted: #AEB5B8; --muted-2: #9CA3A6; --dim: #6E7578;
+  --amber: #FFFFFF; --accent-rgb: 255, 255, 255; --accent-hi: #FFFFFF;
+  --peach: #D4D9DA; --lav: #C9CFD1; --coral: #F2F4F4; --coral-hi: #FFFFFF; --lime: #FFFFFF; --teal: #C9CFD1; --teal-rgb: 201, 207, 209;
+  --ink-rgb: 242, 244, 244;
+  --tab-bg: rgba(13, 16, 17, 0.96); --oct-bg: #0D1011; --sheet-bg: #111516; --term-bg: #0D1011; --term-panel: rgba(17, 21, 22, 0.96); --term-foot: rgba(13, 16, 17, 0.94);
+  --chamfer: none; --oct: circle(50%);
+}
+body[data-theme="meridian"] .card { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.42); }
+body[data-theme="meridian"] .card .br { display: none; }
+body[data-theme="meridian"][data-trim="none"] .card::before { content: ''; position: absolute; left: 0; top: 0; width: 8px; height: 8px; background: #FFFFFF; pointer-events: none; }
+body[data-theme="meridian"] .eyebrow { color: #FFFFFF; font-family: var(--display); font-weight: 400; letter-spacing: 0.36em; }
+body[data-theme="meridian"] .h1 { font-weight: 300; font-size: 30px; letter-spacing: 0.04em; }
+body[data-theme="meridian"] .label, body[data-theme="meridian"] .group-h { font-family: var(--display); font-weight: 400; letter-spacing: 0.3em; color: #D4D9DA; }
+body[data-theme="meridian"] .group-h.red { color: #FFFFFF; }
+body[data-theme="meridian"] .chip.on, body[data-theme="meridian"] .seg button.on { background: #FFFFFF; color: #0B0D0E; box-shadow: none; }
+body[data-theme="meridian"] .btn.primary, body[data-theme="meridian"] .ct-send { clip-path: none; color: #0B0D0E; }
+body[data-theme="meridian"] .tabbar { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42); }
+body[data-theme="meridian"] .tab.on { color: #FFFFFF; }
+body[data-theme="meridian"] .tab.on::after { content: ''; width: 4px; height: 4px; margin-top: -1px; border-radius: 50%; background: #FFFFFF; }
+body[data-theme="meridian"] .hail-oct { clip-path: none; border-radius: 50%; color: #FFFFFF; background: #0D1011; box-shadow: inset 0 0 0 1px #FFFFFF, inset 0 0 0 6px #0D1011, inset 0 0 0 7px rgba(255, 255, 255, 0.5); }
+body[data-theme="meridian"] .bar { align-items: center; gap: 2px; }
+body[data-theme="meridian"] .bar i { height: 1px; background: rgba(255, 255, 255, 0.3); }
+body[data-theme="meridian"] .bar i.on { height: 7px; background: #FFFFFF; }
+body[data-theme="meridian"] .cmd-status i { border-radius: 50%; }
+body[data-theme="meridian"] .trow { box-shadow: none; border-bottom: 1px dotted rgba(255, 255, 255, 0.35); }
+body[data-theme="meridian"] .ttitle { font-weight: 300; font-size: 17.5px; letter-spacing: 0.03em; }
+body[data-theme="meridian"] .tbox i { border-radius: 50%; box-shadow: inset 0 0 0 1px #FFFFFF; }
+body[data-theme="meridian"] .tbox.over i { background: radial-gradient(circle at 34% 28%, #E3E7E8 0%, #8B9295 38%, #2A2F31 78%, #121516 100%); box-shadow: 0 5px 10px rgba(0, 0, 0, 0.6); }
+body[data-theme="meridian"] .trow.done .tbox i { background: #FFFFFF; box-shadow: none; }
+body[data-theme="meridian"] .tmeta .over { padding: 3px 6px 2px; background: #FFFFFF; color: #0B0D0E; font-weight: 600; letter-spacing: 0.16em; }
+body[data-theme="meridian"] .tpri i { width: 3px; background: rgba(255, 255, 255, 0.22) !important; }
+body[data-theme="meridian"] .tpri i[style*="background"] { background: #FFFFFF !important; }
+body[data-theme="meridian"] .cal-title { font-weight: 300; }
+body[data-theme="meridian"] .cal-cell { font: 300 17px/1 var(--display); overflow: visible; gap: 0; }
+body[data-theme="meridian"] .cal-cell > span:first-child { position: relative; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; }
+body[data-theme="meridian"] .dots { display: none; }
+body[data-theme="meridian"] .cal-cell:has(.dots i) > span:first-child { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5); }
+body[data-theme="meridian"] .cal-cell.sel:not(.today) { box-shadow: none; }
+body[data-theme="meridian"] .cal-cell.sel:not(.today) > span:first-child { background: #FFFFFF; color: #0B0D0E; font-weight: 600; }
+body[data-theme="meridian"] .cal-cell.today { background: transparent; box-shadow: none; color: #FFFFFF; }
+body[data-theme="meridian"] .cal-cell.today > span:first-child { font-size: 14px; font-weight: 600; background: #0D1011; box-shadow: inset 0 0 0 1px #FFFFFF, 0 0 0 4px #15191A, 0 0 0 5px rgba(255, 255, 255, 0.45); }
+body[data-theme="meridian"] .cal-cell.today > span:first-child::before { content: ''; position: absolute; inset: 6px; border: 1px solid rgba(255, 255, 255, 0.75); transform: rotate(45deg); }
+body[data-theme="meridian"] .cal-cell.today > span:first-child::after { content: ''; position: absolute; left: 50%; top: -9px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: #FFFFFF; }

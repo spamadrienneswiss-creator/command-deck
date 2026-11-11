@@ -11,7 +11,7 @@ import * as P from './presence.js';
 import * as T from './terminal.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.30.1';
+const VERSION = 'v1.31.0';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
@@ -125,14 +125,15 @@ function persist(kind) {
 }
 
 // ---------------------------------------------------------------- small UI helpers
-const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody' };
-const THEME_BG = { moonbase: '#DADDE1', blueprint: '#0E2A47', cryo: '#E6F0F7', freighter: '#0A0C07', skydock: '#EEF1F4', vector: '#03050A', horizon: '#050505', hivis: '#0A0A0B' };
+const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody', lumen: 'exo2', meridian: 'jura' };
+const THEME_BG = { moonbase: '#DADDE1', blueprint: '#0E2A47', cryo: '#E6F0F7', freighter: '#0A0C07', skydock: '#EEF1F4', vector: '#03050A', horizon: '#050505', hivis: '#0A0A0B', lumen: '#050608', meridian: '#0F1213' };
 const THEMES = [
   ['dusk', 'DUSK', ['#F2A65A', '#A8B0D8']], ['space', 'DEEP SPACE', ['#4FD1E8', '#9FB7FF']], ['red', 'RED ALERT', ['#FF4D4D', '#FFD27A']],
   ['terminal', 'TERMINAL', ['#39FF88', '#1F3328']], ['retro', 'RETRO', ['#5EE7FF', '#FF7BD5']],
   ['moonbase', "MOONBASE '79", ['#F05A1A', '#E4E6E9']], ['blueprint', 'BLUEPRINT', ['#8EC5FF', '#0E2A47']],
   ['cryo', 'CRYO', ['#2D8CFF', '#D6E7F3']], ['freighter', 'FREIGHTER', ['#9CF2A8', '#E8C547']],
-  ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']], ['horizon', 'HORIZON', ['#F2C38B', '#FFF4E3']], ['hivis', 'HI-VIS', ['#C6F432', '#FF3D6E']]
+  ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']], ['horizon', 'HORIZON', ['#F2C38B', '#FFF4E3']], ['hivis', 'HI-VIS', ['#C6F432', '#FF3D6E']],
+  ['lumen', 'LUMEN', ['#FFFFFF', '#FF6A3D']], ['meridian', 'MERIDIAN', ['#FFFFFF', '#8B9295']]
 ];
 const FONTS = [
   ['auto', 'THEME DEFAULT', ''], ['chakra', 'CHAKRA', "'Chakra Petch'"], ['michroma', 'MICHROMA', "'Michroma Scaled'"],
@@ -144,7 +145,7 @@ const FONTS = [
 const INKS = [['theme', 'THEME', null], ['amber', 'AMBER CRT', '#FFC27A'], ['phosphor', 'PHOSPHOR', '#A8F5B4'], ['ice', 'ICE', '#CFE6FF'], ['arctic', 'ARCTIC', '#FFFFFF'], ['rose', 'ROSE', '#F6C1CF']];
 // Your themes: only starred themes show in Settings (null = never edited, so all).
 // The list is shared with the deck through meta/themes; the newest edit wins.
-const THEME_PREV = { dusk: '#14121A', space: '#070B14', red: '#140708', terminal: '#050A07', retro: '#0E0716', moonbase: '#E4E6E9', blueprint: '#0E2A47', cryo: '#D6E7F3', freighter: '#0B0F0A', skydock: '#F2F4F7', vector: '#0A0D12', horizon: '#0A0806', hivis: '#0B0B0B' };
+const THEME_PREV = { dusk: '#14121A', space: '#070B14', red: '#140708', terminal: '#050A07', retro: '#0E0716', moonbase: '#E4E6E9', blueprint: '#0E2A47', cryo: '#D6E7F3', freighter: '#0B0F0A', skydock: '#F2F4F7', vector: '#0A0D12', horizon: '#0A0806', hivis: '#0B0B0B', lumen: '#07080B', meridian: '#15191A' };
 function themeFavs() {
   const all = THEMES.map((t) => t[0]);
   const favs = Array.isArray(S.settings.themeFavs) ? S.settings.themeFavs.filter((v) => all.includes(v)) : all;

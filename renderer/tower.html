@@ -6,12 +6,32 @@
 <title>Comm Tower 1</title>
 <link rel="stylesheet" href="../node_modules/@fontsource/chakra-petch/latin-400.css">
 <link rel="stylesheet" href="../node_modules/@fontsource/chakra-petch/latin-600.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/rajdhani/latin-500.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/rajdhani/latin-600.css">
 <link rel="stylesheet" href="../node_modules/@fontsource/ibm-plex-mono/latin-400.css">
 <link rel="stylesheet" href="../node_modules/@fontsource/ibm-plex-mono/latin-500.css">
 <link rel="stylesheet" href="tower.css">
 </head>
-<body>
-<div class="tw">
+<body data-skin="eclipse" data-state="closed" data-h="r" data-v="u">
+<div class="tw" id="tw">
+  <!-- The rings. Drawn by tower.js; clipped by the window, faded at its open edges. -->
+  <div class="dl-rings" aria-hidden="true"><svg class="dl-hud" id="hud" viewBox="-364 -364 728 728" width="728" height="728"></svg></div>
+
+  <!-- The dial: everything is placed from the hub's centre. -->
+  <div class="dl" id="dial">
+    <div class="dl-keys" id="keys"></div>
+    <i class="dl-brk tl" aria-hidden="true"></i><i class="dl-brk tr" aria-hidden="true"></i><i class="dl-brk bl" aria-hidden="true"></i><i class="dl-brk br" aria-hidden="true"></i>
+    <button type="button" class="dl-hub" id="chip" aria-label="Open Comm Tower 1" aria-expanded="false">
+      <span class="dl-gw g1" aria-hidden="true"><span class="dl-gs"></span></span>
+      <span class="dl-gw g2" aria-hidden="true"><span class="dl-gs"></span></span>
+      <span class="dl-gw g3" aria-hidden="true"><span class="dl-gs"></span></span>
+      <span class="dl-core" aria-hidden="true"></span>
+    </button>
+    <span class="dl-time" id="hubTime" aria-hidden="true"></span>
+  </div>
+  <div class="dl-say" id="say" aria-live="polite"><b id="sayTop">COMM TOWER 1</b><span id="saySub">AT YOUR SERVICE</span></div>
+
+  <!-- The pop-up terminal (and the recording and shortcut boxes inside it). -->
   <div class="tw-pop" id="pop" hidden>
     <div class="tw-phead"><span class="tw-ptitle" id="ptitle">COMM TOWER 1</span><button type="button" class="tw-hb tw-recb" id="recBtn" aria-label="Record a meeting"><i class="tw-dot"></i><span id="recBtnLab">REC</span></button><button type="button" class="tw-hb" id="esc">ESC</button></div>
     <div class="tw-recbox" id="recSetup" hidden>
@@ -27,6 +47,15 @@
       <div class="tw-meter" id="mMic"><span>MY MIC</span><span class="tw-bars"></span></div>
       <div class="tw-rbtns"><button type="button" class="tw-btn r" id="recStop">■ STOP + RECAP</button><button type="button" class="tw-btn" id="recPause">PAUSE</button><button type="button" class="tw-btn" id="recDiscard">DISCARD</button></div>
     </div>
+    <div class="tw-recbox tw-scbox" id="scBox" hidden>
+      <div class="tw-cap">NEW SHORTCUT</div>
+      <input class="tw-rin" id="scTarget" maxlength="400" placeholder="Website address, or pick below" aria-label="Website address, program or folder" spellcheck="false">
+      <div class="tw-rbtns"><button type="button" class="tw-btn" id="scPickApp">PICK A PROGRAM</button><button type="button" class="tw-btn" id="scPickDir">PICK A FOLDER</button></div>
+      <input class="tw-rin" id="scName" maxlength="18" placeholder="Name on the dial (optional)" aria-label="Shortcut name" spellcheck="false">
+      <div class="tw-scmsg" id="scMsg" hidden></div>
+      <div class="tw-rbtns"><button type="button" class="tw-btn p" id="scSave">ADD TO DIAL</button><button type="button" class="tw-btn" id="scCancel">CANCEL</button></div>
+      <div class="tw-sclist" id="scList"></div>
+    </div>
     <div class="tw-log" id="log" aria-live="polite"></div>
     <div class="tw-foot">
       <div class="tw-chips" id="chips">
@@ -40,11 +69,6 @@
       </form>
     </div>
   </div>
-  <button type="button" class="tw-chip" id="chip" aria-label="Open Comm Tower 1">
-    <span class="tw-chair" aria-hidden="true"></span>
-    <span class="tw-portrait" aria-hidden="true">&gt;_</span>
-    <span class="tw-names"><span class="tw-name" id="name">COMM TOWER 1</span><span class="tw-sub" id="sub">CLICK TO TYPE</span></span>
-  </button>
 </div>
 <script type="module" src="tower.js"></script>
 </body>

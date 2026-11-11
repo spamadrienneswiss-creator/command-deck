@@ -14,7 +14,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.30.1';
+const VERSION = 'v1.31.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -154,14 +154,15 @@ function saveMeta() {
 
 // ---------------------------------------------------------------- settings
 // Each theme has its own typeface; the Typeface setting can override it.
-const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody' };
+const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody', lumen: 'exo2', meridian: 'jura' };
 const LIGHT_THEMES = new Set(['moonbase', 'cryo', 'skydock']);
 // Some themes rename panels to fit their world. Only the label text changes.
 const PANEL_NAMES = {
   skydock: { computer: '03 · STATION COMPUTER' },
   vector: { clock: 'PRIMARY · CHRONO', weather: 'EXTERNAL', computer: 'CO-PILOT', calendar: 'FLIGHT PLAN', events: 'WAYPOINTS', notes: 'LOGBOOK' },
   hivis: { clock: '01 / TIME', weather: '02 / ATMOS', computer: '03 / VOICE', calendar: '04 / CYCLE', events: '05 / NEXT', notes: '07 / MEMO' },
-  horizon: { clock: '01 · MISSION CLOCK', weather: '02 · CONDITIONS', calendar: '04 · MISSION CALENDAR', notes: '07 · FIELD NOTES' }
+  horizon: { clock: '01 · MISSION CLOCK', weather: '02 · CONDITIONS', calendar: '04 · MISSION CALENDAR', notes: '07 · FIELD NOTES' },
+  meridian: { clock: 'MERIDIAN', weather: 'ATMOSPHERE', computer: 'SHIP COMPUTER', calendar: 'ALMANAC', events: 'TRANSITS', notes: 'NOTEBOOK' }
 };
 function applyPanelNames(theme) {
   const names = PANEL_NAMES[theme] || {};
@@ -186,6 +187,14 @@ function applyLook(theme = look.theme, font = look.font, ink = look.ink) {
   applyPanelNames(look.theme);
 }
 
+// The deck theme's colors, for Comm Tower 1's "Match theme" dial color.
+function towerColors() {
+  if (!deck.tower || !deck.tower.state) return;
+  const cs = getComputedStyle(document.body);
+  const g = (v) => cs.getPropertyValue(v).trim();
+  deck.tower.state({ theme: { p: g('--amber'), s: g('--lav'), a: g('--coral') } });
+}
+
 function applySettings() {
   const s = S.settings;
   document.body.classList.remove('motion-full', 'motion-subtle', 'motion-still');
@@ -194,6 +203,7 @@ function applySettings() {
   applyLook(s.theme, s.font, s.ink);
   document.body.dataset.frame = s.frame || 'dark';
   document.body.dataset.trim = s.trim || 'none';
+  towerColors();
   sounds.setQuiet(isQuiet());
   sounds.setLevel(s.sound);
   $('#consoleName').textContent = (s.consoleName || 'Command Deck').toUpperCase();
@@ -324,6 +334,20 @@ function renderClock(now = new Date()) {
     const turn = now.getSeconds() / 60;
     $('#clkHoleArc').setAttribute('stroke-dasharray', `${(turn * 615.8).toFixed(1)} 616`);
     $('#clkHoleDot').setAttribute('transform', `rotate(${(turn * 360).toFixed(1)})`);
+  }
+  // Lumen's ring instrument: the white arc is the day so far, the ember arc rides the seconds.
+  if (look.theme === 'lumen') {
+    const day = (now.getHours() * 60 + now.getMinutes()) / 1440;
+    $('#lumDay').setAttribute('stroke-dasharray', `${(day * 427.3).toFixed(1)} 428`);
+    $('#lumSec').setAttribute('transform', `rotate(${(now.getSeconds() * 6 - 90).toFixed(0)} 95 95)`);
+    $('#lumPct').textContent = String(Math.round(day * 100));
+  }
+  // Meridian's dial: real hour and minute hands over the armillary; the heavy arc rides the seconds.
+  if (look.theme === 'meridian') {
+    const mn = now.getMinutes() + now.getSeconds() / 60;
+    $('#merMin').setAttribute('transform', `rotate(${(mn * 6).toFixed(1)} 98 98)`);
+    $('#merHour').setAttribute('transform', `rotate(${(((now.getHours() % 12) + mn / 60) * 30).toFixed(1)} 98 98)`);
+    $('#merSec').setAttribute('transform', `rotate(${now.getSeconds() * 6 - 90} 98 98)`);
   }
   $('#clkAmpm').textContent = h24 ? '24H' : (now.getHours() < 12 ? 'AM' : 'PM');
   $('#clkDay').textContent = U.DAY_FULL[now.getDay()].toUpperCase();
@@ -3312,10 +3336,27 @@ function retirePainted() {
   }
 }
 
+// New themes join a starred list once (v1.31: Lumen, Meridian), so they show in Settings
+// without a trip to ALL THEMES. Unstar them there like any other.
+const NEW_THEMES = ['lumen', 'meridian'];
+function starNewThemes() {
+  const s = S.settings;
+  const seen = Array.isArray(s.themesSeen) ? s.themesSeen : [];
+  const add = NEW_THEMES.filter((t) => !seen.includes(t));
+  if (!add.length) return;
+  s.themesSeen = [...seen, ...add];
+  if (Array.isArray(s.themeFavs)) {
+    s.themeFavs = [...s.themeFavs, ...add.filter((t) => !s.themeFavs.includes(t))];
+    s.themeFavsAt = Date.now();
+  }
+  deck.save('settings', s);
+}
+
 async function start() {
   S.data = await deck.load();
   S.settings = S.data.settings;
   retirePainted();
+  starNewThemes();
   themesHeardAt = S.settings.themeFavsAt || 0;
   S.tasks = S.data.tasks || [];
   S.localEvents = S.data.localEvents || [];

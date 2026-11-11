@@ -1847,3 +1847,204 @@ body[data-theme="hivis"] .trim-badge { display: none !important; }
 .term-field input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; color: var(--text-hi); font: 400 15px/1 var(--mono); }
 .term-field input::placeholder { color: var(--dim); }
 .term-send { width: 46px; height: 46px; border: 0; cursor: pointer; display: grid; place-items: center; background: var(--amber); color: var(--panel-solid); clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
+
+/* ============================================================
+   LUMEN (v1.31): a glass hologram. Frosted panels with a bright top edge and an
+   iridescent rim over soft ember and pale-blue light; thin Exo 2 numerals that
+   glow white; ember for the seconds, the hex line, and anything late.
+   ============================================================ */
+body[data-theme="lumen"] {
+  --frame: rgba(5, 6, 8, var(--frame-alpha));
+  --panel: rgba(20, 22, 27, 0.6); --panel-solid: #101216; --bone-panel: rgba(12, 13, 17, 0.97);
+  --line: #2C3037; --line-2: #24272D; --line-3: #4B5059; --ctl-line: #4B5059;
+  --text: #F4F6F8; --text-hi: #FFFFFF; --text-2: #D5DAE0; --muted: #B4BBC4; --muted-2: #A2A9B2; --dim: #727983;
+  --amber: #FFFFFF; --accent-rgb: 255, 255, 255; --accent-hi: #FFFFFF;
+  --peach: #FF8A62; --peach-rgb: 255, 138, 98;
+  --lav: #A9CBEE; --lav-rgb: 169, 203, 238;
+  --coral: #FF6A3D; --coral-rgb: 255, 106, 61; --coral-hi: #FFB199;
+  --lime: #EEF2F6; --lime-rgb: 238, 242, 246;
+  --pink: #FF8A62; --teal: #A9CBEE; --teal-rgb: 169, 203, 238;
+  --ink-rgb: 244, 246, 248;
+  --modal-bg: rgba(10, 11, 14, 0.98); --sel-bg: #101216; --alert-bg: rgba(10, 11, 14, 0.98);
+  --chamfer: inset(0 round 20px); --chamfer-lg: inset(0 round 26px); --oct: circle(50%);
+}
+body[data-theme="lumen"][data-frame="dark"] .console {
+  background-image:
+    radial-gradient(38% 46% at 22% 30%, rgba(255, 120, 70, 0.3), transparent 70%),
+    radial-gradient(40% 50% at 78% 24%, rgba(150, 205, 255, 0.26), transparent 70%),
+    radial-gradient(46% 50% at 60% 88%, rgba(255, 255, 255, 0.12), transparent 70%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+body[data-theme="lumen"] .scanline { display: none; }
+body[data-theme="lumen"] .brand-name { letter-spacing: 0.34em; text-shadow: 0 0 12px rgba(255, 255, 255, 0.7); }
+body[data-theme="lumen"] .seg, body[data-theme="lumen"] .seg button { border-radius: 10px; }
+body[data-theme="lumen"]:not([data-frame="bone"]) .seg button.on { background: rgba(255, 255, 255, 0.16); color: #FFFFFF; box-shadow: none; }
+body[data-theme="lumen"] :is(.mini-btn, .accent-btn, .ghost-btn, .chip, .quick, .layout-chip, .upd-chip, .icon-btn) { border-radius: 10px; }
+body[data-theme="lumen"] .panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.04) 42%, rgba(255, 255, 255, 0.075));
+  -webkit-backdrop-filter: blur(22px) saturate(150%); backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), inset 0 -24px 44px rgba(255, 255, 255, 0.035);
+}
+body[data-theme="lumen"][data-frame="bone"] .panel { background: var(--bone-panel); }
+body[data-theme="lumen"] .panel .br { display: none; }
+/* The iridescent rim: a 1 px gradient ring, masked so only the edge shows. */
+body[data-theme="lumen"][data-trim="none"] .panel::before {
+  content: ''; position: absolute; inset: 0; border-radius: 20px; padding: 1px; pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 130, 90, 0.6) 30%, rgba(150, 205, 255, 0.7) 62%, rgba(255, 255, 255, 0.85));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+/* A streak of light across the corner and faint scan lines in the glass. */
+body[data-theme="lumen"] .panel::after {
+  content: ''; position: absolute; inset: 0; border-radius: 20px; pointer-events: none;
+  background: linear-gradient(112deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 20%), repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.026) 0 1px, transparent 1px 4px);
+}
+body[data-theme="lumen"] .p-head { font: 600 10.5px/1 var(--display); letter-spacing: 0.26em; color: #FFFFFF; text-shadow: 0 0 10px rgba(255, 255, 255, 0.55); }
+body[data-theme="lumen"] .p-meta, body[data-theme="lumen"] .p-head .amber-t { text-shadow: none; }
+body[data-theme="lumen"] .live { color: #FFFFFF; }
+body[data-theme="lumen"] .dot { border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+body[data-theme="lumen"] .clk-time { font-weight: 200; letter-spacing: -0.02em; text-shadow: 0 0 26px rgba(255, 255, 255, 0.55); }
+body[data-theme="lumen"] .clk-sec { font: 300 28px/1 var(--display); color: #FF8A62; text-shadow: 0 0 14px rgba(255, 106, 61, 0.6); }
+body[data-theme="lumen"] .clk-day { color: #FFFFFF; letter-spacing: 0.3em; }
+body[data-theme="lumen"] .cycle-bar i { border-radius: 3px; background: rgba(255, 255, 255, 0.16); }
+body[data-theme="lumen"] .cycle-bar i.on { background: #FFFFFF; box-shadow: 0 0 10px rgba(255, 255, 255, 0.8); }
+body[data-theme="lumen"] #wxTemp { font-weight: 200; text-shadow: 0 0 20px rgba(255, 255, 255, 0.5); }
+body[data-theme="lumen"] .wx-unit { color: #FF8A62; }
+body[data-theme="lumen"] .wx-icon { filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.7)); }
+body[data-theme="lumen"] .hail { background: radial-gradient(circle at 40% 30%, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.06) 70%); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8); }
+body[data-theme="lumen"] .hail-wrap { filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.35)); }
+body[data-theme="lumen"] .hail-ring { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6); }
+body[data-theme="lumen"] .hexs .hx-tag, body[data-theme="lumen"] .hexs .hx-track b.hi { color: #FF8A62; }
+body[data-theme="lumen"] .dv-ic { border-radius: 12px; }
+body[data-theme="lumen"] .cal-cell { font: 300 15px/1 var(--display); border-radius: 12px; }
+body[data-theme="lumen"] .cal-cell.wkend { color: #A9CBEE; }
+body[data-theme="lumen"] .cal-cell.out, body[data-theme="lumen"] .cal-cell.out.wkend { color: #6B727B; }
+body[data-theme="lumen"] .cal-cell.today { background: transparent; box-shadow: none; color: #000; gap: 2px; }
+body[data-theme="lumen"] .cal-cell.today > span:first-child { width: 28px; height: 28px; flex-shrink: 0; display: grid; place-items: center; border-radius: 50%; font-weight: 600; background: radial-gradient(circle at 38% 30%, #FFFFFF, #D6DCE3); box-shadow: 0 0 20px rgba(255, 255, 255, 0.7); }
+body[data-theme="lumen"] .cal-dots i, body[data-theme="lumen"] .cal-legend i { border-radius: 50%; }
+body[data-theme="lumen"] .ev.now .ev-title::before { border-radius: 50%; background: #FF6A3D; box-shadow: 0 0 8px #FF6A3D; }
+body[data-theme="lumen"] .ev-day { color: #A9CBEE; }
+body[data-theme="lumen"] .ev-day.today { color: #FF8A62; }
+body[data-theme="lumen"] .tk-box { border-radius: 7px; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.7); }
+body[data-theme="lumen"] .tk.overdue .tk-box { box-shadow: inset 0 0 0 1.5px #FF6A3D, 0 0 12px rgba(255, 106, 61, 0.7); }
+body[data-theme="lumen"] .tk.done .tk-box { background: #FFFFFF; box-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
+body[data-theme="lumen"] .tk-meta .over { padding: 3px 7px; border-radius: 7px; background: #FF6A3D; color: #1A0803; font-weight: 600; box-shadow: 0 0 14px rgba(255, 106, 61, 0.6); }
+body[data-theme="lumen"] .tk-meta .tag, body[data-theme="lumen"] .ev-meta .src { border-radius: 6px; }
+body[data-theme="lumen"] .tk-pri i { border-radius: 2px; }
+body[data-theme="lumen"] .pj-bar i { border-radius: 3px; }
+body[data-theme="lumen"] .btn.primary { clip-path: inset(0 round 10px); color: #0B0C0F; }
+body[data-theme="lumen"] .alert-strip { clip-path: inset(0 round 16px); }
+/* Ring instrument beside the clock: how far through the day it is. */
+.clk-art { display: none; position: absolute; right: 18px; top: 32px; height: calc(100% - 96px); max-height: 200px; aspect-ratio: 1; pointer-events: none; }
+.clk-art svg { width: 100%; height: 100%; overflow: visible; }
+body[data-theme="lumen"] .panel[aria-label="Chronometer"], body[data-theme="meridian"] .panel[aria-label="Chronometer"] { container-type: size; }
+body[data-theme="lumen"] .clk-art.lum { display: block; filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.7)); }
+body[data-theme="meridian"] .clk-art.mer { display: block; }
+@container (max-width: 470px) { .clk-art { display: none !important; } }
+@container (max-height: 190px) { .clk-art { display: none !important; } }
+.motion-full .clk-art .ca-spin { transform-box: fill-box; transform-origin: center; animation: caSpin 80s linear infinite; }
+@keyframes caSpin { to { transform: rotate(360deg); } }
+/* With the ring showing, the day-cycle bar says the same thing twice. */
+@container (min-width: 471px) and (min-height: 191px) { body[data-theme="lumen"] .cycle { visibility: hidden; } }
+
+/* ============================================================
+   MERIDIAN (v1.31): a monochrome geometric print. No panel fills, only thin white
+   frames with a solid square at one corner and a ring dot at the other; faint
+   construction lines behind the deck; thin Jura type; line glyphs for the clock,
+   the weather, the terminal key and today's date.
+   ============================================================ */
+body[data-theme="meridian"] {
+  --frame: rgba(11, 13, 14, var(--frame-alpha));
+  --panel: rgba(13, 16, 17, 0.4); --panel-solid: #111516; --bone-panel: rgba(13, 16, 17, 0.97);
+  --line: #4A5153; --line-2: #363C3E; --line-3: #70787B; --ctl-line: #70787B;
+  --text: #F2F4F4; --text-hi: #FFFFFF; --text-2: #D4D9DA; --muted: #AEB5B8; --muted-2: #9CA3A6; --dim: #6E7578;
+  --amber: #FFFFFF; --accent-rgb: 255, 255, 255; --accent-hi: #FFFFFF;
+  --peach: #D4D9DA; --peach-rgb: 212, 217, 218;
+  --lav: #C9CFD1; --lav-rgb: 201, 207, 209;
+  --coral: #F2F4F4; --coral-rgb: 242, 244, 244; --coral-hi: #FFFFFF;
+  --lime: #FFFFFF; --lime-rgb: 255, 255, 255;
+  --pink: #C9CFD1; --teal: #C9CFD1; --teal-rgb: 201, 207, 209;
+  --ink-rgb: 242, 244, 244;
+  --modal-bg: rgba(13, 16, 17, 0.98); --sel-bg: #111516; --alert-bg: rgba(13, 16, 17, 0.98);
+  --chamfer: inset(0); --chamfer-lg: inset(0); --oct: circle(50%);
+}
+body[data-theme="meridian"][data-frame="dark"] .console {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 900' preserveAspectRatio='xMidYMid slice'%3E%3Cg fill='none' stroke='%23FFFFFF' stroke-opacity='.13'%3E%3Ccircle cx='556' cy='185' r='330'/%3E%3Ccircle cx='556' cy='185' r='250' stroke-dasharray='1 7'/%3E%3Cpath d='M556 -160 L900 420 L212 420 Z'/%3E%3Cpath d='M0 185H1440M556 0V900'/%3E%3Ccircle cx='900' cy='640' r='210'/%3E%3Crect x='250' y='40' width='612' height='430'/%3E%3C/g%3E%3Cg fill='%23FFFFFF' fill-opacity='.7'%3E%3Ccircle cx='226' cy='185' r='3'/%3E%3Ccircle cx='886' cy='185' r='3'/%3E%3Ccircle cx='556' cy='515' r='3'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(100deg, rgba(11, 13, 14, 0) 0%, rgba(21, 25, 26, 0.5) 45%, rgba(58, 68, 72, 0.6) 100%);
+  background-size: cover; background-position: center;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.42);
+}
+body[data-theme="meridian"] .scanline { display: none; }
+body[data-theme="meridian"] .brand-name { font-weight: 300; letter-spacing: 0.5em; }
+body[data-theme="meridian"]:not([data-frame="bone"]) .seg button.on { background: #FFFFFF; color: #0B0D0E; box-shadow: none; }
+body[data-theme="meridian"] .panel { background: transparent; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.42); }
+body[data-theme="meridian"][data-frame="bone"] .panel { background: var(--bone-panel); }
+body[data-theme="meridian"] .panel .br { display: none; }
+body[data-theme="meridian"][data-trim="none"] .panel::before { content: ''; position: absolute; left: 0; top: 0; width: 9px; height: 9px; background: #FFFFFF; pointer-events: none; }
+body[data-theme="meridian"] .panel::after { content: ''; position: absolute; right: 8px; bottom: 8px; width: 5px; height: 5px; border-radius: 50%; box-shadow: 0 0 0 1px #FFFFFF; pointer-events: none; }
+body[data-theme="meridian"] .p-head { font: 400 11px/1 var(--display); letter-spacing: 0.36em; color: #FFFFFF; padding-bottom: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.28); }
+body[data-theme="meridian"] .panel[aria-label="Chronometer"] .p-head { border: 0; padding: 0; }
+body[data-theme="meridian"] .p-meta, body[data-theme="meridian"] .peach-t { color: #AEB5B8; letter-spacing: 0.2em; }
+body[data-theme="meridian"] .live { color: #FFFFFF; }
+body[data-theme="meridian"] .dot { border-radius: 50%; }
+body[data-theme="meridian"] .clk-time { font-weight: 300; letter-spacing: 0.02em; text-shadow: none; }
+body[data-theme="meridian"] .clk-sec { font: 300 26px/1 var(--display); color: #AEB5B8; }
+body[data-theme="meridian"] .clk-day { color: #FFFFFF; font-weight: 400; letter-spacing: 0.4em; }
+body[data-theme="meridian"] .clk-date { font-weight: 300; }
+body[data-theme="meridian"] .cycle-bar, body[data-theme="meridian"] .pj-bar { align-items: center; gap: 2px; }
+body[data-theme="meridian"] .cycle-bar i, body[data-theme="meridian"] .pj-bar i { height: 1px; background: rgba(255, 255, 255, 0.3); }
+body[data-theme="meridian"] .cycle-bar i.on, body[data-theme="meridian"] .pj-bar i[style*="background"] { height: 7px; background: #FFFFFF !important; box-shadow: none; }
+body[data-theme="meridian"] #wxTemp { font-weight: 300; }
+body[data-theme="meridian"] .wx-unit { color: #AEB5B8; font-weight: 300; }
+body[data-theme="meridian"] .wx-cond-t { font-weight: 400; }
+body[data-theme="meridian"] .wx-hours, body[data-theme="meridian"] .cmp-log { box-shadow: none; border-top: 1px dotted rgba(255, 255, 255, 0.35); }
+/* The weather glyph: a crescent in a tilted dotted orbit. */
+.wx-art, .hail-art { display: none; }
+body[data-theme="meridian"] .wx-icon { display: none; }
+body[data-theme="meridian"] .wx-art { display: block; width: 62px; height: 62px; margin: 2px 8px 2px 0; }
+body[data-theme="meridian"] .wx-art svg { width: 100%; height: 100%; overflow: visible; }
+/* The terminal key: a ring, a dotted inner ring, and a chevron with its underline. */
+body[data-theme="meridian"] .hail { background: transparent; box-shadow: none; clip-path: none; color: #FFFFFF; }
+body[data-theme="meridian"] .hail:hover { background: transparent; }
+body[data-theme="meridian"] .hail-term { display: none; }
+body[data-theme="meridian"] .hail-art { display: block; width: 100%; height: 100%; }
+body[data-theme="meridian"] .hail-art svg { width: 100%; height: 100%; overflow: visible; }
+body[data-theme="meridian"] .hail:hover .hail-art .ha-ring { stroke-width: 2; }
+body[data-theme="meridian"] .hail-ring { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6); }
+body[data-theme="meridian"] .hail-wrap { margin: 0 8px; }
+body[data-theme="meridian"] .cmp-title { font-weight: 400; letter-spacing: 0.2em; }
+body[data-theme="meridian"] .dv-ic { border-radius: 16px; }
+body[data-theme="meridian"] .cal-month { font-weight: 300; }
+body[data-theme="meridian"] .cal-cell { font: 300 16px/1 var(--display); overflow: visible; gap: 0; }
+body[data-theme="meridian"] .cal-cell > span:first-child { position: relative; width: 28px; height: 28px; flex-shrink: 0; display: grid; place-items: center; border-radius: 50%; }
+body[data-theme="meridian"] .cal-cell.wkend { color: #C9CFD1; }
+body[data-theme="meridian"] .cal-cell.out, body[data-theme="meridian"] .cal-cell.out.wkend { color: #6E7578; }
+body[data-theme="meridian"] .cal-cell:hover { box-shadow: none; }
+body[data-theme="meridian"] .cal-cell:hover > span:first-child { box-shadow: inset 0 0 0 1px #FFFFFF; }
+/* Days with something on them: an outlined circle. */
+body[data-theme="meridian"] .cal-dots, body[data-theme="meridian"] .cal-legend { display: none; }
+body[data-theme="meridian"] .cal-cell:has(.cal-dots i) > span:first-child { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5); }
+body[data-theme="meridian"] .cal-cell.sel:not(.today) { box-shadow: none; }
+body[data-theme="meridian"] .cal-cell.sel:not(.today) > span:first-child { background: #FFFFFF; color: #0B0D0E; font-weight: 600; }
+/* Today: the number in a diamond inside a double ring, with a dot above. */
+body[data-theme="meridian"] .cal-cell.today { background: transparent; box-shadow: none; color: #FFFFFF; z-index: 1; }
+body[data-theme="meridian"] .cal-cell.today > span:first-child { font-size: 13px; font-weight: 600; background: #0D1011; box-shadow: inset 0 0 0 1px #FFFFFF, 0 0 0 4px #15191A, 0 0 0 5px rgba(255, 255, 255, 0.45); }
+body[data-theme="meridian"] .cal-cell.today > span:first-child::before { content: ''; position: absolute; inset: 5px; border: 1px solid rgba(255, 255, 255, 0.75); transform: rotate(45deg); }
+body[data-theme="meridian"] .cal-cell.today > span:first-child::after { content: ''; position: absolute; left: 50%; top: -9px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: #FFFFFF; }
+/* Rows sit on dotted rules. */
+body[data-theme="meridian"] .ev, body[data-theme="meridian"] .tk { box-shadow: none; border-bottom: 1px dotted rgba(255, 255, 255, 0.35); }
+body[data-theme="meridian"] .ev-title, body[data-theme="meridian"] .tk-title { font-weight: 300; font-size: 16.5px; letter-spacing: 0.03em; }
+body[data-theme="meridian"] .ev-day, body[data-theme="meridian"] .ev-day.today { color: #FFFFFF; }
+body[data-theme="meridian"] .ev.now .ev-title::before { border-radius: 50%; background: #FFFFFF; }
+body[data-theme="meridian"] .tk-box { border-radius: 50%; box-shadow: inset 0 0 0 1px #FFFFFF; }
+body[data-theme="meridian"] .tk-box:hover { box-shadow: inset 0 0 0 2px #FFFFFF; }
+body[data-theme="meridian"] .tk.done .tk-box { background: #FFFFFF; box-shadow: none; }
+/* Late: the one shaded sphere on the deck, and a white tag in black type. */
+body[data-theme="meridian"] .tk.overdue .tk-box { background: radial-gradient(circle at 34% 28%, #E3E7E8 0%, #8B9295 38%, #2A2F31 78%, #121516 100%); box-shadow: 0 5px 10px rgba(0, 0, 0, 0.6); }
+body[data-theme="meridian"] .tk-meta .over { padding: 3px 7px 2px; background: #FFFFFF; color: #0B0D0E; font-weight: 600; letter-spacing: 0.18em; }
+body[data-theme="meridian"] .tk-pri i { width: 3px; background: rgba(255, 255, 255, 0.22) !important; }
+body[data-theme="meridian"] .tk-pri i.lit { background: #FFFFFF !important; }
+body[data-theme="meridian"] .tk:not(.done) .tk-pri span { color: #D4D9DA !important; }
+body[data-theme="meridian"] .btn.primary { color: #0B0D0E; }
+body[data-theme="meridian"] .hexs .hx-tag { color: #FFFFFF; }

@@ -30,8 +30,8 @@ const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
 
 let win = null;
-let tower = null;
-let discord = null; // Discord voice: live mute / deafen (src/discord.js) // Comm Tower 1: the talk-to-capture chip on the main monitor
+let tower = null; // Comm Tower 1: the dial (its own small window)
+let discord = null; // Discord voice: live mute / deafen (src/discord.js)
 let tray = null;
 const ICON = path.join(__dirname, 'assets', 'icon.png');
 
@@ -431,64 +431,52 @@ app.on('second-instance', () => {
 });
 
 // ---------------------------------------------------------------- Comm Tower 1
-// A small always-on-top chip on the main monitor. Click it and talk: the deck window
-// does the listening, transcribing and filing (its voice core lives there), and sends
-// each step back here so the chip can show it. The window is sized to what it shows
-// (just the chip, or the chip plus its card), grown and shrunk from its bottom-right
-// corner, so every click on it lands and nothing around it is covered.
-const TOWER_CHIP = { w: 276, h: 100 }; // the button plus room for its glow
-const TOWER_GAP = 6; // from the screen's corner
+// The dial (v1.31): a small always-on-top core that opens into a fan of keys (record,
+// terminal, browser, note, files, your own shortcuts). One frameless, see-through window,
+// only ever as big as what shows: the core (closed), the fan (open), or the core plus the
+// pop-up terminal. The hub keeps its place on screen while the window changes around it.
+// Geometry lives in src/tower-util.js. The deck window still does the work.
+const TU = require('./src/tower-util');
+let towerLay = { state: 'closed', popH: 400 };
+let towerTheme = null; // the deck theme's colors, for the "Match theme" skin
 function towerSettings() {
   const t = settings().tower || {};
-  return { on: t.on !== false, name: String(t.name || 'COMM TOWER 1').trim().toUpperCase() || 'COMM TOWER 1', operator: settings().operatorName || '' };
+  return {
+    on: t.on !== false,
+    name: String(t.name || 'COMM TOWER 1').trim().toUpperCase() || 'COMM TOWER 1',
+    operator: settings().operatorName || '',
+    skin: TU.SKINS.includes(t.skin) ? t.skin : 'eclipse',
+    shortcuts: TU.cleanShortcuts(t.shortcuts).map(({ id, name, kind }) => ({ id, name, kind })),
+    max: TU.MAX_SHORTCUTS
+  };
 }
-// Where the button sits: its left edge and bottom (window coordinates, glow included).
-// Saved as towerPos { l, b }; older { r, b } (bottom-right) is converted.
-let towerSide = 'left';
+function towerDisplays() {
+  return { list: screen.getAllDisplays(), main: screen.getPrimaryDisplay().id };
+}
+// The hub's centre on screen (locked to a corner, or wherever it was left).
 function towerAnchor() {
-  const p = store.get().towerPos;
-  let l = null;
-  let b = null;
-  if (p && Number.isFinite(p.l) && Number.isFinite(p.b)) { l = p.l; b = p.b; }
-  else if (p && Number.isFinite(p.r) && Number.isFinite(p.b)) { l = p.r - TOWER_CHIP.w; b = p.b; }
-  if (l != null) {
-    const on = screen.getAllDisplays().some((d) => { const a = d.bounds; return l + 120 >= a.x && l + 120 < a.x + a.width && b - 40 >= a.y && b - 40 < a.y + a.height; });
-    if (on) return { l, b };
-  }
-  const wa = screen.getPrimaryDisplay().workArea;
-  return { l: wa.x + wa.width - TOWER_GAP - TOWER_CHIP.w, b: wa.y + wa.height - TOWER_GAP };
+  const { list, main } = towerDisplays();
+  return TU.anchor(store.get().towerPos, list, main);
 }
-// Bounds for content w × h: the terminal's left edge lines up with the button's; when that
-// would run off the screen (the default corner), it lines up on the right edges instead.
-function towerBounds(w, h, anchor = towerAnchor()) {
-  const wa = screen.getDisplayNearestPoint({ x: Math.round(anchor.l + 60), y: Math.round(anchor.b - 30) }).workArea;
-  let side = 'left';
-  let x = anchor.l;
-  if (x + w > wa.x + wa.width) { side = 'right'; x = anchor.l + TOWER_CHIP.w - w; }
-  return { bounds: { x: Math.round(x), y: Math.round(anchor.b - h), width: w, height: h }, side };
+function towerPlace(center = towerAnchor()) {
+  const d = center.display || screen.getDisplayNearestPoint({ x: Math.round(center.x), y: Math.round(center.y) });
+  return { ...TU.place(center, towerLay.state, towerLay.popH, d.workArea), pin: center.pin || null };
 }
-// The button's anchor from where the window is now (so a drag sticks).
-function towerLive() {
-  if (!tower || tower.isDestroyed()) return towerAnchor();
-  const bb = tower.getBounds();
-  return { l: towerSide === 'right' ? bb.x + bb.width - TOWER_CHIP.w : bb.x, b: bb.y + bb.height };
-}
-function towerFit(w, h) {
+// Size and place the window for the state it's in, and tell the page where its hub is.
+function towerApply() {
   if (!tower || tower.isDestroyed()) return;
-  w = Math.max(TOWER_CHIP.w, Math.min(460, Math.round(w)));
-  h = Math.max(TOWER_CHIP.h, Math.min(640, Math.round(h)));
-  const { bounds, side } = towerBounds(w, h, towerLive());
-  if (side !== towerSide) { towerSide = side; sendTower('tower:align', side); }
+  const p = towerPlace();
   const cur = tower.getBounds();
-  if (cur.x === bounds.x && cur.y === bounds.y && cur.width === bounds.width && cur.height === bounds.height) return;
-  tower.setBounds(bounds);
+  const b = p.bounds;
+  if (cur.x !== b.x || cur.y !== b.y || cur.width !== b.width || cur.height !== b.height) tower.setBounds(b);
+  sendTower('tower:layout', { state: p.state, hx: p.hx, hy: p.hy, h: p.h, v: p.v, pin: p.pin });
 }
 function createTower() {
   if (tower && !tower.isDestroyed()) return;
-  const c = towerAnchor();
-  towerSide = 'left';
+  towerLay = { state: 'closed', popH: 400 };
+  const p = towerPlace();
   tower = new BrowserWindow({
-    x: Math.round(c.l), y: Math.round(c.b - TOWER_CHIP.h), width: TOWER_CHIP.w, height: TOWER_CHIP.h,
+    ...p.bounds,
     frame: false, transparent: true, resizable: false, movable: true, hasShadow: false,
     skipTaskbar: true, show: false, focusable: false, alwaysOnTop: true, minimizable: false, maximizable: false,
     backgroundColor: '#00000000', title: 'Comm Tower 1',
@@ -497,8 +485,13 @@ function createTower() {
   tower.setAlwaysOnTop(true, 'floating');
   tower.loadURL('deck://app/renderer/tower.html');
   tower.once('ready-to-show', () => { if (tower && !tower.isDestroyed()) tower.showInactive(); });
-  tower.webContents.on('did-finish-load', () => { sendTower('tower:config', towerSettings()); sendTower('tower:align', towerSide); });
+  tower.webContents.on('did-finish-load', () => {
+    sendTower('tower:config', towerSettings());
+    if (towerTheme) sendTower('tower:state', { theme: towerTheme });
+    towerApply();
+  });
   tower.webContents.on('will-navigate', (e) => e.preventDefault());
+  tower.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   tower.on('closed', () => { tower = null; });
 }
 function sendTower(ch, data) {
@@ -509,9 +502,37 @@ function applyTower() {
   if (t.on) { createTower(); sendTower('tower:config', t); }
   else if (tower && !tower.isDestroyed()) tower.destroy();
 }
+function saveTowerSettings(patch) {
+  const s = settings();
+  s.tower = { ...(s.tower || {}), ...patch };
+  store.set('settings', s);
+  if (win && !win.isDestroyed()) win.webContents.send('deck:settings-changed', s);
+  sendTower('tower:config', towerSettings());
+}
+// The keys that open something on the computer.
+function towerLaunch(a) {
+  const t = settings().tower || {};
+  const fail = (what) => sendTower('tower:state', { line: { k: 'err', t: `Couldn't open ${what}.` } });
+  if (a.kind === 'browser') {
+    shell.openExternal(TU.cleanUrl(t.browserUrl) || 'https://www.google.com').catch(() => fail('the browser'));
+  } else if (a.kind === 'files') {
+    if (process.platform === 'win32') {
+      try { require('child_process').spawn('explorer.exe', [], { detached: true, stdio: 'ignore' }).unref(); } catch { fail('File Explorer'); }
+    } else shell.openPath(app.getPath('home'));
+  } else if (a.kind === 'shortcut') {
+    const sc = TU.cleanShortcuts(t.shortcuts).find((x) => x.id === a.id);
+    if (!sc) return;
+    if (sc.kind === 'web') shell.openExternal(sc.target).catch(() => fail(sc.name));
+    else shell.openPath(sc.target).then((err) => { if (err) fail(sc.name); });
+  }
+}
 function registerTowerIpc() {
-  // The chip page measures what it's showing; the window follows, anchored bottom-right.
-  ipcMain.on('tower:size', (_e, w, h) => towerFit(Number(w) || 0, Number(h) || 0));
+  // The page says which state it's in (closed / open / term); the window follows.
+  ipcMain.on('tower:layout', (_e, state, popH) => {
+    towerLay = { state: ['open', 'term'].includes(state) ? state : 'closed', popH: Math.max(200, Math.min(520, Number(popH) || 400)) };
+    towerApply();
+  });
+  // Press and drag the closed core to move it. Let go near a screen corner and it locks there.
   let dragFrom = null;
   ipcMain.on('tower:drag', (_e, phase, sx, sy) => {
     if (!tower || tower.isDestroyed()) return;
@@ -519,22 +540,15 @@ function registerTowerIpc() {
     if (!dragFrom) return;
     tower.setBounds({ x: Math.round(dragFrom.x + sx - dragFrom.sx), y: Math.round(dragFrom.y + sy - dragFrom.sy), width: dragFrom.width, height: dragFrom.height });
     if (phase === 'end') {
-      const a = towerLive();
-      store.set('towerPos', { l: a.l, b: a.b });
       dragFrom = null;
       const bb = tower.getBounds();
-      towerFit(bb.width, bb.height); // flips sides if it now fits (or doesn't)
+      const c = { x: bb.x + bb.width / 2, y: bb.y + bb.height / 2 };
+      const d = screen.getDisplayNearestPoint({ x: Math.round(c.x), y: Math.round(c.y) });
+      store.set('towerPos', TU.dropped(c, d, screen.getPrimaryDisplay().id));
+      towerApply();
     }
   });
-  ipcMain.on('tower:home', () => {
-    store.set('towerPos', null);
-    if (!tower || tower.isDestroyed()) return;
-    const bb = tower.getBounds();
-    const { bounds, side } = towerBounds(bb.width, bb.height, towerAnchor());
-    towerSide = side;
-    sendTower('tower:align', side);
-    tower.setBounds(bounds);
-  });
+  ipcMain.on('tower:home', () => { store.set('towerPos', null); towerApply(); });
   // The pop-up terminal: what you type goes to the deck, which does the work.
   ipcMain.on('tower:send', (_e, text) => {
     if (win && !win.isDestroyed() && text) win.webContents.send('tower:text', String(text).slice(0, 500));
@@ -543,14 +557,47 @@ function registerTowerIpc() {
   ipcMain.on('tower:rec', (_e, a) => {
     if (win && !win.isDestroyed() && a && a.action) win.webContents.send('tower:rec', { action: String(a.action), title: String(a.title || '').slice(0, 80), sys: a.sys !== false, mic: a.mic !== false });
   });
-  // The window only takes keyboard focus while its terminal is open.
+  // The window only takes keyboard focus while the fan or the terminal is open.
   ipcMain.on('tower:focus', (_e, on) => {
     if (!tower || tower.isDestroyed()) return;
     tower.setFocusable(!!on);
     if (on) { tower.focus(); tower.webContents.focus(); }
   });
-  // Deck → chip: what's happening (listening, levels, what it heard, the reply).
-  ipcMain.on('tower:state', (_e, st) => sendTower('tower:state', st));
+  ipcMain.on('tower:launch', (_e, a) => { if (a && a.kind) towerLaunch({ kind: String(a.kind), id: String(a.id || '') }); });
+  // Your own shortcuts (the + key): add, remove, or pick a program / folder with the system dialog.
+  ipcMain.handle('tower:shortcut', async (_e, a) => {
+    const t = settings().tower || {};
+    const list = TU.cleanShortcuts(t.shortcuts);
+    if (!a || !a.action) return { ok: false };
+    if (a.action === 'pick') {
+      const folder = a.what === 'folder';
+      const res = await dialog.showOpenDialog(tower && !tower.isDestroyed() ? tower : win, {
+        title: folder ? 'Pick a folder' : 'Pick a program or file',
+        properties: [folder ? 'openDirectory' : 'openFile'],
+        ...(folder ? {} : { filters: [{ name: 'Programs and shortcuts', extensions: ['exe', 'lnk', 'bat', 'cmd', 'url'] }, { name: 'Any file', extensions: ['*'] }] })
+      });
+      return res.canceled || !res.filePaths[0] ? { ok: false } : { ok: true, path: res.filePaths[0] };
+    }
+    if (a.action === 'add') {
+      if (list.length >= TU.MAX_SHORTCUTS) return { ok: false, error: `The dial holds ${TU.MAX_SHORTCUTS} shortcuts. Remove one first.` };
+      const n = TU.normalizeShortcut({ name: a.name, target: a.target });
+      if (!n.ok) return n;
+      saveTowerSettings({ shortcuts: [...list, { id: `sc_${Date.now().toString(36)}`, name: n.name, kind: n.kind, target: n.target }] });
+      return { ok: true, name: n.name };
+    }
+    if (a.action === 'remove') {
+      saveTowerSettings({ shortcuts: list.filter((x) => x.id !== String(a.id)) });
+      return { ok: true };
+    }
+    return { ok: false };
+  });
+  // Deck → dial: reply lines, busy, recording state, and the deck theme's colors.
+  ipcMain.on('tower:state', (_e, st) => {
+    if (st && st.theme) towerTheme = st.theme;
+    sendTower('tower:state', st);
+  });
+  // Displays come and go (and Windows renumbers them): put the dial back where it belongs.
+  for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, () => towerApply());
 }
 
 // ---------------------------------------------------------------- Discord voice
@@ -689,12 +736,10 @@ app.whenReady().then(() => {
   setupLighting();
 
   globalShortcut.register('Control+Alt+Space', toggleWindow);
-  // Ctrl + Alt + T: Comm Tower 1's terminal from any app (or the deck's own, if the button is hidden).
+  // Ctrl + Alt + T: opens Comm Tower 1's dial from any app (or the deck's terminal, if the dial is hidden).
   globalShortcut.register('Control+Alt+T', () => {
     if (tower && !tower.isDestroyed()) {
-      tower.setFocusable(true);
       tower.showInactive();
-      tower.focus();
       sendTower('tower:open');
     } else if (win && !win.isDestroyed()) {
       if (!win.isVisible()) win.show();

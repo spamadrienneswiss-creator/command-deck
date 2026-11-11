@@ -10,7 +10,7 @@ const DEFAULTS = {
     chipName: '', // your name chip on shared schedules (blank: from operatorName)
     chipColor: '#F4B6A0',
     consoleName: 'Command Deck',
-    tower: { on: true, name: 'COMM TOWER 1', talk: true },
+    tower: { on: true, name: 'COMM TOWER 1', talk: true, skin: 'eclipse', browserUrl: '', shortcuts: [] }, // skin: eclipse | sentinel | prism | halo | theme; shortcuts: [{ id, name, kind, target }]
     termSpeak: true, // the terminal reads its replies out loud // Comm Tower 1: the talk-to-capture chip on the main monitor
     location: { name: 'Los Angeles, California', lat: 34.0522, lon: -118.2437 },
     calendars: [], // { id, name, url, color, enabled }
@@ -39,7 +39,7 @@ const DEFAULTS = {
     voiceFxStrength: 60, // 0–100: dry voice → full effect
     humor: 40, // 0–100: strictly professional → dry and deadpan
     micPatience: 'normal', // how long the mic waits after you stop talking: short | normal | long
-    theme: 'dusk', // dusk | space | red | terminal | retro | moonbase | blueprint | cryo | freighter | skydock | vector | horizon | hivis
+    theme: 'dusk', // dusk | space | red | terminal | retro | moonbase | blueprint | cryo | freighter | skydock | vector | horizon | hivis | lumen | meridian
     themeFavs: null, // starred themes shown in Settings (null = all); shared with Field Unit
     themeFavsAt: 0,
     ink: 'theme', // theme | amber | phosphor | ice | arctic | rose (main text color)
@@ -85,7 +85,7 @@ const DEFAULTS = {
   layoutMine: null, // retired (v1.23): your page 1 arrangement from while Open Window was on; restored once, then cleared
   window: { bounds: null },
   discord: { clientId: '', clientSecret: '', accessToken: '', refreshToken: '', expiresAt: 0 }, // Discord voice (mute / deafen icons): your own Discord app's codes + its token
-  towerPos: null, // Comm Tower 1 chip window position { x, y } (null: bottom-right of the main monitor)
+  towerPos: null, // Comm Tower 1's dial: { pin: 'bl', disp } locked to a screen corner, { cx, cy } out in the open (null: bottom-right of the main display)
   meta: { lastBriefingDate: null, lastLaunch: null, page: 1 },
   push: { publicKey: null, privateKey: null }
 };

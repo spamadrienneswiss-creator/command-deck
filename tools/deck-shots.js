@@ -2,7 +2,7 @@ const { app } = require('electron');
 const fs = require('fs');
 // Screenshots the deck in given themes. Usage (Linux, headless):
 //   COMBOS='[{"name":"dusk","theme":"dusk"}]' SIZE=1280x800 xvfb-run -a npx electron --no-sandbox tools/deck-shots.js
-// Each combo: { name, theme, towerType?: [lines] (opens Comm Tower 1's pop-up, types each line, captures <name>-tower.png), towerAfter?: [deck js, or '@'+tower js] run after typing, wait? (ms after reload; the Signal load-up takes ~9 s on FULL), frame?, trim?, alert?, extra?: 'settings', seed?: js run before reload, js?: js string(s) run before capture }.
+// Each combo: { name, theme, dial?: true / towerType?: [lines] (opens Comm Tower 1's dial: <name>-core.png closed, <name>-dial.png open; then its terminal, types each line, captures <name>-tower.png), towerAfter?: [deck js, or '@'+tower js] run after typing, wait? (ms after reload; the Signal load-up takes ~9 s on FULL), frame?, trim?, alert?, extra?: 'settings', seed?: js run before reload, js?: js string(s) run before capture }.
 // Images land in tools/out/deck/. Uses its own settings folder, so your real deck data is never touched.
 const path = require('path');
 const SP = path.join(__dirname, 'out');
@@ -34,11 +34,18 @@ app.on('browser-window-created', (_e, win) => {
         if (c.js) { for (const step of [].concat(c.js)) { console.log('STEP', c.name, String(await js(step).catch((e) => 'js err ' + e.message)).slice(0, 300)); await wait(500);  } }
         await wait(600);
         fs.writeFileSync(`${SP}/deck/${c.name}.png`, (await win.webContents.capturePage()).toPNG());
-        if (c.towerType && towerWin) {
-          // Open Comm Tower 1's pop-up (a real click on the button), then type into it.
-          await towerWin.webContents.executeJavaScript(`(()=>{const c=document.querySelector('#chip');c.dispatchEvent(new PointerEvent('pointerdown',{button:0,pointerId:1,screenX:5,screenY:5}));c.dispatchEvent(new PointerEvent('pointerup',{button:0,pointerId:1,screenX:5,screenY:5}));return 1})()`).catch((e) => console.log('open err', e.message));
-          await wait(800);
-          for (let i = 0; i < c.towerType.length; i++) {
+        if ((c.towerType || c.dial) && towerWin) {
+          // Comm Tower 1: open the dial (captures <name>-dial.png once it has unfolded), then its terminal.
+          fs.writeFileSync(`${SP}/deck/${c.name}-core.png`, (await towerWin.webContents.capturePage()).toPNG());
+          await towerWin.webContents.executeJavaScript(`window.__dial.open(); 1`).catch((e) => console.log('open err', e.message));
+          await wait(3600);
+          await towerWin.webContents.executeJavaScript(`window.__dial.hover(2); 1`).catch(() => {});
+          await wait(700);
+          console.log('DIAL', c.name, JSON.stringify(towerWin.getBounds()), await towerWin.webContents.executeJavaScript(`JSON.stringify({ state: window.__dial.state(), h: document.body.dataset.h, v: document.body.dataset.v, pin: document.body.dataset.pin || '', open: document.body.classList.contains('open'), keys: document.querySelectorAll('.dl-key').length })`).catch((e) => e.message));
+          fs.writeFileSync(`${SP}/deck/${c.name}-dial.png`, (await towerWin.webContents.capturePage()).toPNG());
+          await towerWin.webContents.executeJavaScript(`window.__dial.pick('terminal'); 1`).catch((e) => console.log('pick err', e.message));
+          await wait(1200);
+          for (let i = 0; i < (c.towerType || []).length; i++) {
             await js(`window.__towerSend(${JSON.stringify(c.towerType[i])}).then(()=>1)`).catch((e) => console.log('type err', e.message));
             await wait(1500);
           }

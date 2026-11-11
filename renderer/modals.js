@@ -16,7 +16,13 @@ const THEMES = [
   ['terminal', 'TERMINAL', ['#39FF88', '#1F3328']], ['retro', 'RETRO', ['#5EE7FF', '#FF7BD5']],
   ['moonbase', "MOONBASE '79", ['#F05A1A', '#E4E6E9']], ['blueprint', 'BLUEPRINT', ['#8EC5FF', '#0E2A47']],
   ['cryo', 'CRYO', ['#2D8CFF', '#D6E7F3']], ['freighter', 'FREIGHTER', ['#9CF2A8', '#E8C547']],
-  ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']], ['horizon', 'HORIZON', ['#F2C38B', '#FFF4E3']], ['hivis', 'HI-VIS', ['#C6F432', '#FF3D6E']]
+  ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']], ['horizon', 'HORIZON', ['#F2C38B', '#FFF4E3']], ['hivis', 'HI-VIS', ['#C6F432', '#FF3D6E']],
+  ['lumen', 'LUMEN', ['#FFFFFF', '#FF6A3D']], ['meridian', 'MERIDIAN', ['#FFFFFF', '#8B9295']]
+];
+// Comm Tower 1's dial colors: [id, label, [light, partner, accent]]. The dial itself is styled in tower.css.
+const DIAL_SKINS = [
+  ['eclipse', 'ECLIPSE', ['#FFFFFF', '#A3A3A3', '#FF6A3D']], ['sentinel', 'SENTINEL', ['#5CFFB0', '#E0FFF0', '#FFC857']],
+  ['prism', 'PRISM', ['#B48CFF', '#7CF3FF', '#FF7AD9']], ['halo', 'HALO', ['#6FE6FF', '#D6FAFF', '#FFB347']], ['theme', 'MATCH THEME', []]
 ];
 const FONTS = [
   ['auto', 'THEME DEFAULT', ''], ['chakra', 'CHAKRA', "'Chakra Petch'"], ['michroma', 'MICHROMA', "'Michroma'"],
@@ -87,7 +93,7 @@ function wirePills(container, onPick) {
 // Only starred themes show in Settings; ALL THEMES lists every one with a star to
 // keep it. Nothing is removed: unstarred themes stay installed. The list is shared
 // with Field Unit (meta/themes). null = never edited, so every theme shows.
-const THEME_BG = { dusk: '#14121A', space: '#070B14', red: '#140708', terminal: '#050A07', retro: '#0E0716', moonbase: '#E4E6E9', blueprint: '#0E2A47', cryo: '#D6E7F3', freighter: '#0B0F0A', skydock: '#F2F4F7', vector: '#0A0D12', horizon: '#0A0806', hivis: '#0B0B0B' };
+const THEME_BG = { dusk: '#14121A', space: '#070B14', red: '#140708', terminal: '#050A07', retro: '#0E0716', moonbase: '#E4E6E9', blueprint: '#0E2A47', cryo: '#D6E7F3', freighter: '#0B0F0A', skydock: '#F2F4F7', vector: '#0A0D12', horizon: '#0A0806', hivis: '#0B0B0B', lumen: '#07080B', meridian: '#15191A' };
 export function themeFavs(s) {
   const all = THEMES.map((t) => t[0]);
   const favs = Array.isArray(s.themeFavs) ? s.themeFavs.filter((v) => all.includes(v)) : all;
@@ -1049,11 +1055,15 @@ export function openSettings(welcome = false) {
           </div>
           <div class="inline" style="flex:none;margin-top:6px"><button type="button" class="btn line" id="sTest">TEST VOICE</button></div>
         </div>
-        <div class="f"><span class="f-label">COMM TOWER 1 · TYPE FROM ANY SCREEN</span>
-          <div class="toggle-row"><span>Show the button on the main monitor</span>${switchHtml('swTower', (draft.tower || {}).on !== false, 'Show Comm Tower 1')}</div>
+        <div class="f"><span class="f-label">COMM TOWER 1 · THE DIAL</span>
+          <div class="toggle-row"><span>Show the dial on screen</span>${switchHtml('swTower', (draft.tower || {}).on !== false, 'Show Comm Tower 1')}</div>
           <div class="toggle-row"><span>Gemini words replies and answers questions</span>${switchHtml('swTowerTalk', (draft.tower || {}).talk !== false, 'Conversational replies')}</div>
           <div class="inline" style="flex:none;margin-top:6px"><input id="sTowerName" class="in" maxlength="20" aria-label="Comm Tower name" value="${esc((draft.tower || {}).name || 'COMM TOWER 1')}" placeholder="COMM TOWER 1" style="flex:1"><button type="button" class="btn line" id="sTowerHome">BACK TO CORNER</button></div>
-          <div class="f-hint">Click the button (or press Ctrl + Alt + T from any app) and a small terminal pops up: type a command, Enter sends, Esc closes. It files tasks, events, notes and timers like the deck's own terminal. Drag the button to move it. The name is whatever you call it.<br>With a Gemini key (Field Unit › DATA RECAP) replies are worded conversationally and questions about your day get answered from your tasks and schedule (they're sent to Gemini for that). No key or no signal: the deck's own replies. The deck's voice reads replies out loud unless you switch VOICE REPLIES off in the terminal.</div></div>
+          <span class="f-label" style="margin-top:12px">DIAL COLOR</span>
+          <div class="pills" id="sTowerSkin">${DIAL_SKINS.map(([v, l, cs]) => `<button type="button" class="pill theme-pill${((draft.tower || {}).skin || 'eclipse') === v ? ' on' : ''}" data-skin="${v}" style="--pc:${cs[2] || '#888'}"><span class="theme-sw">${cs.map((c) => `<i style="background:${c}"></i>`).join('')}</span>${l}</button>`).join('')}</div>
+          <span class="f-label" style="margin-top:12px">BROWSER KEY OPENS</span>
+          <input id="sTowerUrl" class="in" maxlength="300" aria-label="Page the Browser key opens" value="${esc((draft.tower || {}).browserUrl || '')}" placeholder="https://www.google.com" spellcheck="false">
+          <div class="f-hint">Click the glowing core (or press Ctrl + Alt + T from any app) and it opens into a fan of keys: Record a meeting, the typing Terminal, your Browser, a Note, File Explorer, and + for your own shortcuts (a website, a program or a folder; up to 5). Esc closes it. Drag the closed core to move it; let go near any corner of any screen and it locks there, even if Windows shuffles the displays. The dial keeps its own colors whatever the deck's theme, unless you pick MATCH THEME. The name is whatever you call it.<br>With a Gemini key (Field Unit › DATA RECAP) replies are worded conversationally and questions about your day get answered from your tasks and schedule (they're sent to Gemini for that). No key or no signal: the deck's own replies. The deck's voice reads replies out loud unless you switch VOICE REPLIES off in the terminal.</div></div>
         <div class="f"><span class="f-label">DISCORD · MUTE AND DEAFEN BESIDE HAIL</span>
           <div class="f-hint" style="margin-top:0">Shows whether you're muted or deafened in Discord, live, and toggles them (click the icons, or say "mute me" / "deafen me"). One-time setup with your own free Discord app:<br>
           1. Open the <a href="#" id="dcPortal" style="color:var(--amber)">Discord Developer Portal</a> › <b>New Application</b> (any name, e.g. Command Deck).<br>
@@ -1494,6 +1504,13 @@ export function openSettings(welcome = false) {
       wireSwitch($('#swTowerTalk', body), (talk) => { draft.tower = { ...(draft.tower || {}), talk }; });
       wireDiscordSettings(body);
       $('#sTowerName', body).addEventListener('input', (e) => { draft.tower = { ...(draft.tower || {}), name: e.target.value.trim().toUpperCase() || 'COMM TOWER 1' }; });
+      $('#sTowerSkin', body).addEventListener('click', (e) => {
+        const b = e.target.closest('[data-skin]');
+        if (!b) return;
+        draft.tower = { ...(draft.tower || {}), skin: b.dataset.skin };
+        $('#sTowerSkin', body).querySelectorAll('[data-skin]').forEach((x) => x.classList.toggle('on', x === b));
+      });
+      $('#sTowerUrl', body).addEventListener('input', (e) => { draft.tower = { ...(draft.tower || {}), browserUrl: e.target.value.trim() }; });
       $('#sTowerHome', body).addEventListener('click', () => { if (window.deck.tower && window.deck.tower.home) window.deck.tower.home(); app.toast('Back in the corner.', 1800); });
       wireSwitch($('#swBrief', body), (on) => { draft.morningBriefing = on; });
       $('#sVoice', body).addEventListener('change', (e) => { draft.voiceName = e.target.value; });

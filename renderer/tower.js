@@ -1,6 +1,9 @@
-// Comm Tower 1 (v1.27): click the button (or Ctrl + Alt + T) and a small terminal pops up
-// above it. What you type goes to the deck window, which does the work and sends the
-// reply lines back here. The window can take keyboard focus only while the terminal is open.
+// Comm Tower 1 (v1.31): the dial. A glowing core that opens into a fan of keys: record a
+// meeting, the typing terminal, the web browser, a note, File Explorer, and your own
+// shortcuts. Click the core (or press Ctrl + Alt + T) to open it; Esc closes it.
+// The window is only as big as what shows, in one of three states:
+//   closed  the core            open  the fan of keys            term  the core + the pop-up terminal
+// What you type still goes to the deck window, which does the work and sends the reply here.
 
 const $ = (s) => document.querySelector(s);
 const T = window.tower;
@@ -9,19 +12,274 @@ const chip = $('#chip');
 const pop = $('#pop');
 const log = $('#log');
 const input = $('#input');
+const keysEl = $('#keys');
+const hud = $('#hud');
+const SVG = 'http://www.w3.org/2000/svg';
 
 let name = 'COMM TOWER 1';
 let operator = '';
+let skin = 'eclipse';
+let themeColors = null;
+let shortcuts = [];
+let maxShortcuts = 5;
 const lines = [];
 let busy = false;
 let hist = [];
 let histAt = -1;
 let idle = null;
 const IDLE_MS = 60 * 1000;
+const FAN_IDLE_MS = 25 * 1000;
 
-const isOpen = () => !pop.hidden;
+let state = 'closed'; // closed | open | term
+let lay = { hx: 64, hy: 64, h: 'r', v: 'u', pin: null };
+let openedAt = 0;
+let seq = 0; // bumps on every state change, so a late timer from an old one does nothing
+
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function svg(tag, attrs = {}, cls) { const e = document.createElementNS(SVG, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); if (cls) e.setAttribute('class', cls); return e; }
 
+// ---------------------------------------------------------------- the rings
+// Dense concentric rings around the hub (0, 0). The inner three stay with the closed core;
+// the rest sweep out when the dial opens. Mirrored as a group when the fan opens left or down.
+const A0 = 8; // the first key sits just below level; each next one climbs STEP degrees
+const STEP = 21.2;
+const R_KEY = 240;
+const R_SMALL = 152;
+const mir = svg('g');
+const sel = svg('g', {}, 'sel');
+const leads = svg('g');
+function ring({ r, w = 1, dash, col = 'p', op = 1, spin = 0, rev = false, d = 0, alt = false, rot = null, inner = false }) {
+  const c = svg('circle', { cx: 0, cy: 0, r, fill: 'none', 'stroke-opacity': op, 'stroke-width': w }, `rg c-${col}${alt ? ' alt' : ''}${inner ? ' in' : ''}`);
+  if (dash) c.setAttribute('stroke-dasharray', dash);
+  c.style.setProperty('--d', `${d}s`);
+  let node = c;
+  if (rot != null) { node = svg('g', { transform: `rotate(${rot})` }); node.appendChild(c); }
+  if (spin) {
+    const g = svg('g', {}, `spin${inner ? '' : ' far'}`);
+    g.style.animationDuration = `${spin}s`;
+    if (rev) g.style.animationDirection = 'reverse';
+    g.appendChild(node);
+    node = g;
+  }
+  return node;
+}
+function buildHud() {
+  const band = R_KEY * ((5 * STEP + 19.5) * Math.PI / 180);
+  [
+    { r: 98, w: 3, dash: '150 466', spin: 14, d: 0.1, inner: true },
+    { r: 98, w: 3, dash: '60 556', col: 'a', spin: 22, rev: true, d: 0.1, alt: true, inner: true },
+    { r: 112, dash: '3 4', op: 0.7, spin: 70, d: 0.12, inner: true },
+    { r: 150, w: 9, dash: '1.5 7.92', op: 0.4, spin: 120, d: 0.2 },
+    { r: 176, op: 0.5, d: 0.25, alt: true },
+    { r: R_KEY, w: 84, dash: `${band.toFixed(0)} 9999`, op: 0.07, d: 0.3, rot: A0 - 5 * STEP - 9.75 },
+    { r: 198, op: 0.7, d: 0.3 },
+    { r: 282, op: 0.7, d: 0.35, alt: true },
+    { r: 294, w: 8, dash: '1.5 6.2', col: 'a', op: 0.7, spin: 150, rev: true, d: 0.4 },
+    { r: 334, w: 1.5, dash: '230 30 80 30', op: 0.7, spin: 90, rev: true, d: 0.5 },
+    { r: 350, op: 0.25, d: 0.55 }
+  ].forEach((o) => mir.appendChild(ring(o)));
+  // The selector: two accent arcs that swing round to the key under the pointer.
+  sel.appendChild(svg('circle', { cx: 0, cy: 0, r: 288, fill: 'none', 'stroke-width': 6, 'stroke-dasharray': '92 9999', transform: 'rotate(-1.2)' }, 'c-a'));
+  sel.appendChild(svg('circle', { cx: 0, cy: 0, r: 193, fill: 'none', 'stroke-width': 2.5, 'stroke-dasharray': '62 9999', transform: 'rotate(-1.2)' }, 'c-a'));
+  mir.appendChild(sel);
+  mir.appendChild(leads);
+  hud.appendChild(mir);
+  // Lettering round the outside. Not mirrored, so it always reads the right way.
+  const spinG = svg('g', {}, 'spin far');
+  spinG.style.animationDuration = '130s';
+  const g = svg('g', {}, 'rg');
+  g.style.setProperty('--d', '0.45s');
+  g.appendChild(svg('path', { id: 'dlTxt', d: 'M0 -310 A310 310 0 1 1 -0.01 -310', fill: 'none' }));
+  const text = svg('text');
+  const tp = svg('textPath', { href: '#dlTxt' });
+  tp.id = 'arcText';
+  text.appendChild(tp);
+  g.appendChild(text);
+  spinG.appendChild(g);
+  hud.appendChild(spinG);
+  arcText();
+}
+function arcText() {
+  const tp = $('#arcText');
+  if (tp) tp.textContent = `SENTINEL ARRAY // ${name} // QUADRANT LOCK // `.repeat(3);
+}
+
+// ---------------------------------------------------------------- the keys
+const ICON = {
+  record: 'M12 6.5a5.5 5.5 0 1 0 0 11a5.5 5.5 0 1 0 0-11ZM12 10.2a1.8 1.8 0 1 0 0 3.6a1.8 1.8 0 1 0 0-3.6Z',
+  terminal: 'M5 8l4 4-4 4M12 16h7',
+  browser: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18ZM3 12h18M12 3c3.2 3 3.2 15 0 18M12 3c-3.2 3-3.2 15 0 18',
+  note: 'M6 4h9l3 3v13H6ZM9 10.5h6M9 14.5h6',
+  files: 'M3 7h6l2 2h10v10H3Z',
+  add: 'M12 5v14M5 12h14'
+};
+const MAIN = [
+  { id: 'record', label: 'RECORD', sub: 'START A RECAP', cls: 'rec' },
+  { id: 'terminal', label: 'TERMINAL', sub: 'TYPE A COMMAND' },
+  { id: 'browser', label: 'BROWSER', sub: 'OPEN THE WEB' },
+  { id: 'note', label: 'NOTE', sub: 'JOT IT DOWN' },
+  { id: 'files', label: 'FILES', sub: 'FILE EXPLORER' },
+  { id: 'add', label: 'ADD', sub: 'YOUR OWN SHORTCUT' }
+];
+const KIND_SUB = { web: 'WEBSITE', app: 'PROGRAM', folder: 'FOLDER' };
+let keyList = []; // what's on the dial now: the six, then your shortcuts on the inner arc
+function monogram(n) {
+  const words = String(n || '').trim().split(/\s+/).filter(Boolean);
+  const m = words.length > 1 ? words[0][0] + words[1][0] : (words[0] || '?').slice(0, 2);
+  return m.toUpperCase();
+}
+function buildKeys() {
+  const sx = lay.h === 'l' ? -1 : 1;
+  const sy = lay.v === 'd' ? -1 : 1;
+  mir.setAttribute('transform', `scale(${sx} ${sy})`);
+  keyList = [
+    ...MAIN.map((k, i) => ({ ...k, ang: A0 - STEP * i, r: R_KEY, slot: i })),
+    ...shortcuts.slice(0, maxShortcuts).map((s, j) => ({ id: `sc:${s.id}`, label: String(s.name || '').toUpperCase(), sub: KIND_SUB[s.kind] || 'SHORTCUT', small: true, mono: monogram(s.name), ang: A0 - STEP * (j + 0.5), r: R_SMALL, slot: j + 0.5 }))
+  ];
+  const out = keyList.map((k, i) => {
+    const b = el('button', `dl-key${k.cls ? ` ${k.cls}` : ''}${k.small ? ' sm' : ''}`);
+    b.type = 'button';
+    b.dataset.key = k.id;
+    b.dataset.i = String(i);
+    b.setAttribute('aria-label', k.small ? `${k.label} (${k.sub.toLowerCase()})` : k.label);
+    b.tabIndex = -1;
+    const a = k.ang * Math.PI / 180;
+    b.style.setProperty('--kx', `${(Math.cos(a) * k.r * sx).toFixed(1)}px`);
+    b.style.setProperty('--ky', `${(Math.sin(a) * k.r * sy).toFixed(1)}px`);
+    b.style.setProperty('--kd', `${(k.small ? 1.5 + k.slot * 0.1 : 1.1 + k.slot * 0.12).toFixed(2)}s`);
+    const inn = el('span', 'in');
+    if (k.small) inn.appendChild(el('b', '', k.mono));
+    else {
+      const s = svg('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' });
+      s.appendChild(svg('path', { d: ICON[k.id] }));
+      inn.appendChild(s);
+      const lab = el('b', '', k.label);
+      if (k.id === 'record') lab.id = 'recKeyLab';
+      inn.appendChild(lab);
+    }
+    b.appendChild(inn);
+    return b;
+  });
+  keysEl.replaceChildren(...out);
+  // Lead lines from the hub out to each of the six.
+  leads.replaceChildren(...MAIN.map((_k, i) => {
+    const a = (A0 - STEP * i) * Math.PI / 180;
+    const p = svg('path', { d: `M${(122 * Math.cos(a)).toFixed(1)} ${(122 * Math.sin(a)).toFixed(1)} L${(196 * Math.cos(a)).toFixed(1)} ${(196 * Math.sin(a)).toFixed(1)}` }, 'ld');
+    p.style.setProperty('--d', `${(0.9 + i * 0.1).toFixed(2)}s`);
+    return p;
+  }));
+  paintRecKey();
+  const add = keysEl.querySelector('[data-key="add"]');
+  if (add) add.classList.toggle('off', false);
+}
+let hover = -1;
+function setHover(i) {
+  hover = i;
+  [...keysEl.children].forEach((b, n) => b.classList.toggle('hot', n === i));
+  const k = keyList[i];
+  sel.classList.toggle('on', !!k);
+  if (k) sel.style.transform = `rotate(${(-(k.slot) * STEP).toFixed(1)}deg)`;
+  say();
+}
+function say() {
+  const k = keyList[hover];
+  const on = recOn();
+  $('#sayTop').textContent = k ? (k.id === 'record' && on ? 'RECORDING' : k.label) : name;
+  $('#saySub').textContent = k ? (k.id === 'record' && on ? `${hms(recClock())} · OPEN CONTROLS` : k.sub) : on ? `REC ${hms(recClock())}` : operator ? `AT YOUR SERVICE, ${operator.toUpperCase()}` : 'AT YOUR SERVICE';
+}
+keysEl.addEventListener('pointerover', (e) => { const b = e.target.closest('.dl-key'); if (b) { setHover(Number(b.dataset.i)); armFan(); } });
+keysEl.addEventListener('pointerleave', () => setHover(-1));
+keysEl.addEventListener('click', (e) => { const b = e.target.closest('.dl-key'); if (b) pick(b.dataset.key); });
+
+// ---------------------------------------------------------------- states
+function applyLayout(l) {
+  lay = { ...lay, ...l };
+  body.style.setProperty('--hx', `${lay.hx}px`);
+  body.style.setProperty('--hy', `${lay.hy}px`);
+  const flipped = body.dataset.h !== lay.h || body.dataset.v !== lay.v;
+  body.dataset.h = lay.h;
+  body.dataset.v = lay.v;
+  if (lay.pin) body.dataset.pin = lay.pin; else delete body.dataset.pin;
+  body.dataset.state = l.state || state;
+  if (flipped) buildKeys();
+}
+T.onLayout((l) => {
+  applyLayout(l);
+  if (l.state === 'open' && state === 'open' && !body.classList.contains('open')) {
+    // The window is in place: next frame, let the dial unfold.
+    const mine = seq;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (mine !== seq) return;
+      body.classList.add('open');
+      setTimeout(() => { if (mine === seq) body.classList.add('settled'); }, 2600);
+    }));
+  }
+});
+function go(next) { state = next; seq += 1; chip.setAttribute('aria-expanded', String(next !== 'closed')); }
+let fanIdle = null;
+function armFan() {
+  clearTimeout(fanIdle);
+  if (state === 'open') fanIdle = setTimeout(() => { if (state === 'open') closeAll(); }, FAN_IDLE_MS);
+}
+function openDial() {
+  if (state === 'open') return;
+  hidePop();
+  go('open');
+  openedAt = Date.now();
+  setHover(-1);
+  T.layout('open');
+  T.focus(true);
+  armFan();
+}
+// Fold the fan away, then (after) shrink the window to whatever comes next.
+function foldThen(fn) {
+  const mine = seq;
+  const wasOpen = body.classList.contains('open');
+  body.classList.remove('open', 'settled');
+  setHover(-1);
+  clearTimeout(fanIdle);
+  if (!wasOpen) { fn(); return; }
+  setTimeout(() => { if (mine === seq) fn(); }, 380);
+}
+function closeAll() {
+  hidePop();
+  go('closed');
+  foldThen(() => { T.layout('closed'); T.focus(false); });
+}
+function hidePop() {
+  clearTimeout(idle);
+  pop.hidden = true;
+  input.blur();
+}
+// The pop-up terminal. opts: { rec } the recording box, { add } the shortcut box, { fill } text to start with.
+function showTerm(opts = {}) {
+  go('term');
+  foldThen(() => {
+    if (!lines.length) add({ k: 'c', t: `Go ahead${operator ? `, ${operator}` : ''}.` });
+    T.layout('term', 400);
+    T.focus(true);
+    pop.hidden = false;
+    recSetup.hidden = !(opts.rec && !recOn());
+    scBox.hidden = !opts.add;
+    if (opts.add) { scReset(); setTimeout(() => $('#scTarget').focus(), 40); }
+    else if (opts.rec && !recOn()) { $('#recTitle').value = ''; setTimeout(() => $('#recTitle').focus(), 40); }
+    else { if (opts.fill) input.value = opts.fill; setTimeout(() => { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }, 40); }
+    render();
+    armIdle();
+  });
+}
+function pick(id) {
+  if (state !== 'open') return;
+  if (id === 'record') return showTerm({ rec: true });
+  if (id === 'terminal') return showTerm();
+  if (id === 'note') return showTerm({ fill: 'take a note: ' });
+  if (id === 'add') return showTerm({ add: true });
+  if (id === 'browser' || id === 'files') T.launch(id);
+  else if (id.startsWith('sc:')) T.launch('shortcut', id.slice(3));
+  closeAll();
+}
+
+// ---------------------------------------------------------------- the pop-up terminal
 function render() {
   const out = lines.map((e) => {
     if (e.k === 'card') {
@@ -51,26 +309,8 @@ function add(e) {
 }
 function armIdle() {
   clearTimeout(idle);
-  if (isOpen()) idle = setTimeout(() => { if (!input.value && !busy && recSetup.hidden) close(); }, IDLE_MS);
+  if (state === 'term') idle = setTimeout(() => { if (state === 'term' && !input.value && !busy && recSetup.hidden && scBox.hidden) closeAll(); }, IDLE_MS);
 }
-
-function open() {
-  if (!lines.length) add({ k: 'c', t: `Go ahead${operator ? `, ${operator}` : ''}.` });
-  pop.hidden = false;
-  body.classList.add('open');
-  T.focus(true);
-  setTimeout(() => input.focus(), 30);
-  render();
-  armIdle();
-}
-function close() {
-  clearTimeout(idle);
-  pop.hidden = true;
-  body.classList.remove('open');
-  input.blur();
-  T.focus(false);
-}
-
 function send(text) {
   text = String(text || '').trim();
   if (!text) return;
@@ -80,22 +320,42 @@ function send(text) {
   armIdle();
 }
 
+// ---------------------------------------------------------------- colors
+function applySkin() {
+  body.dataset.skin = skin;
+  const vars = ['--p', '--s', '--a', '--a-soft', '--t'];
+  if (skin === 'theme' && themeColors && themeColors.p) {
+    body.style.setProperty('--p', themeColors.p);
+    body.style.setProperty('--s', themeColors.s || themeColors.p);
+    body.style.setProperty('--a', themeColors.a || themeColors.p);
+    body.style.setProperty('--a-soft', `color-mix(in srgb, ${themeColors.a || themeColors.p} 55%, #FFFFFF)`);
+    body.style.setProperty('--t', `color-mix(in srgb, ${themeColors.p} 25%, #FFFFFF)`);
+  } else vars.forEach((v) => body.style.removeProperty(v));
+}
+
 T.onConfig((c) => {
   name = c.name || 'COMM TOWER 1';
   operator = c.operator || '';
-  $('#name').textContent = name;
+  skin = c.skin || 'eclipse';
+  shortcuts = Array.isArray(c.shortcuts) ? c.shortcuts : [];
+  maxShortcuts = c.max || 5;
   $('#ptitle').textContent = name;
   document.title = name;
   chip.setAttribute('aria-label', `Open ${name}`);
+  arcText();
+  applySkin();
+  buildKeys();
+  scList();
+  say();
 });
 T.onState((st) => {
   if (st.line) add(st.line);
   if (typeof st.busy === 'boolean') { busy = st.busy; body.classList.toggle('busy', busy); render(); }
   if (st.rec) showRec(st.rec);
+  if (st.theme) { themeColors = st.theme; applySkin(); }
 });
-T.onAlign((side) => body.classList.toggle('align-right', side === 'right'));
 
-// ---- record a meeting (v1.28): REC in the header → set up → recording → STOP + RECAP
+// ---- record a meeting (v1.28): set up → recording → STOP + RECAP. Opened from the Record key.
 const recSetup = $('#recSetup');
 const recLive = $('#recLive');
 let rec = { state: 'idle' };
@@ -104,16 +364,20 @@ const two = (n) => String(n).padStart(2, '0');
 const hms = (ms) => { const t = Math.floor(ms / 1000); const h = Math.floor(t / 3600); return h ? `${h}:${two(Math.floor(t / 60) % 60)}:${two(t % 60)}` : `${two(Math.floor(t / 60))}:${two(t % 60)}`; };
 const BARS = 8;
 for (const m of ['#mSys', '#mMic']) { const b = $(`${m} .tw-bars`); for (let i = 0; i < BARS; i++) { const e = el('i'); e.style.height = `${4 + i}px`; b.appendChild(e); } }
-function meter(sel, v) { const n = Math.round(Math.min(1, v || 0) * BARS); [...$(`${sel} .tw-bars`).children].forEach((b, i) => b.classList.toggle('on', i < n)); }
+function meter(sel2, v) { const n = Math.round(Math.min(1, v || 0) * BARS); [...$(`${sel2} .tw-bars`).children].forEach((b, i) => b.classList.toggle('on', i < n)); }
 let recBase = { at: 0, elapsed: 0 };
+function recOn() { return ['recording', 'paused', 'starting', 'stopping'].includes(rec.state); }
 function recClock() { return rec.state === 'recording' ? recBase.elapsed + (Date.now() - recBase.at) : rec.elapsed || 0; }
+function paintRecKey() {
+  const lab = $('#recKeyLab');
+  if (lab) lab.textContent = recOn() ? (rec.state === 'paused' ? 'PAUSED' : hms(recClock())) : 'RECORD';
+}
 function showRec(r) {
-  const was = rec.state;
   rec = { ...rec, ...r };
   if (r.levels) { meter('#mSys', r.levels.sys); meter('#mMic', r.levels.mic); }
   if (typeof r.elapsed === 'number') recBase = { at: Date.now(), elapsed: r.elapsed };
   if (r.levels && !r.state) return;
-  const on = ['recording', 'paused', 'starting', 'stopping'].includes(rec.state);
+  const on = recOn();
   body.classList.toggle('rec', on);
   body.classList.toggle('paused', rec.state === 'paused');
   pop.classList.toggle('rec', on);
@@ -129,15 +393,17 @@ function showRec(r) {
     const t = hms(recClock());
     $('#recTime').textContent = rec.state === 'starting' ? '…' : t;
     $('#recBtnLab').textContent = on ? t : 'REC';
-    $('#sub').textContent = on ? `REC ${t} · ${rec.state === 'paused' ? 'PAUSED' : 'CLICK TO OPEN'}` : 'CLICK TO TYPE';
+    $('#hubTime').textContent = on ? (rec.state === 'paused' ? 'PAUSED' : t) : '';
+    paintRecKey();
+    if (state === 'open') say();
   };
   paint();
   if (on) recTick = setInterval(paint, 500);
-  if (was !== rec.state) setTimeout(fit, 0);
 }
 $('#recBtn').addEventListener('click', () => {
-  if (body.classList.contains('rec')) { recLive.scrollIntoView({ block: 'nearest' }); return; }
+  if (recOn()) { recLive.scrollIntoView({ block: 'nearest' }); return; }
   recSetup.hidden = !recSetup.hidden;
+  scBox.hidden = true;
   if (!recSetup.hidden) { $('#recTitle').value = ''; setTimeout(() => $('#recTitle').focus(), 20); }
   armIdle();
 });
@@ -158,23 +424,70 @@ $('#recDiscard').addEventListener('click', () => {
   b.textContent = 'SURE? DISCARD';
   setTimeout(() => { delete b.dataset.sure; b.textContent = 'DISCARD'; }, 4000);
 });
-T.onOpen(() => (isOpen() ? input.focus() : open()));
 
-// The window is sized to what's showing, plus room for the glow.
-const PAD = 18;
-const tw = $('.tw');
-const fit = () => { const r = tw.getBoundingClientRect(); T.size(Math.ceil(r.width) + PAD * 2, Math.ceil(r.height) + PAD * 2); };
-new ResizeObserver(fit).observe(tw);
+// ---- your own shortcuts (the + key): a website, a program, or a folder
+const scBox = $('#scBox');
+function scMsg(t) { const m = $('#scMsg'); m.textContent = t || ''; m.hidden = !t; }
+function scReset() { $('#scTarget').value = ''; $('#scName').value = ''; scMsg(shortcuts.length >= maxShortcuts ? `The dial holds ${maxShortcuts} shortcuts. Remove one to add another.` : ''); }
+function scList() {
+  $('#scList').replaceChildren(...shortcuts.map((s) => {
+    const row = el('div', 'tw-scrow');
+    row.appendChild(el('i', '', KIND_SUB[s.kind] || 'SHORTCUT'));
+    row.appendChild(el('span', '', s.name));
+    const x = el('button', '', 'REMOVE');
+    x.type = 'button';
+    x.addEventListener('click', async () => { await T.shortcut({ action: 'remove', id: s.id }); scMsg(''); });
+    row.appendChild(x);
+    return row;
+  }));
+}
+async function scPick(what) {
+  const res = await T.shortcut({ action: 'pick', what });
+  T.focus(true);
+  if (res && res.ok) { $('#scTarget').value = res.path; $('#scName').focus(); }
+  armIdle();
+}
+async function scSave() {
+  const res = await T.shortcut({ action: 'add', target: $('#scTarget').value, name: $('#scName').value });
+  if (!res || !res.ok) { scMsg((res && res.error) || 'That didn\'t work. Try again.'); return; }
+  scBox.hidden = true;
+  add({ k: 'ok', t: `${res.name} is on the dial.` });
+  input.focus();
+}
+$('#scPickApp').addEventListener('click', () => scPick('program'));
+$('#scPickDir').addEventListener('click', () => scPick('folder'));
+$('#scSave').addEventListener('click', scSave);
+$('#scCancel').addEventListener('click', () => { scBox.hidden = true; input.focus(); });
+for (const id of ['#scTarget', '#scName']) $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); scSave(); } if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); scBox.hidden = true; input.focus(); } armIdle(); });
+
+// Ctrl + Alt + T from anywhere: open the dial (or close it again).
+T.onOpen(() => { if (state === 'closed') openDial(); else if (state === 'term') input.focus(); else closeAll(); });
 
 $('#form').addEventListener('submit', (e) => { e.preventDefault(); const v = input.value; input.value = ''; send(v); });
 input.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeAll(); return; }
   if (e.key === 'ArrowUp' && hist.length) { e.preventDefault(); histAt = Math.min(hist.length - 1, histAt + 1); input.value = hist[histAt]; }
   if (e.key === 'ArrowDown' && histAt >= 0) { e.preventDefault(); histAt -= 1; input.value = histAt >= 0 ? hist[histAt] : ''; }
   armIdle();
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && isOpen()) close(); });
-$('#esc').addEventListener('click', close);
+// With the fan open: 1 to 6 press a key, Enter opens the terminal, the arrows walk the keys, Esc closes.
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && state !== 'closed') { closeAll(); return; }
+  if (state !== 'open') return;
+  armFan();
+  const n = Number(e.key);
+  if (n >= 1 && n <= MAIN.length) { e.preventDefault(); pick(MAIN[n - 1].id); return; }
+  if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+    e.preventDefault();
+    const step = e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? 1 : -1;
+    setHover(Math.max(0, Math.min(MAIN.length - 1, (hover < 0 || hover >= MAIN.length ? (step > 0 ? -1 : MAIN.length) : hover) + step)));
+    return;
+  }
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(keyList[hover] ? keyList[hover].id : 'terminal'); }
+});
+// Clicking away from the open fan folds it.
+window.addEventListener('blur', () => { if (state === 'open' && Date.now() - openedAt > 700) closeAll(); });
+$('#esc').addEventListener('click', closeAll);
 $('#chips').addEventListener('click', (e) => {
   const b = e.target.closest('[data-cmd]');
   if (!b) return;
@@ -182,7 +495,7 @@ $('#chips').addEventListener('click', (e) => {
   send(b.dataset.cmd);
 });
 
-// Click to open / close; press and drag to move.
+// The core: click to open / close; press and drag (while closed) to move it.
 let press = null;
 chip.addEventListener('pointerdown', (e) => {
   if (e.button !== 0) return;
@@ -190,7 +503,7 @@ chip.addEventListener('pointerdown', (e) => {
   chip.setPointerCapture(e.pointerId);
 });
 chip.addEventListener('pointermove', (e) => {
-  if (!press) return;
+  if (!press || state !== 'closed') return;
   if (!press.moved && Math.hypot(e.screenX - press.x, e.screenY - press.y) > 5) {
     press.moved = true;
     body.classList.add('dragging');
@@ -198,15 +511,22 @@ chip.addEventListener('pointermove', (e) => {
   }
   if (press.moved) T.drag('move', e.screenX, e.screenY);
 });
+const toggle = () => { if (state === 'closed') openDial(); else closeAll(); };
 chip.addEventListener('pointerup', (e) => {
   if (!press) return;
   const p = press;
   press = null;
   if (p.moved) { T.drag('end', e.screenX, e.screenY); body.classList.remove('dragging'); return; }
-  if (isOpen()) close(); else open();
+  toggle();
 });
 chip.addEventListener('pointercancel', () => { if (press && press.moved) body.classList.remove('dragging'); press = null; });
-chip.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (isOpen()) close(); else open(); } });
+chip.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggle(); } });
 chip.addEventListener('click', (e) => e.preventDefault());
 
+buildHud();
+buildKeys();
 render();
+say();
+
+// For the screenshot runs in CI.
+window.__dial = { open: openDial, close: closeAll, pick: (id) => { if (state !== 'open') { openDial(); } pick(id); }, state: () => state, hover: setHover };

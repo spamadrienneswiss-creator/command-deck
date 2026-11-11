@@ -439,6 +439,21 @@ app.on('second-instance', () => {
 const TU = require('./src/tower-util');
 let towerLay = { state: 'closed', popH: 400 };
 let towerTheme = null; // the deck theme's colors, for the "Match theme" skin
+let towerRec = null; // the last recording state, so a rebuilt dial still shows a recording in progress
+// Rebuild the dial's window from scratch. Coming back from sleep (or after the graphics
+// driver resets), Windows can leave a see-through always-on-top window frozen: drawn, but
+// deaf to clicks. A fresh window fixes that. Debounced, so a burst of wake-up events
+// (resume, unlock, displays returning) rebuilds it once, after the displays settle.
+let towerRebuildT = null;
+function rebuildTower(why, ms = 2500) {
+  clearTimeout(towerRebuildT);
+  towerRebuildT = setTimeout(() => {
+    if (!towerSettings().on) return;
+    if (tower && !tower.isDestroyed()) tower.destroy();
+    tower = null;
+    createTower();
+  }, ms);
+}
 function towerSettings() {
   const t = settings().tower || {};
   return {
@@ -488,11 +503,15 @@ function createTower() {
   tower.webContents.on('did-finish-load', () => {
     sendTower('tower:config', towerSettings());
     if (towerTheme) sendTower('tower:state', { theme: towerTheme });
+    if (towerRec) sendTower('tower:state', { rec: towerRec });
     towerApply();
   });
+  // If the dial's page crashes or hangs, start it over.
+  tower.webContents.on('render-process-gone', () => rebuildTower('crash', 500));
+  tower.on('unresponsive', () => rebuildTower('hang', 500));
   tower.webContents.on('will-navigate', (e) => e.preventDefault());
   tower.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  tower.on('closed', () => { tower = null; });
+  tower.on('closed', () => { if (tower && tower.isDestroyed()) tower = null; });
 }
 function sendTower(ch, data) {
   if (tower && !tower.isDestroyed()) tower.webContents.send(ch, data);
@@ -594,10 +613,15 @@ function registerTowerIpc() {
   // Deck → dial: reply lines, busy, recording state, and the deck theme's colors.
   ipcMain.on('tower:state', (_e, st) => {
     if (st && st.theme) towerTheme = st.theme;
+    if (st && st.rec && st.rec.state) { const { levels, ...r } = st.rec; towerRec = r; }
     sendTower('tower:state', st);
   });
   // Displays come and go (and Windows renumbers them): put the dial back where it belongs.
   for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, () => towerApply());
+  // Waking up: rebuild the dial once things settle (see rebuildTower()).
+  powerMonitor.on('resume', () => rebuildTower('resume'));
+  powerMonitor.on('unlock-screen', () => rebuildTower('unlock'));
+  app.on('child-process-gone', (_e, d) => { if (d && d.type === 'GPU') rebuildTower('gpu', 1500); });
 }
 
 // ---------------------------------------------------------------- Discord voice

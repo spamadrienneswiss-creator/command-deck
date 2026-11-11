@@ -416,16 +416,18 @@ function settingsHtml() {
     </section>
     <div class="pz-foot">${A.esc(name())} · built-in commands${thinks() ? ' + Gemini' : ''}</div></div>`;
 }
+// Where Field Unit's Gemini key comes from: its own, Wine Log's, or none yet.
+export const keyState = () => (P.cfg.key ? 'own' : P.wineKey ? 'wine' : 'none');
 const mask = (k) => (k ? `${k.slice(0, 4)}••••${k.slice(-3)}` : '');
 
-function openKeySheet() {
+export function openKeySheet() {
   const sh = A.openSheet(`<div class="sheet-head"><span class="label">GEMINI KEY</span><button type="button" class="icon-btn" data-close aria-label="Close">${IC.close}</button></div>
     <div class="hint" style="margin-top:0">Free from <b>aistudio.google.com</b> › Get API key. It's kept with your deck, so every paired phone can use it, and calls go straight from this phone to Google.${P.wineKey && !P.cfg.key ? ' Right now Field Unit is borrowing Wine Log\'s key.' : ''}</div>
     <input class="in" id="pzKey" type="password" autocomplete="off" placeholder="${P.cfg.key ? 'Key saved · paste to replace' : 'Paste your key'}" style="margin-top:14px" aria-label="Gemini key">
     <div class="sheet-foot">${P.cfg.key ? '<button type="button" class="btn" id="pzKeyDel">REMOVE</button>' : ''}<button type="button" class="btn primary" id="pzKeySave" style="flex:1">SAVE</button></div>`);
   sh.addEventListener('click', async (e) => {
-    if (e.target.closest('[data-close]')) { A.closeSheet(); render(); return; }
-    if (e.target.closest('#pzKeyDel')) { saveCfg({ key: '', model: '' }); A.closeSheet(); A.toast('Key removed'); render(); return; }
+    if (e.target.closest('[data-close]')) { A.closeSheet(); A.render(); return; }
+    if (e.target.closest('#pzKeyDel')) { saveCfg({ key: '', model: '' }); A.closeSheet(); A.toast('Key removed'); A.render(); return; }
     if (e.target.closest('#pzKeySave')) {
       const v = A.$('#pzKey', sh).value.trim();
       if (!v) return;
@@ -436,7 +438,7 @@ function openKeySheet() {
       saveCfg({ key: v, model: '', ttsModel: '' });
       A.closeSheet();
       A.toast('Key saved. Gemini online.');
-      render();
+      A.render();
     }
   });
 }

@@ -8,9 +8,10 @@ import { ManifestRelay, manifestUrl } from './lib/manifest.js';
 import { RosterRelay, scheduleUrl, DEFAULT_TYPES, weekStart, addDays, weekLabel, weekDays, ymd, parseYmd, typeOf, shortName, dayLabel, timeRange, parseTime, chipName, PERSON_COLORS, OWNER_COLOR } from './lib/roster.js';
 import { bootScreen } from './boot.js';
 import * as P from './presence.js';
+import * as T from './terminal.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.29.0';
+const VERSION = 'v1.30.0';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
@@ -199,6 +200,20 @@ const TRIMS = [['none', 'NONE', []], ['sunset', 'SUNSET', ['#B5432A', '#E07A2E',
   ['hazard', 'HAZARD', ['#E8C547', '#1A1A1A', '#E8C547', '#1A1A1A']], ['aurora', 'AURORA', ['#2BB3A3', '#6FD08C', '#8E6CD8']], ['gulf', 'GULF', ['#8FC1E3', '#F28A2E', '#8FC1E3']],
   ['dock', 'DOCK LIGHTS', ['#1FB8F0', '#F4B41A', '#FF4F86', '#EE8A2E']], ['accretion', 'ACCRETION', ['#D9894A', '#FFF4E3', '#F2C38B']], ['tape', 'LABEL TAPE', ['#C6F432', '#0B0B0C', '#C6F432']]];
 function applyTheme() {
+  // Field Unit Terminal (Cockpit / Hairline): its own colors and type, on every screen.
+  const ft = T.look();
+  if (ft) {
+    document.body.dataset.theme = ft;
+    document.body.dataset.font = `ft-${ft}`;
+    document.body.dataset.ink = 'theme';
+    delete document.body.dataset.light;
+    const m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.content = ft === 'hairline' ? '#000000' : '#070B0F';
+    document.body.dataset.frame = 'dark';
+    document.body.dataset.trim = 'none';
+    document.body.classList.remove('presence');
+    return;
+  }
   const pres = presenceLook();
   // A theme this version doesn't have (the retired painted ones) falls back to Dusk.
   const theme = pres || !THEME_FONT[S.settings.theme] ? 'dusk' : S.settings.theme;
@@ -762,6 +777,8 @@ function projectCard(p, now) {
 function render() {
   applyTheme();
   if (presenceLook()) { P.render(); if (C.open) ctRefreshChrome(); return; }
+  T.mount();
+  if (T.live()) { T.render(); if (C.open) ctRefreshChrome(); return; }
   P.mount();
   $$('.tab[data-view]').forEach((t) => t.classList.toggle('on', t.dataset.view === S.view));
   const v = $('#view');
@@ -772,6 +789,7 @@ function render() {
   else if (S.view === 'notes') v.innerHTML = viewNotes();
   else v.innerHTML = viewSettings();
   if (S.peek && P.on()) v.insertAdjacentHTML('afterbegin', `<button type="button" class="pz-back" data-pz-back>‹ ${esc(P.name())}</button>`);
+  else if (S.peek && T.on()) v.insertAdjacentHTML('afterbegin', `<button type="button" class="ft-back" data-pz-back>‹ ${T.look() === 'hairline' ? 'FIELD UNIT' : 'BACK TO FIELD UNIT'}</button>`);
   v.scrollTop = keep;
   if (C.open) ctRefreshChrome();
 }
@@ -1731,7 +1749,17 @@ function viewSettings() {
       <button type="button" class="icon-btn" data-go="today" aria-label="Back to Today">${IC.left}</button>
       <h1 class="h1" style="margin:0;font-size:28px">Settings</h1>
     </header>
-    ${P.ENABLED ? `<div class="set-group"><span class="label">INTERFACE</span>
+    <div class="set-group"><span class="label">INTERFACE</span>
+      <div class="ui-picks" role="radiogroup" aria-label="Interface">${[
+        ['cockpit', 'COCKPIT', 'Slate plates, cyan screens, hardware keys. After Starfield.', '23:18'],
+        ['hairline', 'HAIRLINE', 'Black and white, thin lines, your week as an orbit.', '<svg width="34" height="34" viewBox="0 0 34 34"><circle cx="17" cy="17" r="15" fill="none" stroke="rgba(255,255,255,0.25)"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="0.8"/><line x1="17" y1="17" x2="28" y2="8" stroke="rgba(255,255,255,0.6)" stroke-width="0.6"/><circle cx="28" cy="8" r="2" fill="#000" stroke="#fff" stroke-width="0.7"/><circle cx="11" cy="12" r="1.6" fill="#FF4D3D"/></svg>'],
+        ['classic', 'CLASSIC', 'The original Field Unit, in your color theme.', '&gt;_']
+      ].map(([v, l, d, sw]) => { const cur = (T.look() || 'classic') === v; return `<button type="button" role="radio" aria-checked="${cur}" class="ui-pick${cur ? ' on' : ''}" data-ui-pick="${v}"><span class="ui-sw ${v}" aria-hidden="true">${sw}</span><span><b>${l}</b><small>${d}</small></span><i class="ui-dot" aria-hidden="true"></i></button>`; }).join('')}</div>
+      <div class="hint">Switches instantly. Tasks, schedule, notes, recaps and sync with the deck are the same in every interface.${T.on() ? ' Color theme and typeface below apply to Classic.' : ''}</div></div>
+    ${T.on() ? `<div class="set-group"><span class="label">GEMINI · ANSWERS QUESTIONS IN COMMS</span>
+      <button type="button" class="btn line block" data-gemini-key>${P.keyState() === 'own' ? 'KEY SAVED · CHANGE' : P.keyState() === 'wine' ? 'USING WINE LOG\'S KEY · ADD ONE' : 'ADD A GEMINI KEY'}</button>
+      <div class="hint">Commands run on Field Unit itself. Questions (<b>can I fit the dentist in before my shift?</b>) go to Gemini, which sees your tasks and calendar and can offer to add things. ${P.keyState() === 'none' ? 'Without a key, questions get an honest "can\'t answer".' : ''}</div></div>` : ''}
+    ${P.ENABLED ? `<div class="set-group"><span class="label">PRESENCE</span>
       <button type="button" class="btn primary" data-to-presence style="width:100%">${P.on() ? `BACK TO ${esc(P.name().toUpperCase())}` : 'SWITCH TO PRESENCE'}</button>
       <div class="hint">Presence: the Computer as a glowing orb that talks, with calm Tasks and Week screens. Notes, recaps and this screen stay one tap away.</div></div>` : ''}
     <div class="set-group"><span class="label">CALLSIGN</span>
@@ -2225,6 +2253,12 @@ function ctEntryHtml(e) {
       ${canConfirm ? '<div class="ct-yn"><button type="button" class="ct-no" data-ct="no">CANCEL · N</button><button type="button" class="ct-yes" data-ct="yes">CONFIRM · Y</button></div>' : ''}
     </div>`;
   }
+  if (e.k === 'sugg') {
+    const fin = e.state === 'added' ? '✓ ADDED' : e.state === 'skipped' ? 'SKIPPED' : '';
+    return `<div class="ct-card ${fin ? 'st-kept' : 'tone-info'}" data-e="${e.id}"><div class="ct-card-h"><span>${fin || 'SUGGESTION'}</span></div>
+      <div class="ct-kv"><span>${esc((e.s && e.s.kind ? e.s.kind : 'task').toUpperCase())}</span><span>${esc(e.title)}${e.when ? ` · ${esc(e.when)}` : ''}</span></div>
+      ${fin ? '' : `<div class="ct-yn"><button type="button" class="ct-yes" data-ct="sugg-yes" data-id="${e.id}">${esc((e.label || 'Add').toUpperCase())}</button><button type="button" class="ct-no" data-ct="sugg-no" data-id="${e.id}">NOT NOW</button></div>`}</div>`;
+  }
   return '';
 }
 
@@ -2276,7 +2310,7 @@ function openComms() {
   $('#ctForm').addEventListener('submit', onCommsSubmit);
   fitComms();
   ctScroll(true);
-  sfx.droneStart();
+  if (!T.on()) sfx.droneStart();
   const last = C.log[C.log.length - 1];
   const fresh = !last || Date.now() - (last.at || 0) > 20 * 60000;
   if (fresh) {
@@ -2356,7 +2390,7 @@ async function say(text, tone = '') {
   node.parentElement.classList.add('typing');
   const pres = presenceLook();
   if (pres) P.voiceLine(text, tone);
-  const voice = pres ? { stop() {} } : sfx.readout(text, per);
+  const voice = pres || T.on() ? { stop() {} } : sfx.readout(text, per);
   const t0 = performance.now();
   await new Promise((resolve) => {
     const step = () => {
@@ -2416,8 +2450,16 @@ async function runBuiltIn(text) {
 // Gemini instead. Plain commands ("call sam thursday at 3") stay built-in.
 const CREATE_START = /^(?:add|create|make|log|put|new|set up|set|schedule|book|remind me|i need to|i have to|i've got to|i gotta|don't forget|need to|gotta|todo|to do|task)\b/i;
 const CHATTY = /^(?:what|what's|whats|when|where|why|how|who|which|can|could|should|would|will|is|are|am|do|does|did|have|has|tell me|help|explain|any|anything|hey|hi|hello|yo|thanks|thank you|good (?:morning|afternoon|evening|night)|i'm|im|i am|i feel|let's|lets|ok so|so|please explain|give me|summarize|plan|suggest|remind me what)\b/i;
+// The Field Unit Terminal looks (Cockpit, Hairline) answer questions with Gemini too.
+const smartLook = () => presenceLook() || T.on();
+function isQuestion(text, r) {
+  if (!r || (r.intent !== 'add-task' && r.intent !== 'add-event')) return false;
+  const t = text.trim().toLowerCase();
+  if (CREATE_START.test(t)) return false;
+  return /\?\s*$/.test(t) || CHATTY.test(t);
+}
 function wantsGemini(text, r) {
-  if (!presenceLook() || !P.thinks()) return false;
+  if (!smartLook() || !P.thinks()) return false;
   if (!r || r.intent === 'empty') return true;
   if (r.intent !== 'add-task' && r.intent !== 'add-event') return false;
   const t = text.trim().toLowerCase();
@@ -2732,7 +2774,7 @@ function briefing() {
 }
 
 async function transmit(label, fields, firstLine, undo) {
-  if (presenceLook()) {
+  if (presenceLook() || T.on()) {
     await say(`${firstLine}${quip()}`);
     const ack = S.sync ? await S.sync.acknowledged(4500) : 'timeout';
     await card({ head: ack === 'ok' ? `${label} · SYNCED` : `${label} · SYNCS LATER`, tone: ack === 'ok' ? 'ok' : 'wait', fields, undo });
@@ -2796,6 +2838,8 @@ async function runCommand(text) {
   try { r = fb.parseCommand(text, ctx, now); } catch (e) { r = { intent: 'empty' }; }
 
   if (!C.pending && wantsGemini(text, r)) { C.src = null; return P.think({ text }); }
+  // No Gemini key: a question isn't a task. Say so instead of filing it (Cockpit / Hairline).
+  if (!C.pending && T.on() && !P.thinks() && isQuestion(text, r)) { await say('I can only answer questions with a Gemini key. Add one in Settings › Gemini; commands work without it.', 'warn'); return; }
 
   // Edits that match no existing task may really be new tasks ("make dinner reservations, high priority").
   if (r.intent === 'edit-task' && r.fallback && !findTask(r.query)) {
@@ -2965,7 +3009,7 @@ async function runCommand(text) {
     case 'cancel': return say('Standing by.', 'sys');
     case 'set-humor': S.settings.humor = r.value; saveSettings(); return say(`Humor setting ${r.value} percent.`);
     case 'humor-query': return say(`Humor setting is at ${S.settings.humor} percent.`);
-    default: return presenceLook() && P.thinks() ? P.think({ text }) : fail(pick('miss'));
+    default: return smartLook() && P.thinks() ? P.think({ text }) : fail(pick('miss'));
   }
 }
 
@@ -3178,7 +3222,11 @@ function wireSwipe() {
 
 // ---------------------------------------------------------------- events
 function wire() {
-  $$('.tab[data-view]').forEach((t) => t.addEventListener('click', () => { S.view = t.dataset.view; $('#view').scrollTop = 0; render(); }));
+  $$('.tab[data-view]').forEach((t) => t.addEventListener('click', () => {
+    // In Cockpit / Hairline, Today and Tasks are the look's own screens.
+    if (T.on() && (t.dataset.view === 'today' || t.dataset.view === 'tasks')) { S.peek = false; T.go(t.dataset.view === 'tasks' ? 'tasks' : 'home'); render(); return; }
+    S.view = t.dataset.view; $('#view').scrollTop = 0; render();
+  }));
   $('#hailBtn').addEventListener('click', () => {
     if (!S.deckId) { showPairing(); return; }
     openComms();
@@ -3231,7 +3279,7 @@ function wire() {
     if (t.closest('[data-new-note]')) return openNoteEditor(null);
     if (t.closest('[data-scan]')) { ac(); startFieldScan(); return; }
     const go = t.closest('[data-go]');
-    if (go) { S.view = go.dataset.go; $('#view').scrollTop = 0; render(); return; }
+    if (go) { if (T.on() && go.dataset.go === 'today') { S.peek = false; T.go('home'); render(); return; } S.view = go.dataset.go; $('#view').scrollTop = 0; render(); return; }
     if (t.closest('[data-recap-pick]')) { pickRecording(); return; }
     const rr = t.closest('[data-recap]');
     if (rr) { openRecapSheet(rr.dataset.recap); return; }
@@ -3253,6 +3301,9 @@ function wire() {
     const tr = t.closest('[data-task]');
     if (tr) { const task = S.tasks.find((x) => x.id === tr.dataset.task); if (task) openTaskEditor(task); return; }
     if (t.closest('[data-pz-back]')) { S.peek = false; render(); return; }
+    if (t.closest('[data-gemini-key]')) { P.openKeySheet(); return; }
+    const uip = t.closest('[data-ui-pick]');
+    if (uip) { S.settings.ui = uip.dataset.uiPick; S.peek = uip.dataset.uiPick !== 'classic'; S.view = 'settings'; saveSettings(); render(); toast(uip.dataset.uiPick === 'classic' ? 'Classic Field Unit.' : `${uip.dataset.uiPick === 'cockpit' ? 'Cockpit' : 'Hairline'} online. Tap Back to Field Unit to see it.`, 2600); return; }
     if (t.closest('[data-to-presence]')) { S.settings.ui = 'presence'; S.peek = false; saveSettings(); render(); return; }
     if (t.closest('[data-theme-all]')) { openThemeSheet(); return; }
     const th = t.closest('[data-theme-pick]');
@@ -3300,7 +3351,7 @@ function wire() {
   wireSwipe();
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { sfx.droneStop(); if (C.open) C.skip = true; }
-    else { render(); checkLocalAlerts(); if (C.open) sfx.droneStart(); }
+    else { render(); checkLocalAlerts(); if (C.open && !T.on()) sfx.droneStart(); }
   });
 }
 
@@ -3327,6 +3378,7 @@ function presenceApi() {
 
 async function start() {
   P.initPresence(presenceApi());
+  T.initTerminal(presenceApi());
   applyTheme();
   const boot = bootScreen();
   const params = new URLSearchParams(location.search);
@@ -3391,7 +3443,7 @@ async function start() {
   }, 1000);
   setInterval(checkLocalAlerts, 15000);
   setInterval(fetchWeather, 20 * 60000);
-  setInterval(() => { if (!document.hidden && !$('.sheet') && !C.open && S.view !== 'settings') render(); }, 60000);
+  setInterval(() => { if (!document.hidden && !$('.sheet') && !C.open && (T.live() || S.view !== 'settings')) render(); }, 60000);
 }
 
 start();

@@ -48,8 +48,9 @@ Read this first in any new thread. It's the handoff from earlier work, so a fres
   4. Watch it with `tools/watch-release.sh Release <sha>`.
 - Commit as `Claude <noreply@anthropic.com>`. Keep the README and FIELD-UNIT-SETUP.md in step with features.
 
-## Where things stand (v1.30.0, Nov 2026)
+## Where things stand (v1.30.1, Nov 2026)
 Shipped recently:
+- v1.30.1: Hairline's classic screens (Calendar, Notes, Settings, recaps, every sheet) now match its Today: no tab bar (`--tabbar-h: 0`, Today's keys navigate), `← TODAY` back link, thin rules instead of boxes, underline inputs, white-filled selected chips, round calendar days, light Inter Tight headings. All in terminal.css under `body[data-theme="hairline"]` ("HAIRLINE · classic screens"). Nick asked for it the evening v1.30 shipped.
 - v1.30: Field Unit Terminal: Cockpit and Hairline looks on the phone, picked in Settings › Interface (Classic stays); see the code map. Came from Nick's "UI Design" inspiration folder (Starfield cockpit, Cyclical, Anomaly Detected, Deerflow…); Ember and Dot Tiles were mocked and turned down. Nick plans a full deck redesign next, not started ("not ready to make the deck adjustments yet").
 - v1.29: the Ship Computer's waveform (above OPEN TERMINAL) is now an RX hex stream: made-up bytes drifting left (`buildWave()` in app.js builds `.hexs` into `#wave`; styles near `@keyframes hxRun`), TX + lavender + faster while `data-voice` is speaking / thinking, still on STILL. Board: "Replacing the waveform" option D on the DiscordVoice board (Nick picked it Nov 9). `onLevel()` / `resetWave()` stay for when listening returns.
 - v1.28.1: recap summaries survive a busy Gemini: on a 5xx / no answer they wait and retry, then try other Flash models; each call times out after 3 min (`SUMMARY_MS` in src/gemini.js), and a failed job never leaves a recap stuck on a step (`pump()` in recap.js). Nick's first test meeting hit a Gemini 5xx with `gemini-3.8-flash`.

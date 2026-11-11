@@ -11,7 +11,7 @@ import * as P from './presence.js';
 import * as T from './terminal.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.30.0';
+const VERSION = 'v1.30.1';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
@@ -789,7 +789,7 @@ function render() {
   else if (S.view === 'notes') v.innerHTML = viewNotes();
   else v.innerHTML = viewSettings();
   if (S.peek && P.on()) v.insertAdjacentHTML('afterbegin', `<button type="button" class="pz-back" data-pz-back>‹ ${esc(P.name())}</button>`);
-  else if (S.peek && T.on()) v.insertAdjacentHTML('afterbegin', `<button type="button" class="ft-back" data-pz-back>‹ ${T.look() === 'hairline' ? 'FIELD UNIT' : 'BACK TO FIELD UNIT'}</button>`);
+  else if (S.peek && T.on()) v.insertAdjacentHTML('afterbegin', `<button type="button" class="ft-back" data-pz-back>${T.look() === 'hairline' ? '← TODAY' : '‹ BACK TO FIELD UNIT'}</button>`);
   v.scrollTop = keep;
   if (C.open) ctRefreshChrome();
 }

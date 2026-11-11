@@ -295,3 +295,95 @@ body.ft-hairline .ct-send { width: auto; padding: 0 0 0 10px; background: transp
 .ui-pick small { display: block; margin-top: 6px; font: 400 11.5px/1.4 var(--mono); color: var(--muted); }
 .ui-pick .ui-dot { margin-left: auto; width: 18px; height: 18px; flex: none; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line-3); }
 .ui-pick.on .ui-dot { background: var(--amber); box-shadow: inset 0 0 0 1.5px var(--amber), inset 0 0 0 5px var(--bg); }
+
+/* ================================================================ HAIRLINE · classic screens (v1.30.1)
+   Calendar, Notes, Settings, recaps and every sheet drawn like Hairline's Today: black, thin
+   rules instead of boxes, light Inter Tight for words and numbers, Space Mono for small labels,
+   white for anything selected, red only for late. No tab bar: Today's keys get you around. */
+body[data-theme="hairline"] { --chamfer: none; --tabbar-h: 0px; }
+body.ft-hairline .tabbar { display: none; }
+body.ft-hairline .view { padding: calc(var(--safe-top) + 16px) 22px calc(var(--safe-bottom) + 28px); }
+body.ft-hairline .ft-back { min-height: 44px; margin: -6px 0 6px; padding: 0; font: 400 9.5px/1 'Space Mono', monospace; letter-spacing: 0.14em; color: #EDEDED; background: #000; }
+body.ft-hairline .ft-back { position: sticky; top: 0; width: calc(100% + 44px); margin-left: -22px; padding-left: 22px; justify-content: flex-start; }
+
+/* Type */
+body[data-theme="hairline"] .h1 { margin-top: 4px; font: 200 52px/0.95 'Inter Tight', sans-serif !important; letter-spacing: -0.03em; color: #fff; }
+body[data-theme="hairline"] .label, body[data-theme="hairline"] .group-h, body[data-theme="hairline"] .eyebrow, body[data-theme="hairline"] .sub, body[data-theme="hairline"] .cal-dow, body[data-theme="hairline"] .nrow-meta { font: 400 9.5px/1 'Space Mono', monospace !important; letter-spacing: 0.14em; color: #8A8A8A; }
+body[data-theme="hairline"] .group-h.red { color: #FF6B5C; }
+body[data-theme="hairline"] .hint, body[data-theme="hairline"] .empty { font: 300 13px/1.55 'Inter Tight', sans-serif; color: #8A8A8A; }
+body[data-theme="hairline"] .hint b, body[data-theme="hairline"] .empty b { font-weight: 400; color: #EDEDED; }
+body[data-theme="hairline"] .icon-btn { color: #EDEDED; }
+
+/* Surfaces: rules, not boxes */
+body[data-theme="hairline"] .card, body[data-theme="hairline"] .install, body[data-theme="hairline"] .pj-card { padding: 14px 0; background: transparent; clip-path: none; box-shadow: inset 0 1px 0 rgba(255,255,255,0.14); }
+body[data-theme="hairline"] .card .br { display: none; }
+body[data-theme="hairline"] .set-group { margin-top: 26px; padding-top: 14px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.14); }
+body[data-theme="hairline"] .set-group > .label { margin-bottom: 12px; }
+body[data-theme="hairline"] .set-row, body[data-theme="hairline"] .trow, body[data-theme="hairline"] .nrow, body[data-theme="hairline"] .agenda .ev, body[data-theme="hairline"] .pj-pick, body[data-theme="hairline"] .sub-item { box-shadow: inset 0 -1px 0 rgba(255,255,255,0.1); }
+body[data-theme="hairline"] .set-row { font: 300 15px/1.4 'Inter Tight', sans-serif; color: #CFCFCF; }
+
+/* Inputs: a single underline */
+body[data-theme="hairline"] .in, body[data-theme="hairline"] .sel, body[data-theme="hairline"] .ta { padding-left: 0; padding-right: 0; background-color: transparent; box-shadow: inset 0 -1px 0 rgba(255,255,255,0.35); font: 300 17px/1 'Inter Tight', sans-serif; color: #fff; }
+body[data-theme="hairline"] .sel { padding-right: 24px; background-position: calc(100% - 10px) 50%, calc(100% - 5px) 50%; }
+body[data-theme="hairline"] .ta { padding-top: 10px; font: 300 16px/1.55 'Inter Tight', sans-serif; }
+body[data-theme="hairline"] .in:focus, body[data-theme="hairline"] .sel:focus, body[data-theme="hairline"] .ta:focus { box-shadow: inset 0 -1px 0 #fff; }
+body[data-theme="hairline"] .in.title { font: 200 30px/1.1 'Inter Tight', sans-serif; letter-spacing: -0.01em; box-shadow: inset 0 -1px 0 #fff; }
+body[data-theme="hairline"] .in::placeholder, body[data-theme="hairline"] .ta::placeholder { color: #5E5E5E; }
+body[data-theme="hairline"] input[type="date"], body[data-theme="hairline"] input[type="time"] { color-scheme: dark; }
+
+/* Chips and buttons: outlines; selected = solid white */
+body[data-theme="hairline"] .chip { height: 36px; padding: 0 12px; background: transparent; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.22); color: #BDBDBD; font: 400 10px/1 'Space Mono', monospace !important; letter-spacing: 0.14em; }
+body[data-theme="hairline"] .chip.on { background: #fff; color: #000 !important; box-shadow: none; }
+body[data-theme="hairline"] .chip .theme-sw, body[data-theme="hairline"] .chip .ink-sw { filter: grayscale(0.2); }
+body[data-theme="hairline"] .pills { gap: 0; }
+body[data-theme="hairline"] .pills .chip { margin: 0 -1px -1px 0; }
+body[data-theme="hairline"] .btn, body[data-theme="hairline"] .btn.line, body[data-theme="hairline"] .btn.danger { min-height: 44px; clip-path: none; background: transparent; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3); color: #EDEDED; font: 400 10px/1 'Space Mono', monospace !important; letter-spacing: 0.16em; }
+body[data-theme="hairline"] .btn.danger { color: #FF8A7E; }
+body[data-theme="hairline"] .btn.primary { background: #fff; color: #000 !important; box-shadow: none; }
+body[data-theme="hairline"] .seg { box-shadow: none; }
+body[data-theme="hairline"] .seg button { color: #8A8A8A; font: 400 10px/1 'Space Mono', monospace; letter-spacing: 0.16em; box-shadow: inset 0 -1px 0 rgba(255,255,255,0.14); }
+body[data-theme="hairline"] .seg button.on, body[data-theme="hairline"] .seg button[aria-selected="true"] { color: #fff; background: transparent; box-shadow: inset 0 -1px 0 #fff; }
+body[data-theme="hairline"] .switch { border-radius: 13px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35); }
+body[data-theme="hairline"] .switch i { border-radius: 50%; background: #5E5E5E; }
+body[data-theme="hairline"] .switch[aria-checked="true"] i { background: #fff; }
+body[data-theme="hairline"] .tbox i { border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.45); }
+body[data-theme="hairline"] .trow.done .tbox i { background: #fff; color: #000; }
+body[data-theme="hairline"] .tbox.over i { box-shadow: inset 0 0 0 1px #FF4D3D; }
+body[data-theme="hairline"] .tag { box-shadow: none !important; color: #8A8A8A !important; padding: 0 !important; }
+
+/* Calendar */
+body[data-theme="hairline"] .cal-title { font: 200 34px/1 'Inter Tight', sans-serif; letter-spacing: 0.02em; text-transform: none; }
+body[data-theme="hairline"] .cal-cell { font: 300 16px/1 'Inter Tight', sans-serif; border-radius: 50%; width: 44px; height: 44px; justify-self: center; }
+body[data-theme="hairline"] .cal-cell.out { color: #3A3A3A; }
+body[data-theme="hairline"] .cal-cell.today { color: #000; background: #fff; box-shadow: none; font-weight: 400; }
+body[data-theme="hairline"] .cal-cell.today .dots i { background: #000 !important; }
+body[data-theme="hairline"] .cal-cell.sel:not(.today) { box-shadow: inset 0 0 0 1px #fff; }
+body[data-theme="hairline"] .dots i { border-radius: 50%; background: #BDBDBD !important; }
+body[data-theme="hairline"] .agenda .ev { grid-template-columns: 6px 64px minmax(0, 1fr); }
+body[data-theme="hairline"] .agenda .ev .c { align-self: center; width: 6px; height: 6px; margin: 0; border-radius: 50%; background: #fff !important; }
+body[data-theme="hairline"] .agenda .ev .t { font: 400 9.5px/1.3 'Space Mono', monospace; letter-spacing: 0.12em; color: #8A8A8A; }
+body[data-theme="hairline"] .agenda .ev .n, body[data-theme="hairline"] .nrow-title, body[data-theme="hairline"] .ttitle { font: 300 17px/1.25 'Inter Tight', sans-serif; color: #EDEDED; }
+body[data-theme="hairline"] .agenda .ev .s, body[data-theme="hairline"] .nrow-prev, body[data-theme="hairline"] .tmeta { font: 400 9.5px/1.4 'Space Mono', monospace; letter-spacing: 0.1em; color: #8A8A8A; }
+
+/* Notes, recaps, projects */
+body[data-theme="hairline"] .nrow { width: calc(100% + 44px); margin: 0 -22px; padding: 14px 22px; }
+body[data-theme="hairline"] .note-ta { font: 300 17px/1.6 'Inter Tight', sans-serif; }
+body[data-theme="hairline"] .pj-bar i, body[data-theme="hairline"] .pj-meter i { background: #262626; }
+body[data-theme="hairline"] .pj-bar i.on, body[data-theme="hairline"] .pj-meter i.on { background: #fff; }
+
+/* Settings › Interface rows */
+body[data-theme="hairline"] .ui-picks { gap: 0; }
+body[data-theme="hairline"] .ui-pick { padding: 12px 0; background: transparent; box-shadow: inset 0 -1px 0 rgba(255,255,255,0.12); }
+body[data-theme="hairline"] .ui-pick.on { box-shadow: inset 0 -1px 0 #fff; }
+body[data-theme="hairline"] .ui-pick b { font: 400 13px/1 'Inter Tight', sans-serif; letter-spacing: 0.2em; }
+body[data-theme="hairline"] .ui-pick small { font: 300 13px/1.4 'Inter Tight', sans-serif; color: #8A8A8A; }
+body[data-theme="hairline"] .ui-pick.on .ui-dot { background: #fff; box-shadow: inset 0 0 0 5px #000, inset 0 0 0 6px #fff; }
+
+/* Sheets */
+body[data-theme="hairline"] .sheet { padding-left: 22px; padding-right: 22px; background: #000; box-shadow: inset 0 1px 0 rgba(255,255,255,0.35); }
+body[data-theme="hairline"] .grabber { width: 36px; height: 1px; background: rgba(255,255,255,0.5); }
+body[data-theme="hairline"] .sheet-head .label { color: #EDEDED; }
+body[data-theme="hairline"] .toast { border-radius: 0; background: #000; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35); color: #EDEDED; font: 300 14px/1.4 'Inter Tight', sans-serif; }
+body[data-theme="hairline"] .scan-btn, body[data-theme="hairline"] .recap-btn { background: transparent; clip-path: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3); color: #EDEDED; }
+body[data-theme="hairline"] .scan-btn .t1 { font: 400 13px/1 'Inter Tight', sans-serif; letter-spacing: 0.2em; }
+body[data-theme="hairline"] .scan-btn .t2 { font: 400 9.5px/1.3 'Space Mono', monospace; letter-spacing: 0.08em; color: #8A8A8A; }

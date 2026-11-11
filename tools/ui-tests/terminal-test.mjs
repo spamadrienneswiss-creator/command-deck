@@ -153,8 +153,16 @@ for (const look of LOOK ? [LOOK] : ['cockpit', 'hairline']) {
   check(await page.evaluate(() => document.body.classList.contains('ft-live')), `${look}: back returns to the look`);
   await page.click('#ft [data-ft="agenda"]'); await page.waitForTimeout(300);
   await page.screenshot({ path: path.join(OUT, `${look}-calendar.png`) });
-  await page.click('.tab[data-view="today"]'); await page.waitForTimeout(300);
-  check(await page.evaluate(() => document.body.classList.contains('ft-live')), `${look}: Today tab returns to the look`);
+  await page.click('.ft-back'); await page.waitForTimeout(250);
+  await page.click('#ft [data-ft="notes"]'); await page.waitForTimeout(300);
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: path.join(OUT, `${look}-notes.png`) });
+  await page.click('.ft-back'); await page.waitForTimeout(250);
+  await page.click('#ft [data-ft="agenda"]'); await page.waitForTimeout(300);
+  if (look === 'hairline') { check(await page.evaluate(() => getComputedStyle(document.querySelector('.tabbar')).display === 'none'), `${look}: no tab bar`); await page.click('.ft-back'); }
+  else await page.click('.tab[data-view="today"]');
+  await page.waitForTimeout(300);
+  check(await page.evaluate(() => document.body.classList.contains('ft-live')), `${look}: Today tab / back returns to the look`);
   // Switch to classic and back
   await page.click('#ft [data-ft="settings"]'); await page.waitForTimeout(300);
   await page.click('[data-ui-pick="classic"]'); await page.waitForTimeout(300);

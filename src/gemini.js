@@ -152,32 +152,49 @@ async function summarize(opts, fetchFn = fetch) {
 const TOWER_SCHEMA = {
   type: 'OBJECT',
   properties: {
-    reply: { type: 'STRING', description: 'What to say out loud: one or two short sentences' },
-    command: { type: 'STRING', description: 'Only when the reply offers to add or set something: the exact command for the deck, e.g. "Add dentist appointment on Tuesday November 10 at 10 AM". Otherwise empty.' }
+    reply: { type: 'STRING', description: 'What to say back. Short for quick things; longer (with line breaks) when the question needs it.' },
+    act: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Deck commands to run NOW because the operator plainly asked for them, e.g. "Add task call the dentist on Friday", "Schedule lunch with Sam Tuesday at noon", "Set a timer for 20 minutes". Otherwise empty.' },
+    command: { type: 'STRING', description: 'One deck command to OFFER (the reply asks "Want me to …? Type yes."). Otherwise empty.' },
+    remember: { type: 'ARRAY', items: { type: 'STRING' }, description: 'New lasting facts worth keeping about the operator, their people, preferences or plans, each one short line in third person. Otherwise empty.' },
+    forget: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Remembered lines (copied exactly) the operator wants dropped or that are now wrong. Otherwise empty.' },
+    lookup: { type: 'STRING', description: 'Only when answering needs current information from the web (news, scores, prices, opening hours, anything after your training): a search query. Otherwise empty.' }
   },
   required: ['reply']
 };
 
-function towerPrompt({ name, operator, humor, heard, done, context }) {
+/** The standing instructions: who it is, how to talk, what it remembers, and what the deck holds right now. */
+function towerPrompt({ name, operator, humor, context, memory }) {
   const who = operator || 'the operator';
-  const dry = Number(humor) >= 60 ? 'Dry wit is welcome, lightly.' : Number(humor) <= 10 ? 'Strictly businesslike, no jokes.' : 'A touch of dry humor is fine, never forced.';
+  const dry = Number(humor) >= 60 ? 'Dry wit is welcome.' : Number(humor) <= 10 ? 'Strictly businesslike, no jokes.' : 'A touch of dry humor is fine, never forced.';
+  const mem = (memory || []).filter(Boolean);
   return [
-    `You are ${name || 'Comm Tower 1'}, the voice on the comms line of ${who}'s Command Deck (a desktop console). ${who} just typed a message to you in its terminal.`,
-    `Talk like a capable, warm crew member on a ship's comms line: natural, brief, friendly, a little JARVIS. ${dry}`,
-    'Your reply is shown in the terminal and may be read aloud: one or two short sentences, usually under 35 words. No lists, no markdown, no emoji. Say dates and times the way a person would ("Friday the 20th", "10 in the morning").',
-    `Use ${who}'s name now and then, not every time.`,
-    'Only state facts that appear below. Never invent tasks, events, times or plans.',
+    `You are ${name || 'Comm Tower 1'}, the AI aboard ${who}'s Command Deck, a desktop console that holds their calendar, tasks, projects, notes and meeting recaps. ${who} talks to you by typing in its terminal. You are one ongoing conversation that carries across days: the earlier messages are your shared history, so follow up on them, refer back to them and build on them naturally.`,
+    `Personality: a capable, warm crew member, a little JARVIS. ${dry} Use ${who}'s name now and then, not every time.`,
+    'Length: match the question. Quick things get a sentence or two. Questions that need explaining, planning, advice or detail get a proper answer: several sentences, with line breaks between steps or items (plain lines, starting a line with "- " is fine). No markdown symbols like ** or #, no emoji. Replies may be read aloud, so say dates and times the way a person would.',
+    'Knowledge: answer general questions from your own knowledge, like any good assistant. For anything about ' + who + "'s own life (tasks, events, plans, people, notes), rely only on the deck data and memories below and never invent details. If you need fresh information from the web, put a search in \"lookup\".",
+    'Doing things: when ' + who + ' plainly asks you to add, schedule, remind, time or complete something, put the deck command(s) in "act" and write the reply as if it is done (the deck runs them and reports any problem). When something would merely help, offer it in the reply ("Want me to …? Type yes.") and put the command in "command". Commands always spell out the day and time.',
+    'Memory: when ' + who + ' tells you something lasting about themselves, their people, preferences, routines or plans, or says "remember", add a short line to "remember" (third person, with the date if it matters). Don\'t store passing chatter, things already in the deck data, passwords or account numbers. When asked to forget something, or a memory turns out wrong, copy that line into "forget". When asked what you remember, say it plainly.',
     '',
-    done
-      ? `The deck has ALREADY done what was asked. Its own confirmation: "${done.reply}". (${done.kind === 'err' ? 'This was a problem, not a success: say so plainly and helpfully.' : 'Say it back conversationally, keeping every fact exact: titles, dates, times, amounts.'}) If something in the context below is clearly and usefully related (a clash, a same-day errand, an overdue item), you may mention it in a few words; otherwise don't. Leave "command" empty.`
-      : 'This is a question or a request the deck can\'t do by itself. Answer it from the context below. If the honest answer is that you don\'t know, say so briefly. If adding a task, event, reminder or timer would clearly help, offer it in the reply ("Want me to …? Type yes.") and put the matching deck command, with an explicit day and time, in "command". Never claim you already did it.',
+    mem.length ? `WHAT YOU REMEMBER ABOUT ${who.toUpperCase()} (oldest first):\n${mem.map((m) => `- ${m}`).join('\n')}` : 'WHAT YOU REMEMBER: nothing yet.',
     '',
-    `${who} typed: "${heard}"`,
-    '',
-    'CONTEXT FROM THE DECK:',
+    'THE DECK RIGHT NOW:',
     context || '(nothing)'
   ].join('\n');
 }
+
+/** The message turn: what was typed, plus what the deck already did (if anything). */
+function towerTurn({ heard, done, when }) {
+  const lines = [`${when ? `[${when}] ` : ''}${heard}`];
+  if (done) {
+    lines.push('', done.kind === 'err'
+      ? `(The deck tried this as a command and hit a problem: "${done.reply}". Say so plainly and helpfully.)`
+      : `(The deck has ALREADY done this. Its own confirmation: "${done.reply}". Say it back conversationally, keeping every fact exact. Leave "act" and "command" empty.)`);
+  }
+  return lines.join('\n');
+}
+
+const clean = (t, max) => String(t || '').replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, max);
+const list = (v, n, max) => (Array.isArray(v) ? v : []).map((x) => clean(x, max)).filter(Boolean).slice(0, n);
 
 /** Model fallback shared by every call: the remembered model, the aliases, then whatever Flash the key can see. */
 async function generate(key, model, body, fetchFn) {
@@ -206,12 +223,15 @@ async function towerReply(opts, fetchFn = fetch) {
   const { key, model } = opts || {};
   if (!key) throw new Error('no key');
   const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), opts.timeoutMs || 7000);
+  const timer = setTimeout(() => ac.abort(), opts.timeoutMs || 30000);
   const f = (url, init) => fetchFn(url, { ...init, signal: ac.signal });
   try {
+    const history = (Array.isArray(opts.history) ? opts.history : []).filter((h) => h && h.text).slice(-40)
+      .map((h) => ({ role: h.role === 'model' ? 'model' : 'user', parts: [{ text: String(h.text).slice(0, 3000) }] }));
     const body = {
-      contents: [{ role: 'user', parts: [{ text: towerPrompt(opts) }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 400, responseMimeType: 'application/json', responseSchema: TOWER_SCHEMA, thinkingConfig: { thinkingBudget: 0 } }
+      systemInstruction: { parts: [{ text: towerPrompt(opts) }] },
+      contents: [...history, { role: 'user', parts: [{ text: towerTurn(opts) }] }],
+      generationConfig: { temperature: 0.8, maxOutputTokens: 6000, responseMimeType: 'application/json', responseSchema: TOWER_SCHEMA, thinkingConfig: { thinkingBudget: 1024 } }
     };
     let out;
     try {
@@ -224,9 +244,41 @@ async function towerReply(opts, fetchFn = fetch) {
     }
     let obj;
     try { obj = JSON.parse(String(out.text || '').replace(/^```(?:json)?\s*|\s*```$/g, '')); } catch (e) { throw new Error('unreadable reply'); }
-    const reply = String(obj.reply || '').replace(/\s+/g, ' ').trim().slice(0, 400);
+    const reply = clean(obj.reply, 3000);
     if (!reply) throw new Error('empty reply');
-    return { model: out.model, reply, command: String(obj.command || '').trim().slice(0, 200) };
+    return {
+      model: out.model,
+      reply,
+      command: clean(obj.command, 200),
+      act: list(obj.act, 3, 200),
+      remember: list(obj.remember, 5, 200),
+      forget: list(obj.forget, 10, 200),
+      lookup: clean(obj.lookup, 200)
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** A web lookup for the terminal: Gemini with Google Search grounding, answering in plain text. */
+async function towerLookup(opts, fetchFn = fetch) {
+  const { key, model, query } = opts || {};
+  if (!key || !query) throw new Error('nothing to look up');
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), opts.timeoutMs || 30000);
+  const f = (url, init) => fetchFn(url, { ...init, signal: ac.signal });
+  try {
+    const who = opts.operator || 'the operator';
+    const body = {
+      systemInstruction: { parts: [{ text: `You are ${opts.name || 'Comm Tower 1'}, the AI on ${who}'s Command Deck. Search the web and answer ${who}'s message from what you find: plainly, a little warm, short unless detail is needed. Plain text with line breaks, no markdown symbols, no links. Today is ${opts.when || new Date().toDateString()}.` }] },
+      contents: [{ role: 'user', parts: [{ text: `${opts.heard || query}\n\n(Search for: ${query})` }] }],
+      tools: [{ google_search: {} }],
+      generationConfig: { temperature: 0.4, maxOutputTokens: 4000 }
+    };
+    const out = await generate(key, model, body, f);
+    const reply = clean(out.text, 3000);
+    if (!reply) throw new Error('empty reply');
+    return { model: out.model, reply };
   } finally {
     clearTimeout(timer);
   }
@@ -243,4 +295,4 @@ async function testKey(key, fetchFn = fetch) {
   }
 }
 
-module.exports = { summarize, testKey, listModels, buildPrompt, parseRecap, RECAP_SCHEMA, towerReply, towerPrompt, TOWER_SCHEMA };
+module.exports = { summarize, testKey, listModels, buildPrompt, parseRecap, RECAP_SCHEMA, towerReply, towerLookup, towerPrompt, towerTurn, TOWER_SCHEMA };

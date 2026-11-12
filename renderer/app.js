@@ -14,7 +14,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.32.1';
+const VERSION = 'v1.33.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -2107,42 +2107,135 @@ function towerTalkOn() {
 }
 function towerContext() {
   const now = new Date();
+  const today0 = new Date(now.toDateString());
+  const dayName = (d) => `${U.DAY_FULL[d.getDay()].slice(0, 3)} ${U.MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
   const lines = [`Right now: ${U.DAY_FULL[now.getDay()]}, ${U.MONTHS[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}, ${U.fmtTimeShort(now, false)}.`];
-  try { lines.push(`Weather: ${weatherSentence()}`); } catch (e) { /* no weather yet */ }
-  const soon = new Date(now.getTime() + 14 * 864e5);
-  const ev = allEvents().filter((e) => e.end >= now && e.start <= soon).slice(0, 25);
-  lines.push('Calendar, next two weeks:');
-  lines.push(ev.length ? ev.map((e) => `- ${U.DAY_FULL[e.start.getDay()].slice(0, 3)} ${U.MONTHS[e.start.getMonth()].slice(0, 3)} ${e.start.getDate()}${e.allDay ? ' (all day)' : ` ${U.fmtTimeShort(e.start, false)}–${U.fmtTimeShort(e.end, false)}`}: ${e.title}`).join('\n') : '- nothing');
-  const sched = (S.schedule || []).filter((x) => !x.deleted && x.date && new Date(`${x.date}T00:00`) >= new Date(now.toDateString()) && new Date(`${x.date}T00:00`) <= soon).slice(0, 20);
-  if (sched.length) lines.push('Schedule (shifts and appointments):', sched.map((x) => `- ${x.date}: ${[x.type, x.title, x.start && `${x.start}${x.end ? `–${x.end}` : ''}`].filter(Boolean).join(' · ')}`).join('\n'));
-  const tasks = activeTasks().slice().sort((a, b) => (a.due ? new Date(a.due) : Infinity) - (b.due ? new Date(b.due) : Infinity)).slice(0, 25);
+  try {
+    lines.push(`Weather: ${weatherSentence()}`);
+    const d = S.weather && S.weather.daily;
+    if (d && d.time) lines.push(`Forecast: ${d.time.slice(1, 6).map((t, i) => `${dayName(new Date(`${t}T12:00`))} ${wxInfo(d.weather_code[i + 1], 1).words}, ${Math.round(d.temperature_2m_max[i + 1])}/${Math.round(d.temperature_2m_min[i + 1])}${d.precipitation_probability_max && d.precipitation_probability_max[i + 1] >= 30 ? `, ${d.precipitation_probability_max[i + 1]}% rain` : ''}`).join('; ')}`);
+  } catch (e) { /* no weather yet */ }
+  const from = new Date(today0.getTime() - 3 * 864e5);
+  const soon = new Date(now.getTime() + 60 * 864e5);
+  const ev = allEvents().filter((e) => e.end >= from && e.start <= soon).slice(0, 70);
+  lines.push('Calendar, past 3 days and next 60:');
+  lines.push(ev.length ? ev.map((e) => `- ${dayName(e.start)}${e.allDay ? ' (all day)' : ` ${U.fmtTimeShort(e.start, false)}–${U.fmtTimeShort(e.end, false)}`}: ${e.title}${e.end < now ? ' (past)' : ''}`).join('\n') : '- nothing');
+  const sched = (S.schedule || []).filter((x) => !x.deleted && x.date && new Date(`${x.date}T00:00`) >= from && new Date(`${x.date}T00:00`) <= soon).slice(0, 40);
+  if (sched.length) lines.push('Schedule (shifts and appointments):', sched.map((x) => `- ${x.date}: ${[x.type, x.title, x.start && `${x.start}${x.end ? `–${x.end}` : ''}`, x.note].filter(Boolean).join(' · ')}`).join('\n'));
+  const proj = (id) => { const p = id && S.projects.find((x) => x.id === id); return p ? p.name : ''; };
+  const tasks = activeTasks().slice().sort((a, b) => (a.due ? new Date(a.due) : Infinity) - (b.due ? new Date(b.due) : Infinity)).slice(0, 90);
   lines.push('Open tasks:');
-  lines.push(tasks.length ? tasks.map((t) => `- ${t.title}${t.due ? ` (due ${spokenWhen(t.due, t.dueHasTime)}${isOverdue(t, now) ? ', OVERDUE' : ''})` : ''}${t.priority === 'high' ? ' [high priority]' : ''}`).join('\n') : '- none');
+  lines.push(tasks.length ? tasks.map((t) => `- ${t.title}${t.due ? ` (due ${spokenWhen(t.due, t.dueHasTime)}${isOverdue(t, now) ? ', OVERDUE' : ''})` : ''}${t.priority === 'high' ? ' [high priority]' : ''}${proj(t.projectId) ? ` [project: ${proj(t.projectId)}]` : ''}`).join('\n') : '- none');
+  const done = S.tasks.filter((t) => t.done && t.doneAt && new Date(t.doneAt) > new Date(now.getTime() - 7 * 864e5)).sort((a, b) => new Date(b.doneAt) - new Date(a.doneAt)).slice(0, 20);
+  if (done.length) lines.push('Finished in the last week:', done.map((t) => `- ${t.title} (${dayName(new Date(t.doneAt))})`).join('\n'));
+  const projects = (S.projects || []).filter((p) => p.status !== 'done');
+  if (projects.length) {
+    lines.push('Projects:', projects.map((p) => {
+      const pt = S.tasks.filter((t) => t.projectId === p.id);
+      return `- ${p.name}${p.goal ? `: ${String(p.goal).slice(0, 160)}` : ''} (${pt.filter((t) => t.done).length}/${pt.length} tasks done${p.due ? `, due ${p.due}` : ''})`;
+    }).join('\n'));
+  }
+  const byDate = (n) => new Date(n.editedAt || n.createdAt || 0);
+  const notes = (S.notes || []).filter((n) => !Recap.isRecap(n)).sort((a, b) => byDate(b) - byDate(a)).slice(0, 12);
+  if (notes.length) lines.push('Recent notes:', notes.map((n) => `- ${n.title || 'Untitled'} (${dayName(byDate(n))})${n.body && String(n.body).trim() !== n.title ? `: ${String(n.body).replace(/\s+/g, ' ').slice(0, 400)}` : ''}`).join('\n'));
+  const recaps = (S.notes || []).filter((n) => Recap.isRecap(n) && n.recap.summary).sort((a, b) => byDate(b) - byDate(a)).slice(0, 5);
+  if (recaps.length) lines.push('Recent meeting recaps:', recaps.map((n) => `- ${n.title || 'Meeting'} (${dayName(byDate(n))}): ${String(n.recap.summary).slice(0, 500)}${(n.recap.actions || []).length ? ` Action items: ${n.recap.actions.map((a) => (a && a.text) || a).slice(0, 8).join('; ')}` : ''}`).join('\n'));
   const tm = (S.timers || []).filter((t) => t.endsAt && new Date(t.endsAt) > now);
   if (tm.length) lines.push(`Running timers/alarms: ${tm.map((t) => `${t.label || t.kind} until ${U.fmtTimeShort(new Date(t.endsAt), false)}`).join('; ')}`);
   return lines.join('\n');
 }
-async function towerWord(heard, done) {
-  if (!towerTalkOn() || !deck.tower || !deck.tower.word) return null;
+
+// ---- the AI's memory (v1.33): the running conversation and the things it was told to keep
+const CHAT_KEEP = 60;
+const MEMORY_KEEP = 150;
+function chatAdd(role, text) {
+  text = String(text || '').trim();
+  if (!text) return;
+  S.aiChat.push({ role, text: text.slice(0, 3000), at: new Date().toISOString() });
+  if (S.aiChat.length > CHAT_KEEP) S.aiChat.splice(0, S.aiChat.length - CHAT_KEEP);
+  deck.save('aiChat', S.aiChat);
+}
+function chatStamp(at) {
+  const d = new Date(at);
+  return `${U.DAY_FULL[d.getDay()].slice(0, 3)} ${U.MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}, ${U.fmtTimeShort(d, false)}`;
+}
+function chatHistory() {
+  // Your lines carry when you said them, so a conversation can run across days.
+  return S.aiChat.slice(-40).map((m) => ({ role: m.role, text: m.role === 'user' ? `[${chatStamp(m.at)}] ${m.text}` : m.text }));
+}
+function memoryLines() {
+  return S.aiMemory.map((m) => `${m.t} (noted ${chatStamp(m.at).split(',')[0]})`);
+}
+function memoryApply(g) {
+  if (!g) return;
+  let changed = false;
+  for (const f of g.forget || []) {
+    const key = String(f).replace(/\s*\(noted [^)]*\)\s*$/, '').trim().toLowerCase();
+    const before = S.aiMemory.length;
+    S.aiMemory = S.aiMemory.filter((m) => m.t.toLowerCase() !== key && !(key.length > 12 && m.t.toLowerCase().includes(key)));
+    if (S.aiMemory.length !== before) changed = true;
+  }
+  for (const r of g.remember || []) {
+    const t = String(r).replace(/\s*\(noted [^)]*\)\s*$/, '').trim();
+    if (!t || /\b(password|passcode|pin|card number|account number|ssn|social security)\b/i.test(t)) continue;
+    if (S.aiMemory.some((m) => m.t.toLowerCase() === t.toLowerCase())) continue;
+    S.aiMemory.push({ t, at: new Date().toISOString() });
+    changed = true;
+  }
+  if (S.aiMemory.length > MEMORY_KEEP) S.aiMemory.splice(0, S.aiMemory.length - MEMORY_KEEP);
+  if (changed) deck.save('aiMemory', S.aiMemory);
+}
+function aiClearChat() { S.aiChat = []; deck.save('aiChat', S.aiChat); }
+function aiForget(i) { S.aiMemory.splice(i, 1); deck.save('aiMemory', S.aiMemory); }
+function aiForgetAll() { S.aiMemory = []; deck.save('aiMemory', S.aiMemory); aiClearChat(); }
+// Long answers show in full, but only the start is read aloud.
+function speakable(reply) {
+  const flat = String(reply).replace(/\n+/g, ' ');
+  if (flat.split(/\s+/).length <= 60) return flat;
+  const parts = flat.match(/[^.!?]+[.!?]+/g) || [flat];
+  return `${parts.slice(0, 2).join(' ').trim()} The rest is on screen.`;
+}
+
+function aiBase() {
   const r = S.settings.recap || {};
-  const res = await deck.tower.word({ key: r.geminiKey, model: r.model || '', name: (S.settings.tower && S.settings.tower.name) || 'COMM TOWER 1', operator: S.settings.operatorName, humor: S.settings.humor ?? 40, heard, done, context: towerContext() }).catch(() => null);
+  return { key: r.geminiKey, model: r.model || '', name: (S.settings.tower && S.settings.tower.name) || 'COMM TOWER 1', operator: S.settings.operatorName, when: chatStamp(new Date()) };
+}
+async function towerWord(heard, done, history = []) {
+  if (!towerTalkOn() || !deck.tower || !deck.tower.word) return null;
+  const res = await deck.tower.word({ ...aiBase(), humor: S.settings.humor ?? 40, heard, done, history, memory: memoryLines(), context: towerContext() }).catch(() => null);
   return res && res.ok ? res : null;
 }
+async function towerLookup(heard, query) {
+  if (!deck.tower || !deck.tower.lookup) return null;
+  const res = await deck.tower.lookup({ ...aiBase(), heard, query }).catch(() => null);
+  return res && res.ok ? res : null;
+}
+// Things it may do straight away. Anything that throws something away waits for a yes.
+const RISKY = /\b(delete|remove|discard|erase|wipe|clear|cancel|forget|drop)\b/i;
+// A plain task request (vs. chatter that the parser would otherwise file as a task).
+const TASK_START = /^(?:add|new task|task|to-?do|remind me|remember to|don'?t let me forget|i need to|need to|buy|pick up|call|email|text|book|pay|renew|schedule|make|get|fix|clean|order|finish|send|submit|return|cancel)\b/i;
 async function respond(text, sink) {
   text = String(text || '').trim();
   if (!text) return;
   if (S.alert && S.alert.ringing) stopRinging();
   sink.line('you', text);
   sink.busy(true);
+  const history = chatHistory();
+  chatAdd('user', text);
   let made = null;
   let built = null;
   const say = (reply, kind = 'c', card = null) => {
     sink.busy(false);
     sink.line(kind === 'err' ? 'err' : 'c', reply);
     if (card) sink.card(card);
-    if (S.settings.termSpeak !== false) speak(reply).catch(() => {});
+    chatAdd('model', reply);
+    if (S.settings.termSpeak !== false) speak(speakable(reply)).catch(() => {});
   };
   const run = (cmd) => handleCommand(cmd, { quiet: true, onReply: (res) => { built = res; made = res.task; } });
+
+  // Start fresh: the chat, or everything it remembers too.
+  if (/^(?:clear|reset|wipe|new)\s+(?:the\s+)?(?:chat|conversation)\b/i.test(text)) { aiClearChat(); return say('Fresh page. I still remember the things you asked me to keep.'); }
+  if (/^forget everything\b/i.test(text)) { aiForgetAll(); return say(`Done, ${S.settings.operatorName}. Memory wiped and the chat cleared.`); }
 
   // An answer to something it offered ("Want me to hold 10 AM? Type yes.")
   if (towerOffer && Date.now() - towerOffer.at < 5 * 60e3 && (YES.test(text) || NO.test(text))) {
@@ -2159,16 +2252,37 @@ async function respond(text, sink) {
 
   let parsed = null;
   try { parsed = await deck.parse(text, commandCtx()); } catch (e) { parsed = { intent: 'empty' }; }
-  // A question (that the parser would only file as a task) goes to Gemini; with no Gemini it's answered honestly, not filed.
-  const question = (!parsed || ['add-task', 'empty'].includes(parsed.intent)) && looksLikeQuestion(text);
+  const fallback = !parsed || ['add-task', 'empty'].includes(parsed.intent);
+  // Questions and conversation go to the AI. A clear task request still goes straight to the deck.
+  const talk = fallback && (looksLikeQuestion(text) || (towerTalkOn() && !TASK_START.test(text)));
 
-  if (question) {
+  if (talk) {
     pushLog('u', text);
-    const g = await towerWord(text, null);
+    const g = await towerWord(text, null, history);
     if (!g) { pushLog('c', "I can't answer that one offline."); return say(towerTalkOn() ? "I can't answer that one right now. To file it as a task, start with \"add\"." : "Questions need Gemini (add a key in Settings › Field Unit › DATA RECAP). To file it as a task, start with \"add\".", 'err'); }
-    pushLog('c', g.reply);
-    if (g.command) towerOffer = { command: g.command, at: Date.now() };
-    return say(g.reply);
+    memoryApply(g);
+    let reply = g.reply;
+    // Needs the web: look it up, and answer from that.
+    if (g.lookup) {
+      const l = await towerLookup(text, g.lookup);
+      reply = l ? l.reply : `${reply}\n(I tried to look that up online and couldn't get through.)`;
+    }
+    // Things it was plainly asked to do: done now, with a card for each.
+    const cards = [];
+    const problems = [];
+    for (const cmd of g.act || []) {
+      if (RISKY.test(cmd)) { towerOffer = { command: cmd, at: Date.now() }; reply += `\nThat one throws something away, so type yes to confirm: ${cmd}`; continue; }
+      built = null; made = null;
+      await run(cmd);
+      if (built && built.kind === 'ok') cards.push(termCard(built.intent, made));
+      else problems.push(built ? built.reply : `I couldn't do "${cmd}".`);
+    }
+    if (problems.length) reply += `\n${problems.join('\n')}`;
+    if (g.command && !towerOffer) towerOffer = { command: g.command, at: Date.now() };
+    pushLog('c', reply.split('\n')[0]);
+    say(reply, 'c', cards[0] || null);
+    for (const c of cards.slice(1)) sink.card(c);
+    return;
   }
 
   // A command: the deck does it now, then the reply gets worded.
@@ -2177,7 +2291,8 @@ async function respond(text, sink) {
   const card = built.kind === 'ok' ? termCard(built.intent, made) : null;
   // Mute / deafen should be instant: no wording pass.
   if (built.intent === 'discord' || built.intent === 'meeting') return say(built.reply, built.kind);
-  const g = await towerWord(text, { reply: built.reply.replace(/^Copy that, [^.]+\.\s*/, ''), kind: built.kind, intent: built.intent });
+  const g = await towerWord(text, { reply: built.reply.replace(/^Copy that, [^.]+\.\s*/, ''), kind: built.kind, intent: built.intent }, history);
+  memoryApply(g);
   return say(g ? g.reply : built.reply, built.kind, card);
 }
 
@@ -3364,6 +3479,8 @@ async function start() {
   S.notes = S.data.notes || [];
   S.projects = S.data.projects || [];
   S.schedule = S.data.schedule || [];
+  S.aiChat = Array.isArray(S.data.aiChat) ? S.data.aiChat : [];
+  S.aiMemory = Array.isArray(S.data.aiMemory) ? S.data.aiMemory : [];
   S.schedWeek = weekStart(new Date());
   S.tkView = 'queue';
   const now = new Date();
@@ -3396,6 +3513,7 @@ async function start() {
   wireSchedule();
 
   initModals({
+    aiClearChat, aiForget, aiForgetAll,
     lightInfo: () => ({ ...lightState }),
     lightsPreview: (cfg) => (deck.lights ? deck.lights.configure(cfg).then((s) => { if (s) lightState = s; return s; }).catch(() => null) : Promise.resolve(null)),
     lightsTest: (name) => (deck.lights ? deck.lights.test(name) : Promise.resolve(false)),

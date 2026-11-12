@@ -85,6 +85,8 @@ const DEFAULTS = {
   layoutMine: null, // retired (v1.23): your page 1 arrangement from while Open Window was on; restored once, then cleared
   window: { bounds: null },
   discord: { clientId: '', clientSecret: '', accessToken: '', refreshToken: '', expiresAt: 0 }, // Discord voice (mute / deafen icons): your own Discord app's codes + its token
+  aiChat: [], // the terminal's running conversation with Gemini: { role: user|model, text, at } (last 60)
+  aiMemory: [], // what the terminal's AI was told to keep: { t, at } (up to 150)
   towerPos: null, // Comm Tower 1's dial: { pin: 'bl', disp } locked to a screen corner, { cx, cy } out in the open (null: bottom-right of the main display)
   meta: { lastBriefingDate: null, lastLaunch: null, page: 1 },
   push: { publicKey: null, privateKey: null }

@@ -170,7 +170,7 @@ body.paused .tw-rtime { animation: tw-blink 1s steps(1) infinite; }
 .tw-pop.rec { box-shadow: inset 0 0 0 1px rgba(255, 111, 89, 0.6); }
 .tw-log { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 14px 6px; display: flex; flex-direction: column; scrollbar-width: thin; user-select: text; -webkit-user-select: text; }
 .tw-log > :first-child { margin-top: auto; }
-.ln { font: 400 12.5px/1.55 'IBM Plex Mono', monospace; color: var(--text); margin: 2px 0; overflow-wrap: anywhere; }
+.ln { font: 400 12.5px/1.55 'IBM Plex Mono', monospace; color: var(--text); margin: 2px 0; overflow-wrap: anywhere; white-space: pre-line; }
 .ln .pr { color: var(--dim); }
 .ln.you { color: var(--amb); margin-top: 9px; text-transform: lowercase; }
 .ln.you .pr { color: var(--amb); }

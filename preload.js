@@ -55,6 +55,7 @@ contextBridge.exposeInMainWorld('deck', {
     state: (st) => ipcRenderer.send('tower:state', st),
     home: () => ipcRenderer.send('tower:home'),
     word: (opts) => ipcRenderer.invoke('tower:word', opts),
+    lookup: (opts) => ipcRenderer.invoke('tower:lookup', opts),
     onText: (fn) => ipcRenderer.on('tower:text', (_e, t) => fn(t)),
     onRec: (fn) => ipcRenderer.on('tower:rec', (_e, a) => fn(a))
   },

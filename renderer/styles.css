@@ -1825,7 +1825,7 @@ body[data-theme="hivis"] .trim-badge { display: none !important; }
 .term-btn.on { color: var(--lime); }
 .term-log { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 18px 8px; display: flex; flex-direction: column; }
 .term-log > :first-child { margin-top: auto; }
-.tm-ln { font: 400 13px/1.6 var(--mono); color: var(--text); margin: 2px 0; overflow-wrap: anywhere; user-select: text; }
+.tm-ln { font: 400 13px/1.6 var(--mono); color: var(--text); margin: 2px 0; overflow-wrap: anywhere; user-select: text; white-space: pre-line; }
 .tm-pr { color: var(--dim); }
 .tm-you { color: var(--amber); margin-top: 10px; text-transform: lowercase; }
 .tm-you .tm-pr { color: var(--amber); }
@@ -2048,3 +2048,7 @@ body[data-theme="meridian"] .tk-pri i.lit { background: #FFFFFF !important; }
 body[data-theme="meridian"] .tk:not(.done) .tk-pri span { color: #D4D9DA !important; }
 body[data-theme="meridian"] .btn.primary { color: #0B0D0E; }
 body[data-theme="meridian"] .hexs .hx-tag { color: #FFFFFF; }
+
+/* Settings › System › TERMINAL · WHAT IT REMEMBERS (v1.33) */
+.ai-mem { max-height: 220px; overflow-y: auto; margin-top: 6px; }
+.ai-mem .toggle-row span { white-space: normal; overflow-wrap: anywhere; }

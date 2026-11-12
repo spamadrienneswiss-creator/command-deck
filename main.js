@@ -461,6 +461,7 @@ function towerSettings() {
     name: String(t.name || 'COMM TOWER 1').trim().toUpperCase() || 'COMM TOWER 1',
     operator: settings().operatorName || '',
     skin: TU.SKINS.includes(t.skin) ? t.skin : 'eclipse',
+    style: TU.STYLES.includes(t.style) ? t.style : 'sentinel',
     layer: t.layer === 'desktop' ? 'desktop' : 'top',
     shortcuts: TU.cleanShortcuts(t.shortcuts).map(({ id, name, kind }) => ({ id, name, kind })),
     max: TU.MAX_SHORTCUTS

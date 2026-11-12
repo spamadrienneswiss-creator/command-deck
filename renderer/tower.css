@@ -6,7 +6,7 @@
   --p: #FFFFFF; --s: #A3A3A3; --a: #FF6A3D; --a-soft: #FFB199; --t: #FFFFFF; --k: #000000;
   --amb: var(--p); --grn: #B8E27A; --lav: #A8B0D8; --coral: #FF8A7A;
   --ink: #F4EFE9; --text: #ECE7E1; --mute: #8E8A97; --dim: #6E6A78; --line: #23252F; --line3: #3A3D4C;
-  --hx: 64px; --hy: 64px; --mh: 90deg; --mv: 0deg;
+  --hx: 64px; --hy: 64px; --mh: 90deg; --mv: 0deg; --sy: 1;
 }
 /* Color skins (Settings › System › COMM TOWER 1 › DIAL COLOR). Three colors each: the light,
    its partner, and one accent. "Match theme" gets its colors from the deck (tower.js). */
@@ -209,8 +209,85 @@ body[data-v="d"] .tw-pop { top: 134px; }
 .tw-scrow button { height: 22px; padding: 0 8px; border: 0; cursor: pointer; background: transparent; box-shadow: inset 0 0 0 1px var(--line3); color: #C9C4CE; font: 500 9px/1 'IBM Plex Mono', monospace; letter-spacing: 0.12em; }
 .tw-scrow button:hover { box-shadow: inset 0 0 0 1px var(--coral); color: var(--coral); }
 .tw-send { color: var(--k); }
+
+/* ================================================================
+   DIAL STYLE (v1.32): Sentinel (above), Obsidian and Lantern. Settings › System › COMM TOWER 1.
+   Style is the shape and finish; the color skin still sets --p / --s / --a.
+   ================================================================ */
+.st-ob, .dl-plane, .dl-cone, .dl-dust, .dl-seams { display: none; }
+
+/* ---- OBSIDIAN: the dial as hardware */
+body[data-style="obsidian"] .st-ob { display: inline; }
+body[data-style="obsidian"] .dl-seams { display: block; }
+body[data-style="obsidian"].open .dl-hud { filter: drop-shadow(0 0 2px color-mix(in srgb, var(--p) 35%, transparent)); }
+.dl-hud .ob-tick { fill: none; stroke: var(--p); stroke-opacity: 0.55; }
+.dl-hud .ob-num { fill: var(--s); font: 400 7px 'IBM Plex Mono', monospace; letter-spacing: 0.18em; }
+body[data-style="obsidian"] .dl-hub { background: radial-gradient(circle, #0B0B0C 0 30%, #17181B 31% 44%, #050506 45% 47%, transparent 48%); }
+body[data-style="obsidian"] .dl-hub::before {
+  content: ''; position: absolute; inset: 12px; border-radius: 50%; z-index: 0;
+  background: conic-gradient(from 20deg, #3A3C41, #8E9299 12%, #2A2C30 24%, #A7ABB2 36%, #26282C 48%, #8B8F96 60%, #303236 72%, #9EA2A9 84%, #3A3C41);
+  -webkit-mask: radial-gradient(circle, transparent 0 60%, #000 61% 70%, transparent 71%); mask: radial-gradient(circle, transparent 0 60%, #000 61% 70%, transparent 71%);
+  transition: transform 0.5s ease;
+}
+body[data-style="obsidian"].open .dl-hub::before { transform: rotate(140deg); transition: transform 2s cubic-bezier(0.22, 0.8, 0.2, 1); }
+body[data-style="obsidian"] .dl-hub::after {
+  content: ''; position: absolute; inset: 34px; border-radius: 50%; z-index: 0;
+  background: radial-gradient(circle at 42% 36%, #2A2B2F, #0A0A0B 60%, #000 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.35), inset 0 -6px 12px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+body[data-style="obsidian"] .dl-gw { z-index: 1; }
+body[data-style="obsidian"] .dl-gs { border-width: 1px; }
+body[data-style="obsidian"] .g1 .dl-gs { border-color: #D9DCE1; box-shadow: 0 0 6px rgba(255, 255, 255, 0.35); }
+body[data-style="obsidian"] .g2 .dl-gs { border-color: #8E9299; box-shadow: 0 0 4px rgba(255, 255, 255, 0.2); }
+body[data-style="obsidian"] .dl-gs::after { width: 6px; height: 6px; margin-left: -3px; top: -4px; }
+body[data-style="obsidian"] .dl-core { z-index: 2; width: 12px; height: 12px; margin: -6px 0 0 -6px; background: #FFFFFF; box-shadow: 0 0 10px #FFFFFF, 0 0 28px color-mix(in srgb, var(--p) 80%, transparent), 0 0 60px color-mix(in srgb, var(--a) 50%, transparent); }
+body[data-style="obsidian"].rec .dl-core { background: var(--a-soft); box-shadow: 0 0 10px var(--a), 0 0 30px var(--a); }
+body[data-style="obsidian"] .dl-key .in {
+  position: relative;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.14) 0%, rgba(40, 40, 44, 0.86) 38%, rgba(6, 6, 7, 0.96) 100%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p) 70%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -14px 20px rgba(0, 0, 0, 0.6);
+  text-shadow: none; transform: perspective(500px) rotateX(10deg);
+}
+body[data-style="obsidian"] .dl-key .in::after { content: ''; position: absolute; left: 8%; right: 8%; top: 0; height: 46%; background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0)); pointer-events: none; }
+body[data-style="obsidian"] .dl-key:hover .in, body[data-style="obsidian"] .dl-key:focus-visible .in, body[data-style="obsidian"] .dl-key.hot .in { transform: perspective(500px) rotateX(0deg) scale(1.12); background: var(--p); color: var(--k); }
+body[data-style="obsidian"] .dl-key.rec .in { box-shadow: inset 0 0 0 1px var(--a), inset 0 1px 0 color-mix(in srgb, var(--a-soft) 70%, transparent), inset 0 -14px 20px rgba(0, 0, 0, 0.6); }
+body[data-style="obsidian"] .dl-key.rec:hover .in, body[data-style="obsidian"] .dl-key.rec.hot .in { background: var(--a); }
+.dl-seams { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; }
+body.open .dl-seams { opacity: 1; transition: opacity 1.2s ease 0.6s; }
+.dl-seams i { position: absolute; left: -1px; top: -1px; width: 2px; height: 2px; border-radius: 50%; background: var(--a); box-shadow: 0 0 8px 3px color-mix(in srgb, var(--a) 70%, transparent); }
+
+/* ---- LANTERN: the dial as light, projected up from a lens */
+body[data-style="lantern"] .dl-plane, body[data-style="lantern"] .dl-cone, body[data-style="lantern"] .dl-dust { display: block; }
+body[data-style="lantern"] .dl-rings { perspective: 900px; perspective-origin: var(--hx) var(--hy); }
+body[data-style="lantern"] .dl-plane.p2 { transform: translateZ(-60px); opacity: 0.8; }
+body[data-style="lantern"] .dl-plane.p3 { transform: translateZ(60px); }
+body[data-style="lantern"].open .dl-hud { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--p) 75%, transparent)) drop-shadow(0 0 1px var(--s)); }
+body[data-style="lantern"] .dl-hub { background: radial-gradient(circle, color-mix(in srgb, var(--p) 24%, transparent), color-mix(in srgb, var(--p) 4%, transparent) 50%, transparent 66%); }
+body[data-style="lantern"].open .dl-hub { transform: scale(1) translateY(calc(-18px * var(--sy))); }
+body[data-style="lantern"] .dl-core { width: 24px; height: 24px; margin: -12px 0 0 -12px; background: radial-gradient(circle, #FFFFFF, var(--t) 40%, transparent 72%); box-shadow: 0 0 18px var(--t), 0 0 50px color-mix(in srgb, var(--p) 90%, transparent), 0 0 90px color-mix(in srgb, var(--a) 45%, transparent); }
+body[data-style="lantern"] .dl-key .in {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--p) 16%, transparent), color-mix(in srgb, var(--p) 3%, rgba(0, 0, 0, 0.55)) 50%, color-mix(in srgb, var(--p) 9%, transparent));
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p) 80%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.9), inset -1px 0 0 color-mix(in srgb, var(--s) 60%, transparent), inset 1px 0 0 color-mix(in srgb, var(--a) 40%, transparent), 0 0 22px color-mix(in srgb, var(--p) 28%, transparent);
+}
+body[data-style="lantern"] .dl-key.rec .in { box-shadow: inset 0 0 0 1px var(--a), inset 0 1px 0 var(--a-soft), 0 0 24px color-mix(in srgb, var(--a) 40%, transparent); }
+body[data-style="lantern"] .dl-say b { text-shadow: 0 0 18px color-mix(in srgb, var(--p) 90%, transparent), 0 0 2px #FFFFFF, 0 0 4px #000; }
+/* The projection: a lens below the core (above it when the fan opens downward) and its cone of light. */
+.dl-cone { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; transform: scaleY(var(--sy)); opacity: 0; transition: opacity 0.3s ease; }
+body.open .dl-cone { opacity: 1; transition: opacity 1.4s ease 0.4s; }
+.dl-cone i { position: absolute; left: -54px; top: -6px; width: 108px; height: 84px; clip-path: polygon(50% 0, 100% 100%, 0 100%); background: linear-gradient(0deg, transparent, color-mix(in srgb, var(--p) 10%, transparent) 45%, color-mix(in srgb, var(--p) 32%, transparent)); filter: blur(1px); }
+.dl-cone i.w { left: -68px; width: 136px; background: linear-gradient(0deg, transparent, color-mix(in srgb, var(--s) 6%, transparent) 55%, color-mix(in srgb, var(--p) 14%, transparent)); filter: blur(4px); }
+.dl-cone b { position: absolute; left: -22px; top: 72px; width: 44px; height: 8px; border-radius: 50%; background: var(--t); box-shadow: 0 0 14px var(--t), 0 0 40px color-mix(in srgb, var(--p) 80%, transparent), 0 0 70px color-mix(in srgb, var(--a) 50%, transparent); }
+.dl-cone em { position: absolute; left: -36px; top: 68px; width: 72px; height: 16px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--p) 60%, transparent); box-shadow: 0 0 10px color-mix(in srgb, var(--p) 50%, transparent); }
+.dl-dust { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; }
+body.open .dl-dust { opacity: 1; transition: opacity 1.5s ease 1s; }
+.dl-dust i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: var(--t); box-shadow: 0 0 6px var(--p); animation: dlDrift linear infinite; }
+.dl-dust i.o { background: var(--a); box-shadow: 0 0 6px var(--a); }
+body:not(.open) .dl-dust i { animation-play-state: paused; }
+@keyframes dlDrift { 0% { transform: translate(0, 0); opacity: 0; } 20% { opacity: 0.9; } 80% { opacity: 0.7; } 100% { transform: translate(var(--dx), var(--dy)); opacity: 0; } }
+
 @media (prefers-reduced-motion: reduce) {
-  .tw-pop, .ln.busy, .dl-core, .dl-gs, .dl-hud, .dl-hud .spin { animation: none !important; }
-  .dl-hud .rg, .dl-key, .dl-hub, .dl-gw, .dl-brk, .dl-say, .dl-rings::before, .dl-hud .ld { transition-duration: 0.01s !important; transition-delay: 0s !important; }
+  .tw-pop, .ln.busy, .dl-core, .dl-gs, .dl-hud, .dl-hud .spin, .dl-dust i { animation: none !important; }
+  .dl-hud .rg, .dl-key, .dl-hub, .dl-gw, .dl-brk, .dl-say, .dl-rings::before, .dl-hud .ld, .dl-cone, .dl-dust, .dl-seams, .dl-hub::before { transition-duration: 0.01s !important; transition-delay: 0s !important; }
 }
 .tw-pop:has(#scBox:not([hidden])) #recLive { display: none; }

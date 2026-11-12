@@ -12,13 +12,20 @@
 <link rel="stylesheet" href="../node_modules/@fontsource/ibm-plex-mono/latin-500.css">
 <link rel="stylesheet" href="tower.css">
 </head>
-<body data-skin="eclipse" data-state="closed" data-h="r" data-v="u">
+<body data-skin="eclipse" data-style="sentinel" data-state="closed" data-h="r" data-v="u">
 <div class="tw" id="tw">
   <!-- The rings. Drawn by tower.js; clipped by the window, faded at its open edges. -->
-  <div class="dl-rings" aria-hidden="true"><svg class="dl-hud" id="hud" viewBox="-364 -364 728 728" width="728" height="728"></svg></div>
+  <div class="dl-rings" aria-hidden="true">
+    <svg class="dl-hud dl-plane p2" id="hud2" viewBox="-364 -364 728 728" width="728" height="728"></svg>
+    <svg class="dl-hud" id="hud" viewBox="-364 -364 728 728" width="728" height="728"></svg>
+    <svg class="dl-hud dl-plane p3" id="hud3" viewBox="-364 -364 728 728" width="728" height="728"></svg>
+  </div>
 
   <!-- The dial: everything is placed from the hub's centre. -->
   <div class="dl" id="dial">
+    <div class="dl-cone" aria-hidden="true"><i class="w"></i><i></i><em></em><b></b></div>
+    <div class="dl-dust" id="dust" aria-hidden="true"></div>
+    <div class="dl-seams" id="seams" aria-hidden="true"></div>
     <div class="dl-keys" id="keys"></div>
     <i class="dl-brk tl" aria-hidden="true"></i><i class="dl-brk tr" aria-hidden="true"></i><i class="dl-brk bl" aria-hidden="true"></i><i class="dl-brk br" aria-hidden="true"></i>
     <button type="button" class="dl-hub" id="chip" aria-label="Open Comm Tower 1" aria-expanded="false">

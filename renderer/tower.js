@@ -19,6 +19,7 @@ const SVG = 'http://www.w3.org/2000/svg';
 let name = 'COMM TOWER 1';
 let operator = '';
 let skin = 'eclipse';
+let style = 'sentinel'; // sentinel | obsidian | lantern (Settings › System › COMM TOWER 1 › DIAL STYLE)
 let themeColors = null;
 let shortcuts = [];
 let maxShortcuts = 5;
@@ -97,6 +98,33 @@ function buildHud() {
   g.appendChild(text);
   spinG.appendChild(g);
   hud.appendChild(spinG);
+  // Obsidian: an instrument bezel. Ticks every 5°, bearing numbers that drift round.
+  const ob = svg('g', {}, 'st-ob rg');
+  ob.style.setProperty('--d', '0.32s');
+  for (let k = 0; k < 72; k++) {
+    const a = k * 5 * Math.PI / 180;
+    const major = k % 6 === 0;
+    const r1 = major ? 252 : 258; const r2 = major ? 270 : 266;
+    ob.appendChild(svg('line', { x1: (r1 * Math.cos(a)).toFixed(1), y1: (r1 * Math.sin(a)).toFixed(1), x2: (r2 * Math.cos(a)).toFixed(1), y2: (r2 * Math.sin(a)).toFixed(1), 'stroke-width': major ? 1.2 : 0.6 }, 'ob-tick'));
+  }
+  hud.appendChild(ob);
+  const obSpin = svg('g', {}, 'st-ob spin far');
+  obSpin.style.animationDuration = '200s';
+  obSpin.style.animationDirection = 'reverse';
+  const obNums = svg('g', {}, 'rg alt');
+  obNums.style.setProperty('--d', '0.5s');
+  for (let k = 0; k < 12; k++) {
+    const a = (k * 30 - 90) * Math.PI / 180;
+    const t = svg('text', { x: (342 * Math.cos(a)).toFixed(1), y: (342 * Math.sin(a) + 2.5).toFixed(1), 'text-anchor': 'middle' }, 'ob-num');
+    t.textContent = String(k * 30).padStart(3, '0');
+    obNums.appendChild(t);
+  }
+  obSpin.appendChild(obNums);
+  hud.appendChild(obSpin);
+  // Lantern: two more ring planes, one behind and one in front, for depth.
+  const h2 = $('#hud2'); const h3 = $('#hud3');
+  [{ r: 186, dash: '2 5', op: 0.55, d: 0.22, alt: true, spin: 160, rev: true }, { r: 260, op: 0.35, d: 0.3 }, { r: 352, dash: '1 6', op: 0.3, d: 0.5, spin: 220 }].forEach((o) => h2.appendChild(ring(o)));
+  [{ r: 132, w: 1.5, dash: '40 300', op: 0.9, d: 0.18, spin: 30 }, { r: 216, dash: '6 10', col: 'a', op: 0.8, d: 0.3, alt: true, spin: 110, rev: true }, { r: 304, dash: '1 4', op: 0.6, d: 0.42, spin: 240, rev: true }].forEach((o) => h3.appendChild(ring(o)));
   arcText();
 }
 function arcText() {
@@ -161,6 +189,26 @@ function buildKeys() {
     return b;
   });
   keysEl.replaceChildren(...out);
+  // Obsidian's three ember bearings on the bezel, and Lantern's light dust, both in the fan's direction.
+  $('#seams').replaceChildren(...[-96, -42, 12].map((deg) => {
+    const i = el('i');
+    const a = deg * Math.PI / 180;
+    i.style.transform = `translate(${(126 * Math.cos(a) * sx).toFixed(1)}px, ${(126 * Math.sin(a) * sy).toFixed(1)}px)`;
+    return i;
+  }));
+  let seed = 7;
+  const rnd = (lo, hi) => { seed = (seed * 16807) % 2147483647; return lo + (hi - lo) * ((seed - 1) / 2147483646); };
+  $('#dust').replaceChildren(...Array.from({ length: 26 }, (_v, k) => {
+    const i = el('i', k % 7 === 0 ? 'o' : '');
+    const a = rnd(-1.75, 0.35); const rr = rnd(110, 340);
+    i.style.left = `${(Math.cos(a) * rr * sx).toFixed(0)}px`;
+    i.style.top = `${(Math.sin(a) * rr * sy).toFixed(0)}px`;
+    i.style.setProperty('--dx', `${rnd(-26, 26).toFixed(0)}px`);
+    i.style.setProperty('--dy', `${(rnd(-40, -8) * sy).toFixed(0)}px`);
+    i.style.animationDuration = `${rnd(5, 11).toFixed(1)}s`;
+    i.style.animationDelay = `${rnd(-10, 0).toFixed(1)}s`;
+    return i;
+  }));
   // Lead lines from the hub out to each of the six.
   leads.replaceChildren(...MAIN.map((_k, i) => {
     const a = (A0 - STEP * i) * Math.PI / 180;
@@ -199,6 +247,7 @@ function applyLayout(l) {
   const flipped = body.dataset.h !== lay.h || body.dataset.v !== lay.v;
   body.dataset.h = lay.h;
   body.dataset.v = lay.v;
+  body.style.setProperty('--sy', lay.v === 'd' ? '-1' : '1');
   if (lay.pin) body.dataset.pin = lay.pin; else delete body.dataset.pin;
   body.dataset.state = l.state || state;
   if (flipped) buildKeys();
@@ -337,6 +386,8 @@ T.onConfig((c) => {
   name = c.name || 'COMM TOWER 1';
   operator = c.operator || '';
   skin = c.skin || 'eclipse';
+  style = ['obsidian', 'lantern'].includes(c.style) ? c.style : 'sentinel';
+  body.dataset.style = style;
   shortcuts = Array.isArray(c.shortcuts) ? c.shortcuts : [];
   maxShortcuts = c.max || 5;
   $('#ptitle').textContent = name;

@@ -68,4 +68,6 @@ const many = Array.from({ length: 9 }, (_v, i) => ({ id: `s${i}`, name: `N${i}`,
 ok(TU.cleanShortcuts(many).length === TU.MAX_SHORTCUTS, 'at most five shortcuts');
 ok(TU.cleanShortcuts([{ id: 'x', target: 'javascript:1' }, null, 'no']).length === 0, 'bad saved shortcuts dropped');
 
+ok(TU.STYLES.join() === 'sentinel,obsidian,lantern', 'three dial styles');
+
 console.log(`dial-test: ${n} checks passed`);

@@ -158,5 +158,6 @@ function cleanShortcuts(list) {
 }
 
 const SKINS = ['eclipse', 'sentinel', 'prism', 'halo', 'theme'];
+const STYLES = ['sentinel', 'obsidian', 'lantern'];
 
-module.exports = { CORE, FAN, EDGE, TERM_W, SNAP, MAX_SHORTCUTS, SKINS, stateBox, dirs, place, corners, snapCorner, resolveDisplay, anchor, dropped, cleanUrl, normalizeShortcut, cleanShortcuts };
+module.exports = { CORE, FAN, EDGE, TERM_W, SNAP, MAX_SHORTCUTS, SKINS, STYLES, stateBox, dirs, place, corners, snapCorner, resolveDisplay, anchor, dropped, cleanUrl, normalizeShortcut, cleanShortcuts };

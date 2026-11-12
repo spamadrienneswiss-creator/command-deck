@@ -17,6 +17,9 @@ let QRCode = null;
 
 // Sound effects and the boot sequence should play without a click first.
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+// Windows' window-occlusion check can decide a see-through, always-on-top window is hidden and stop
+// painting it (Comm Tower 1's dial then looks frozen and ignores clicks). Turn that check off.
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 
 // A private "deck://" scheme serves the app's own files. It lets the voice
 // engine load its WebAssembly and modules the same way a website would.
@@ -633,6 +636,14 @@ function registerTowerIpc() {
   });
   // Displays come and go (and Windows renumbers them): put the dial back where it belongs.
   for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, () => towerApply());
+  // Health check: once a minute, ask the dial's page to answer. No answer within 5 s means it's
+  // frozen: rebuild it.
+  setInterval(() => {
+    if (!tower || tower.isDestroyed() || !towerSettings().on) return;
+    let answered = false;
+    tower.webContents.executeJavaScript('1').then(() => { answered = true; }).catch(() => {});
+    setTimeout(() => { if (!answered && tower && !tower.isDestroyed()) rebuildTower('frozen', 0); }, 5000);
+  }, 60 * 1000);
   // Waking up: rebuild the dial once things settle (see rebuildTower()).
   powerMonitor.on('resume', () => rebuildTower('resume'));
   powerMonitor.on('unlock-screen', () => rebuildTower('unlock'));

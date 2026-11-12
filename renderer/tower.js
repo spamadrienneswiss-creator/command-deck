@@ -253,17 +253,35 @@ function applyLayout(l) {
   if (flipped) buildKeys();
 }
 T.onLayout((l) => {
+  clearTimeout(layoutWait);
   applyLayout(l);
   if (l.state === 'open' && state === 'open' && !body.classList.contains('open')) {
-    // The window is in place: next frame, let the dial unfold.
+    // The window is in place: a moment later, let the dial unfold. (A timer, not animation
+    // frames: Windows can stop handing frames to a see-through window it thinks is hidden,
+    // and then the dial would never open.)
     const mine = seq;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
+    setTimeout(() => {
       if (mine !== seq) return;
       body.classList.add('open');
       setTimeout(() => { if (mine === seq) body.classList.add('settled'); }, 2600);
-    }));
+    }, 40);
   }
 });
+// If the main process never answers a layout request, don't sit there half-open: reset to
+// the closed core and ask again, so the next click works.
+let layoutWait = null;
+function askLayout(next, popH) {
+  T.layout(next, popH);
+  clearTimeout(layoutWait);
+  layoutWait = setTimeout(() => {
+    state = 'closed'; seq += 1;
+    body.classList.remove('open', 'settled');
+    pop.hidden = true;
+    chip.setAttribute('aria-expanded', 'false');
+    T.layout('closed');
+    T.focus(false);
+  }, 2000);
+}
 function go(next) { state = next; seq += 1; chip.setAttribute('aria-expanded', String(next !== 'closed')); }
 let fanIdle = null;
 function armFan() {
@@ -276,7 +294,7 @@ function openDial() {
   go('open');
   openedAt = Date.now();
   setHover(-1);
-  T.layout('open');
+  askLayout('open');
   T.focus(true);
   armFan();
 }
@@ -293,7 +311,7 @@ function foldThen(fn) {
 function closeAll() {
   hidePop();
   go('closed');
-  foldThen(() => { T.layout('closed'); T.focus(false); });
+  foldThen(() => { askLayout('closed'); T.focus(false); });
 }
 function hidePop() {
   clearTimeout(idle);
@@ -305,7 +323,7 @@ function showTerm(opts = {}) {
   go('term');
   foldThen(() => {
     if (!lines.length) add({ k: 'c', t: `Go ahead${operator ? `, ${operator}` : ''}.` });
-    T.layout('term', 400);
+    askLayout('term', 400);
     T.focus(true);
     pop.hidden = false;
     recSetup.hidden = !(opts.rec && !recOn());

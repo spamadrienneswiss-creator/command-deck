@@ -33,6 +33,8 @@ await ctx.route(/generativelanguage\.googleapis\.com/, async (route) => {
   if (!body) return json({ models: [{ name: 'models/gemini-flash-latest', supportedGenerationMethods: ['generateContent'] }] });
   const cand = (text) => json({ candidates: [{ content: { parts: [{ text }] } }] });
   if (body.tools) return cand('The farmers market runs 8 to 1 on Saturdays.');
+  // The first chat call: Gemini's servers are busy once.
+  if (!globalThis.__busyOnce) { globalThis.__busyOnce = true; return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: { message: 'The model is overloaded.' } }) }); }
   const said = body.contents[body.contents.length - 1].parts.map((p) => p.text || '').join(' ');
   if (/oat milk/i.test(said)) return cand(JSON.stringify({ heard: said, reply: 'Noted, and it\'s on the list for Friday.\nAnything else?', remember: ['Nick drinks oat milk'], act: ['add task buy oat milk friday'] }));
   if (/market/i.test(said)) return cand(JSON.stringify({ heard: said, reply: 'Checking.', lookup: 'farmers market hours Saturday' }));

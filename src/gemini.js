@@ -197,7 +197,7 @@ const clean = (t, max) => String(t || '').replace(/[ \t]+/g, ' ').replace(/ *\n 
 const list = (v, n, max) => (Array.isArray(v) ? v : []).map((x) => clean(x, max)).filter(Boolean).slice(0, n);
 
 /** Model fallback shared by every call: the remembered model, the aliases, then whatever Flash the key can see. */
-async function generate(key, model, body, fetchFn) {
+async function generate(key, model, body, fetchFn, opts = {}) {
   const tried = new Set();
   const attempt = async (m) => {
     tried.add(m);
@@ -205,14 +205,19 @@ async function generate(key, model, body, fetchFn) {
     return { m, r };
   };
   let { m, r } = await attempt(model || PREFERRED[0]);
-  if (!r.ok && (r.status === 404 || (r.status === 400 && /not found|not supported/i.test(JSON.stringify(r.json || {}))))) {
+  // Busy or hiccuping (5xx): one more try after a breath.
+  if (r.status >= 500) { tried.delete(m); await new Promise((ok) => setTimeout(ok, opts.retryMs ?? 1200)); ({ m, r } = await attempt(m)); }
+  const missing = (x) => x.status === 404 || (x.status === 400 && /not found|not supported/i.test(JSON.stringify(x.json || {})));
+  if (!r.ok && (missing(r) || r.status >= 500)) {
+    // Then the other Flash models (and whatever this key lists) until one answers.
     const options = [...PREFERRED, ...(await listModels(key, fetchFn).catch(() => []))].filter((x) => !tried.has(x));
     for (const next of options) {
-      ({ m, r } = await attempt(next));
-      if (r.ok || !(r.status === 404 || r.status === 400)) break;
+      const t = await attempt(next);
+      if (t.r.ok) { ({ m, r } = t); break; }
+      if (!(missing(t.r) || t.r.status >= 500)) { ({ m, r } = t); break; }
     }
   }
-  if (!r.ok) throw new Error(friendly(r.status, r.json));
+  if (!r.ok) throw Object.assign(new Error(friendly(r.status, r.json)), { status: r.status });
   const cand = r.json && r.json.candidates && r.json.candidates[0];
   const text = cand && cand.content && Array.isArray(cand.content.parts) ? cand.content.parts.map((p) => p.text || '').join('') : '';
   return { model: m, text };
@@ -238,7 +243,8 @@ async function towerReply(opts, fetchFn = fetch) {
       out = await generate(key, model, body, f);
     } catch (e) {
       // Some models don't take a thinking budget: try once more without it.
-      if (!/thinking/i.test(String(e.message))) throw e;
+      // Some models don't take a thinking budget, and a few fail outright with one: once more without it.
+      if (!/thinking/i.test(String(e.message)) && !(e.status >= 500)) throw e;
       delete body.generationConfig.thinkingConfig;
       out = await generate(key, model, body, f);
     }

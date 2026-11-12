@@ -66,6 +66,18 @@ const fakeGemini = (reply, seen = {}) => async (url, init) => {
     await assert.rejects(() => towerReply({ key: '', heard: 'x' }, fakeGemini({ reply: 'hi' })));
     await assert.rejects(() => towerReply({ key: 'k', heard: 'x' }, fakeGemini({ reply: '' })));
   });
+  await check('a busy Gemini (503) gets another try, then another model', async () => {
+    const seen = [];
+    const flaky = async (url, init) => {
+      seen.push(url);
+      if (/models\?/.test(url)) return { ok: true, status: 200, json: async () => ({ models: [] }) };
+      if (seen.filter((u) => /generateContent/.test(u)).length <= 2) return { ok: false, status: 503, json: async () => ({ error: { message: 'The model is overloaded.' } }) };
+      return { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify({ reply: 'Back online.' }) }] } }] }) };
+    };
+    const r = await towerReply({ key: 'k', heard: 'hello' }, flaky);
+    assert.strictEqual(r.reply, 'Back online.');
+    assert.ok(seen.filter((u) => /generateContent/.test(u)).length >= 3);
+  });
   await check('a slow Gemini is cut off', async () => {
     const slow = (url, init) => new Promise((_res, rej) => { init.signal.addEventListener('abort', () => rej(new Error('aborted'))); });
     await assert.rejects(() => towerReply({ key: 'k', heard: 'x', timeoutMs: 50 }, slow));

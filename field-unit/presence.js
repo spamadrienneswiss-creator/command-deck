@@ -748,11 +748,14 @@ async function generate(body, { tts = false } = {}) {
   let queue = [P.cfg[field], ...base].filter(Boolean);
   const tried = new Set();
   let listed = false;
+  let busy = null;
   while (queue.length) {
     const model = queue.shift();
     if (tried.has(model)) continue;
     tried.add(model);
-    const r = await gemini(`models/${model}:generateContent`, body);
+    let r = await gemini(`models/${model}:generateContent`, body);
+    // Busy or hiccuping (5xx): one more try after a breath, then move on to the next model.
+    if (r.status >= 500) { await new Promise((ok) => setTimeout(ok, 1200)); r = await gemini(`models/${model}:generateContent`, body); }
     if (r.ok) {
       if (model !== P.cfg[field]) saveCfg({ [field]: model });
       return r.json;
@@ -763,8 +766,14 @@ async function generate(body, { tts = false } = {}) {
       continue;
     }
     if (r.status === 404) continue;
+    if (r.status >= 500) {
+      busy = r;
+      if (!listed) { listed = true; queue = queue.concat((await listModels(test).catch(() => [])).sort((a, b) => Number(/preview|exp/.test(a)) - Number(/preview|exp/.test(b)) || Number(/lite/.test(a)) - Number(/lite/.test(b)))); }
+      continue;
+    }
     throw new Error(geminiError(r.status, r.json));
   }
+  if (busy) throw Object.assign(new Error(geminiError(busy.status, busy.json)), { server: true });
   throw new Error(tts ? 'No Gemini voice is available for this key.' : 'No Gemini model is available for this key.');
 }
 const textOf = (json) => ((((json && json.candidates) || [])[0] || {}).content || {}).parts || [];
@@ -884,7 +893,8 @@ export async function think({ text = '', audio = null } = {}) {
     let json;
     try { json = await generate(body); } catch (e) {
       // Some models don't take a thinking budget: once more without it.
-      if (!/thinking/i.test(String(e && e.message))) throw e;
+      // Some models don't take a thinking budget, and a few fail outright with one: once more without it.
+      if (!/thinking/i.test(String(e && e.message)) && !(e && e.server)) throw e;
       delete body.generationConfig.thinkingConfig;
       json = await generate(body);
     }

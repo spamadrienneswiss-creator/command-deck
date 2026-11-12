@@ -106,6 +106,7 @@ Listening is switched off for now (v1.27): you type, and the deck answers, out l
 - **It remembers.** One running conversation, shared by the deck terminal and Comm Tower 1, carries across days (the last 60 messages), so you can say *"and Friday?"* or *"what did I ask you this morning?"*. Tell it lasting things (*"remember that Adrienne's birthday is May 3"*, *"I prefer morning appointments"*) and it keeps a note. Ask *"what do you remember?"*, tell it to forget something, or see and remove the notes in **Settings › System › TERMINAL · WHAT IT REMEMBERS**. *Clear chat* starts a fresh conversation; *forget everything* clears both.
 - **It does things when asked** (*"put a call with Sam on Tuesday at 2 and remind me to prep the night before"*) and shows a card for each; anything that throws something away waits for a **yes**. When it only suggests something, type **yes** or **no**.
 - **It can look things up online** (news, scores, opening hours) through Google Search, when Gemini's free allowance for that permits.
+- **Field Unit shares it (v1.34).** Comms on the phone, in every look, talks to the same AI with the same conversation and notes, synced through your deck's Firebase: start something at the desk and carry on from your phone.
 - A plain task (*"add…"*, *"remind me to…"*, *"buy…"*) still goes straight onto your list, instantly.
 
 ### Comm Tower 1 (the dial)

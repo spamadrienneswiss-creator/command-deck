@@ -9,9 +9,10 @@ import { RosterRelay, scheduleUrl, DEFAULT_TYPES, weekStart, addDays, weekLabel,
 import { bootScreen } from './boot.js';
 import * as P from './presence.js';
 import * as T from './terminal.js';
+import * as AM from './lib/aimem.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.33.0';
+const VERSION = 'v1.34.0';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
@@ -77,6 +78,7 @@ const S = {
   events: load('fu.events', []),
   timers: load('fu.timers', []),
   notes: load('fu.notes', []),
+  ai: AM.normalizeAi(load('fu.ai', null)), // the AI's memory, shared with the deck (lib/aimem.js)
   projects: load('fu.projects', []),
   schedule: load('fu.schedule', []),
   schedWeek: weekStart(new Date()),
@@ -154,6 +156,16 @@ function themeFavs() {
 }
 function shareThemes() {
   if (S.sync && Array.isArray(S.settings.themeFavs)) S.sync.setMeta('themes', { favs: [...S.settings.themeFavs], at: S.settings.themeFavsAt || Date.now() }).catch(() => {});
+}
+// The AI's memory: one conversation and one set of notes, shared with the deck through meta/ai.
+function aiSave() {
+  store('fu.ai', S.ai);
+  if (S.sync) S.sync.setMeta('ai', { ...S.ai, at: Date.now() }).catch(() => {});
+}
+function adoptAi(remote) {
+  const merged = AM.mergeAi(S.ai, remote);
+  if (AM.aiKey(merged) !== AM.aiKey(S.ai)) { S.ai = merged; store('fu.ai', S.ai); }
+  if (remote && AM.aiKey(merged) !== AM.aiKey(remote) && S.sync) S.sync.setMeta('ai', { ...S.ai, at: Date.now() }).catch(() => {});
 }
 function adoptThemes(d) {
   const at = d ? Number(d.at) || 0 : 0;
@@ -422,6 +434,7 @@ function startSync() {
   S.sync.watchMeta('shared', (d) => { if (d) { S.shared = d; store('fu.shared', d); fetchWeather(); render(); } });
   S.sync.watchMeta('calendar', (d) => { if (d) { S.calendar = d; store('fu.calendar', d); render(); } });
   S.sync.watchMeta('themes', (d) => adoptThemes(d && Array.isArray(d.favs) ? d : null));
+  S.sync.watchMeta('ai', (d) => adoptAi(d || null));
   P.watchConfig();
   S.sync.watchMeta('command', (d) => { if (d) { S.command = d; store('fu.command', d); render(); } });
 
@@ -1757,9 +1770,10 @@ function viewSettings() {
         ['classic', 'CLASSIC', 'The original Field Unit, in your color theme.', '&gt;_']
       ].map(([v, l, d, sw]) => { const cur = (T.look() || 'classic') === v; return `<button type="button" role="radio" aria-checked="${cur}" class="ui-pick${cur ? ' on' : ''}" data-ui-pick="${v}"><span class="ui-sw ${v}" aria-hidden="true">${sw}</span><span><b>${l}</b><small>${d}</small></span><i class="ui-dot" aria-hidden="true"></i></button>`; }).join('')}</div>
       <div class="hint">Switches instantly. Tasks, schedule, notes, recaps and sync with the deck are the same in every interface.${T.on() ? ' Color theme and typeface below apply to Classic.' : ''}</div></div>
-    ${T.on() ? `<div class="set-group"><span class="label">GEMINI · ANSWERS QUESTIONS IN COMMS</span>
+    <div class="set-group"><span class="label">GEMINI · THE AI IN COMMS</span>
       <button type="button" class="btn line block" data-gemini-key>${P.keyState() === 'own' ? 'KEY SAVED · CHANGE' : P.keyState() === 'wine' ? 'USING WINE LOG\'S KEY · ADD ONE' : 'ADD A GEMINI KEY'}</button>
-      <div class="hint">Commands run on Field Unit itself. Questions (<b>can I fit the dentist in before my shift?</b>) go to Gemini, which sees your tasks and calendar and can offer to add things. ${P.keyState() === 'none' ? 'Without a key, questions get an honest "can\'t answer".' : ''}</div></div>` : ''}
+      <button type="button" class="btn line block" data-ai-mem style="margin-top:8px">WHAT IT REMEMBERS · ${S.ai.memory.length}</button>
+      <div class="hint">Plain commands run on Field Unit itself. Questions and conversation go to Gemini, which sees your tasks, calendar, projects, notes and recaps, remembers what you tell it, does what you ask, and can look things up online. It's the same conversation and memory as the deck's terminal. ${P.keyState() === 'none' ? 'Without a key, questions get an honest "can\'t answer".' : ''}</div></div>
     ${P.ENABLED ? `<div class="set-group"><span class="label">PRESENCE</span>
       <button type="button" class="btn primary" data-to-presence style="width:100%">${P.on() ? `BACK TO ${esc(P.name().toUpperCase())}` : 'SWITCH TO PRESENCE'}</button>
       <div class="hint">Presence: the Computer as a glowing orb that talks, with calm Tasks and Week screens. Notes, recaps and this screen stay one tap away.</div></div>` : ''}
@@ -2459,12 +2473,15 @@ function isQuestion(text, r) {
   if (CREATE_START.test(t)) return false;
   return /\?\s*$/.test(t) || CHATTY.test(t);
 }
+// Since v1.34 every look (Classic too) talks to Gemini when there's a key, sharing the deck's memory.
+const PLAIN_TASK = /^(?:buy|pick up|call|email|text|book|pay|renew|fix|clean|order|finish|send|submit|return|get)\b/i;
 function wantsGemini(text, r) {
-  if (!smartLook() || !P.thinks()) return false;
+  if (!P.thinks()) return false;
   if (!r || r.intent === 'empty') return true;
   if (r.intent !== 'add-task' && r.intent !== 'add-event') return false;
   const t = text.trim().toLowerCase();
   if (CREATE_START.test(t)) return false;
+  if (r.intent === 'add-task') return !PLAIN_TASK.test(t) || /\?\s*$/.test(t);
   return /\?\s*$/.test(t) || CHATTY.test(t);
 }
 function parsed(text) {
@@ -2833,6 +2850,9 @@ async function runCommand(text) {
     return;
   }
   if (/^(exit|close|quit|bye)$/.test(lower)) { closeComms(); return; }
+  // The AI's shared memory: a fresh conversation, or a clean slate.
+  if (/^(?:clear|reset|wipe|new)\s+(?:the\s+)?(?:chat|conversation)\b/.test(lower)) { AM.clearChat(S.ai); aiSave(); await say('Fresh page. I still remember the things you asked me to keep.'); return; }
+  if (/^forget everything\b/.test(lower)) { AM.forgetAll(S.ai); aiSave(); await say(`Done, ${operator()}. Memory wiped and the chat cleared.`); return; }
 
   const ctx = { categories: categories(), people: people(), projects: liveProjects(), defaultReminder: shared().defaultReminder ?? 15 };
   let r;
@@ -3010,7 +3030,7 @@ async function runCommand(text) {
     case 'cancel': return say('Standing by.', 'sys');
     case 'set-humor': S.settings.humor = r.value; saveSettings(); return say(`Humor setting ${r.value} percent.`);
     case 'humor-query': return say(`Humor setting is at ${S.settings.humor} percent.`);
-    default: return smartLook() && P.thinks() ? P.think({ text }) : fail(pick('miss'));
+    default: return P.thinks() ? P.think({ text }) : fail(pick('miss'));
   }
 }
 
@@ -3303,6 +3323,7 @@ function wire() {
     if (tr) { const task = S.tasks.find((x) => x.id === tr.dataset.task); if (task) openTaskEditor(task); return; }
     if (t.closest('[data-pz-back]')) { S.peek = false; render(); return; }
     if (t.closest('[data-gemini-key]')) { P.openKeySheet(); return; }
+    if (t.closest('[data-ai-mem]')) { P.openMemorySheet(); return; }
     const uip = t.closest('[data-ui-pick]');
     if (uip) { S.settings.ui = uip.dataset.uiPick; S.peek = uip.dataset.uiPick !== 'classic'; S.view = 'settings'; saveSettings(); render(); toast(uip.dataset.uiPick === 'classic' ? 'Classic Field Unit.' : `${uip.dataset.uiPick === 'cockpit' ? 'Cockpit' : 'Hairline'} online. Tap Back to Field Unit to see it.`, 2600); return; }
     if (t.closest('[data-to-presence]')) { S.settings.ui = 'presence'; S.peek = false; saveSettings(); render(); return; }
@@ -3365,6 +3386,7 @@ function presenceApi() {
     allEvents, eventsOnDay, liveProjects, projectById, projectStats, projectDueLabel, categoryById, briefing, wxWords,
     openTaskEditor, openEventEditor, openProject, openProjectEditor, openSheet, closeSheet, showPairing, classic,
     openComms, submitCommand, ctChipsHtml, ctAdd, ctUpdate, say, queueOut, knows, runCommand: runBuiltIn,
+    ai: () => S.ai, aiSave, AM,
     addTask: (title, at, timed) => { const t = { ...blankTask(), title, due: at, dueHasTime: !!(at && timed) }; upsertTask(t); return t; },
     addEvent: (title, at, allDay) => {
       const start = at ? new Date(at) : U.startOfDay(new Date());

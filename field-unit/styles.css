@@ -1095,3 +1095,6 @@ body[data-theme="meridian"] .cal-cell.today { background: transparent; box-shado
 body[data-theme="meridian"] .cal-cell.today > span:first-child { font-size: 14px; font-weight: 600; background: #0D1011; box-shadow: inset 0 0 0 1px #FFFFFF, 0 0 0 4px #15191A, 0 0 0 5px rgba(255, 255, 255, 0.45); }
 body[data-theme="meridian"] .cal-cell.today > span:first-child::before { content: ''; position: absolute; inset: 6px; border: 1px solid rgba(255, 255, 255, 0.75); transform: rotate(45deg); }
 body[data-theme="meridian"] .cal-cell.today > span:first-child::after { content: ''; position: absolute; left: 50%; top: -9px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: #FFFFFF; }
+
+/* v1.34: the AI's longer answers keep their line breaks. */
+.ct-fu .tx { white-space: pre-line; }

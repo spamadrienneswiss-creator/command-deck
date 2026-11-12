@@ -173,6 +173,8 @@ function startSync(deckId) {
   F.sync.track('schedule', () => h.getList('schedule'), (list) => h.applyRemote('schedule', list), onErr);
   // Your themes: the starred list is shared both ways with Field Unit; newest edit wins.
   F.sync.watchMeta('themes', (d) => { if (h.adoptThemes) h.adoptThemes(d && Array.isArray(d.favs) ? d : null); });
+  // The terminal AI's memory: one conversation and one set of notes, shared with every phone.
+  F.sync.watchMeta('ai', (d) => { if (h.adoptAi) h.adoptAi(d || null); });
 
   F.unsubs.push(fb.onSnapshot(fb.collection(F.fire.db, 'decks', deckId, 'members'), (snap) => {
     const before = new Set(F.members.map((m) => m.id));
@@ -445,6 +447,12 @@ export function relayShared(s) {
     recapAudio: (s.recap && s.recap.audio) || 'd30', recapSummaries: !!(s.recap && s.recap.geminiKey),
     updatedAt: Date.now()
   }).catch(() => {});
+}
+
+export function relayAi(state) {
+  if (!F.sync || !state) return false;
+  F.sync.setMeta('ai', { ...state, at: Date.now() }).catch(() => {});
+  return true;
 }
 
 export function relayThemes(favs, at) {

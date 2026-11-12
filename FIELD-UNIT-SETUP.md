@@ -141,3 +141,7 @@ If you ever want to publish by hand instead, Part 2's `npm run deploy -- --proje
 | Phone shows old data | Pull it to the front and wait a few seconds; if Command shows **UPLINK ERROR**, see Settings › Field Unit on the computer. |
 
 **Free-tier limits** (reads, writes, storage and bandwidth) are far above what one console and a few phones use.
+
+## The AI in Comms (v1.34)
+
+With a Gemini key (Settings › GEMINI · THE AI IN COMMS, or the one set on the deck), Comms in every look — Classic, Cockpit and Hairline — talks to the same AI as the deck's terminal and Comm Tower 1: one shared conversation and one set of remembered notes, synced through your deck's Firebase. Ask questions, plan, chat; it sees your tasks, calendar, schedule, projects, notes and recaps, does what you plainly ask (deletions still ask you to confirm), and can look things up online. **WHAT IT REMEMBERS** in Settings lists its notes with ✕, plus CLEAR CHAT and FORGET ALL; typing *clear chat* or *forget everything* in Comms does the same. Plain commands (*add…*, *buy…*, *call…*) still run on the phone instantly.

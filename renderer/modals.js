@@ -1070,7 +1070,7 @@ export function openSettings(welcome = false) {
           <div class="f-hint">Click the glowing core (or press Ctrl + Alt + T from any app) and it opens into a fan of keys: Record a meeting, the typing Terminal, your Browser, a Note, File Explorer, and + for your own shortcuts (a website, a program or a folder; up to 5). Esc closes it. DIAL STYLE is its shape and finish (Sentinel: rings of light; Obsidian: machined hardware; Lantern: a projected hologram); DIAL COLOR its colors, in any mix. ON TOP keeps it above every window; DESKTOP lets other windows cover it, and Ctrl + Alt + T brings it forward. Drag the closed core to move it; let go near any corner of any screen and it locks there, even if Windows shuffles the displays. The dial keeps its own colors whatever the deck's theme, unless you pick MATCH THEME. The name is whatever you call it.<br>With a Gemini key (Field Unit › DATA RECAP) replies are worded conversationally and questions about your day get answered from your tasks and schedule (they're sent to Gemini for that). No key or no signal: the deck's own replies. The deck's voice reads replies out loud unless you switch VOICE REPLIES off in the terminal.</div></div>
         <div class="f"><span class="f-label">TERMINAL · WHAT IT REMEMBERS</span>
           <div id="sAiMem"></div>
-          <div class="f-hint">The terminal (on the deck and in Comm Tower 1) keeps one running conversation with Gemini, the last 60 messages, so it can follow up on what you said earlier, even days later. It also keeps short notes of lasting things you tell it ("remember that…", your people, preferences, plans). Tell it to forget something, or remove notes here. Typing "clear chat" starts a fresh conversation; "forget everything" clears both. This lives only on this PC, and goes to Google each time you ask Gemini something.</div>
+          <div class="f-hint">The terminal (on the deck and in Comm Tower 1) keeps one running conversation with Gemini, the last 60 messages, so it can follow up on what you said earlier, even days later. It also keeps short notes of lasting things you tell it ("remember that…", your people, preferences, plans). Tell it to forget something, or remove notes here. Typing "clear chat" starts a fresh conversation; "forget everything" clears both. Field Unit shares the same conversation and notes, synced through your deck's Firebase; what Gemini needs goes to Google each time you ask it something.</div>
         </div>
         <div class="f"><span class="f-label">DISCORD · MUTE AND DEAFEN BESIDE HAIL</span>
           <div class="f-hint" style="margin-top:0">Shows whether you're muted or deafened in Discord, live, and toggles them (click the icons, or say "mute me" / "deafen me"). One-time setup with your own free Discord app:<br>
@@ -1534,15 +1534,15 @@ export function openSettings(welcome = false) {
       const aiMem = () => {
         const box = $('#sAiMem', body);
         if (!box) return;
-        const mem = app.S.aiMemory || [];
-        box.innerHTML = `<div class="toggle-row"><span>${mem.length} remembered · ${(app.S.aiChat || []).length} messages in the chat</span><span><button type="button" class="btn line" data-ai="chat">CLEAR CHAT</button> <button type="button" class="btn line" data-ai="all">FORGET ALL</button></span></div>`
-          + (mem.length ? `<div class="ai-mem">${mem.map((m, i) => `<div class="toggle-row"><span>${esc(m.t)}</span><button type="button" class="btn line" data-ai-x="${i}" aria-label="Forget this">✕</button></div>`).join('')}</div>` : '');
+        const mem = (app.S.ai && app.S.ai.memory) || [];
+        box.innerHTML = `<div class="toggle-row"><span>${mem.length} remembered · ${((app.S.ai && app.S.ai.chat) || []).length} messages in the chat</span><span><button type="button" class="btn line" data-ai="chat">CLEAR CHAT</button> <button type="button" class="btn line" data-ai="all">FORGET ALL</button></span></div>`
+          + (mem.length ? `<div class="ai-mem">${mem.map((m) => `<div class="toggle-row"><span>${esc(m.t)}</span><button type="button" class="btn line" data-ai-x="${esc(m.id)}" aria-label="Forget this">✕</button></div>`).join('')}</div>` : '');
       };
       aiMem();
       $('#sAiMem', body).addEventListener('click', (e) => {
         const x = e.target.closest('[data-ai-x]');
         const b = e.target.closest('[data-ai]');
-        if (x) { app.aiForget(Number(x.dataset.aiX)); aiMem(); return; }
+        if (x) { app.aiForget(x.dataset.aiX); aiMem(); return; }
         if (!b) return;
         if (b.dataset.ai === 'chat') { app.aiClearChat(); app.toast('Fresh conversation.', 1800); }
         if (b.dataset.ai === 'all') {

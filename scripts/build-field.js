@@ -10,6 +10,7 @@ const copies = [
   ['shared/sync.js', 'sync.js'],
   ['shared/manifest.js', 'manifest.js'],
   ['shared/roster.js', 'roster.js'],
+  ['shared/aimem.js', 'aimem.js'],
   ['renderer/util.js', 'util.js']
 ];
 for (const [from, to] of copies) {

@@ -776,36 +776,55 @@ function persona() {
     warm: 'Warm, friendly and encouraging, like a thoughtful assistant who knows the user well.',
     brief: 'Brisk and factual. No jokes, no filler.'
   }[o.persona] || '';
-  return `You are ${name()}, the voice of Field Unit, the phone side of ${A.operator()}'s Command Deck (a personal dashboard for tasks, projects, a calendar and notes). Call the user ${callsYou()}. ${style} Your replies are read aloud: short, natural spoken sentences (usually one to three), no lists, no markdown, no emoji. Say times the way people say them.`;
+  return `You are ${name()}, the voice of Field Unit, the phone side of ${A.operator()}'s Command Deck (a personal dashboard for tasks, projects, a calendar and notes). Call the user ${callsYou()}. ${style} Say times the way people say them.`;
 }
 function contextBlock() {
   const S = A.S;
   const now = new Date();
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const f = (d) => `${A.U.DAY_FULL[d.getDay()]} ${A.U.MONTHS[d.getMonth()]} ${d.getDate()} ${A.U.fmtTimeShort(d, A.clock24())}`;
-  const tasks = A.sortTasks(A.active(), now).slice(0, 40).map((t) => {
+  const day = (d) => `${A.U.DAY_FULL[d.getDay()]} ${A.U.MONTHS[d.getMonth()]} ${d.getDate()}`;
+  const f = (d) => `${day(d)} ${A.U.fmtTimeShort(d, A.clock24())}`;
+  const tasks = A.sortTasks(A.active(), now).slice(0, 90).map((t) => {
     const p = A.projectById(t.projectId);
-    return `- ${t.title}${t.due ? ` (due ${t.dueHasTime ? f(new Date(t.due)) : `${A.U.DAY_FULL[new Date(t.due).getDay()]} ${A.U.MONTHS[new Date(t.due).getMonth()]} ${new Date(t.due).getDate()}`}${A.isOverdue(t, now) ? ', OVERDUE' : ''})` : ''}${t.priority === 'high' ? ' [high priority]' : ''}${p ? ` [project: ${p.name}]` : ''}`;
+    return `- ${t.title}${t.due ? ` (due ${t.dueHasTime ? f(new Date(t.due)) : day(new Date(t.due))}${A.isOverdue(t, now) ? ', OVERDUE' : ''})` : ''}${t.priority === 'high' ? ' [high priority]' : ''}${p ? ` [project: ${p.name}]` : ''}`;
   });
-  const until = A.U.addDays(now, 14);
-  const events = A.allEvents().filter((e) => e.end > now && e.start < until).slice(0, 40).map((e) => `- ${e.title}: ${e.allDay ? `${A.U.DAY_FULL[e.start.getDay()]} ${A.U.MONTHS[e.start.getMonth()]} ${e.start.getDate()}, all day` : `${f(e.start)} to ${A.U.fmtTimeShort(e.end, A.clock24())}`}${e.location ? ` at ${e.location}` : ''}`);
-  const projects = A.liveProjects().map((p) => { const st = A.projectStats(p); return `- ${p.name}: ${st.done}/${st.total} tasks done${p.due ? `, finish by ${A.projectDueLabel(p)}` : ''}`; });
-  const w = S.weather && S.weather.current ? `${Math.round(S.weather.current.temperature_2m)}° and ${A.wxWords(S.weather.current.weather_code)}, high ${Math.round(S.weather.daily.temperature_2m_max[0])}, low ${Math.round(S.weather.daily.temperature_2m_min[0])}` : 'unknown';
-  return `Right now: ${f(now)} (${tz}).
-Weather: ${w}.
-Command Deck (the PC): ${A.commandOnline() ? 'online' : 'offline; changes sync when it wakes'}.
-Open tasks:
-${tasks.join('\n') || '- none'}
-Calendar, next two weeks:
-${events.join('\n') || '- nothing'}
-Projects:
-${projects.join('\n') || '- none'}`;
+  const from = A.U.addDays(A.U.startOfDay(now), -3);
+  const until = A.U.addDays(now, 60);
+  const events = A.allEvents().filter((e) => e.end > from && e.start < until).slice(0, 70).map((e) => `- ${e.title}: ${e.allDay ? `${day(e.start)}, all day` : `${f(e.start)} to ${A.U.fmtTimeShort(e.end, A.clock24())}`}${e.location ? ` at ${e.location}` : ''}${e.end < now ? ' (past)' : ''}`);
+  const sched = (S.schedule || []).filter((x) => !x.deleted && x.date && new Date(`${x.date}T00:00`) >= from && new Date(`${x.date}T00:00`) <= until).slice(0, 40)
+    .map((x) => `- ${x.date}: ${[x.type, x.title, x.start && `${x.start}${x.end ? `–${x.end}` : ''}`, x.note].filter(Boolean).join(' · ')}`);
+  const finished = (S.tasks || []).filter((t) => t.done && t.doneAt && new Date(t.doneAt) > A.U.addDays(now, -7)).slice(0, 20).map((t) => `- ${t.title} (${day(new Date(t.doneAt))})`);
+  const projects = A.liveProjects().map((p) => { const st = A.projectStats(p); return `- ${p.name}${p.goal ? `: ${String(p.goal).slice(0, 160)}` : ''}: ${st.done}/${st.total} tasks done${p.due ? `, finish by ${A.projectDueLabel(p)}` : ''}`; });
+  const when = (n) => new Date(n.editedAt || n.createdAt || 0);
+  const isRecap = (n) => n.src === 'recap' && n.recap;
+  const notes = (S.notes || []).filter((n) => !isRecap(n) && !n.deleted).sort((a, b) => when(b) - when(a)).slice(0, 12)
+    .map((n) => `- ${n.title || 'Untitled'} (${day(when(n))})${n.body && String(n.body).trim() !== n.title ? `: ${String(n.body).replace(/\s+/g, ' ').slice(0, 400)}` : ''}`);
+  const recaps = (S.notes || []).filter((n) => isRecap(n) && n.recap.summary && !n.deleted).sort((a, b) => when(b) - when(a)).slice(0, 5)
+    .map((n) => `- ${n.title || 'Meeting'} (${day(when(n))}): ${String(n.recap.summary).slice(0, 500)}${(n.recap.actions || []).length ? ` Action items: ${n.recap.actions.map((a) => (a && a.text) || a).slice(0, 8).join('; ')}` : ''}`);
+  let w = 'unknown';
+  try {
+    const W = S.weather;
+    if (W && W.current) {
+      w = `${Math.round(W.current.temperature_2m)}° and ${A.wxWords(W.current.weather_code)}, high ${Math.round(W.daily.temperature_2m_max[0])}, low ${Math.round(W.daily.temperature_2m_min[0])}`;
+      if (W.daily.time) w += `. Next days: ${W.daily.time.slice(1, 6).map((t, i) => `${day(new Date(`${t}T12:00`)).split(' ')[0]} ${Math.round(W.daily.temperature_2m_max[i + 1])}/${Math.round(W.daily.temperature_2m_min[i + 1])}`).join(', ')}`;
+    }
+  } catch (e) { /* no weather yet */ }
+  return [`Right now: ${f(now)} (${tz}).`, `Weather: ${w}.`,
+    `Command Deck (the PC): ${A.commandOnline() ? 'online' : 'offline; changes sync when it wakes'}.`,
+    'Open tasks:', tasks.join('\n') || '- none',
+    finished.length ? `Finished in the last week:\n${finished.join('\n')}` : '',
+    'Calendar, past 3 days and next 60:', events.join('\n') || '- nothing',
+    sched.length ? `Schedule (shifts and appointments):\n${sched.join('\n')}` : '',
+    'Projects:', projects.join('\n') || '- none',
+    notes.length ? `Recent notes:\n${notes.join('\n')}` : '',
+    recaps.length ? `Recent meeting recaps:\n${recaps.join('\n')}` : ''
+  ].filter(Boolean).join('\n');
 }
 const REPLY_SCHEMA = {
   type: 'OBJECT',
   properties: {
     heard: { type: 'STRING', description: 'Exactly what the user said or typed, written out as plain text.' },
-    reply: { type: 'STRING', description: 'Your spoken reply.' },
+    reply: { type: 'STRING', description: 'Your reply: short for quick things, longer with line breaks when the question needs it.' },
     suggestion: {
       type: 'OBJECT', nullable: true,
       description: 'Only when adding something would clearly help and the user did not already ask for it plainly. Otherwise null.',
@@ -816,7 +835,11 @@ const REPLY_SCHEMA = {
         label: { type: 'STRING', description: 'Two or three word button text, e.g. Add reminder.' }
       },
       required: ['kind', 'title', 'label']
-    }
+    },
+    act: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Commands to run NOW because the user plainly asked for them, written the way the user would type them, e.g. "Add task call the dentist on Friday", "Schedule lunch with Sam Tuesday at noon", "Set a timer for 20 minutes". Otherwise empty.' },
+    remember: { type: 'ARRAY', items: { type: 'STRING' }, description: 'New lasting facts worth keeping about the user, their people, preferences or plans, each one short line in third person. Otherwise empty.' },
+    forget: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Remembered lines (copied exactly) the user wants dropped or that are now wrong. Otherwise empty.' },
+    lookup: { type: 'STRING', description: 'Only when answering needs current information from the web (news, scores, prices, opening hours): a search query. Otherwise empty.' }
   },
   required: ['heard', 'reply']
 };
@@ -825,25 +848,47 @@ const REPLY_SCHEMA = {
 export async function think({ text = '', audio = null } = {}) {
   setState('thinking');
   if (!navigator.onLine) { setState('idle'); A.C.src = 'builtin'; return A.say('No signal for Gemini right now. Built-in commands still work.', 'err'); }
-  const hist = A.C.log.filter((e) => (e.k === 'you' || (e.k === 'fu' && !e.tone)) && e.text).slice(-12, audio ? undefined : -1)
-    .map((e) => ({ role: e.k === 'you' ? 'user' : 'model', parts: [{ text: e.text }] }));
+  // The shared conversation (deck and phone) comes first, then this message.
+  const ai = A.ai();
   const contents = [];
-  hist.forEach((h) => { const last = contents[contents.length - 1]; if (last && last.role === h.role) last.parts.push(...h.parts); else contents.push(h); });
+  A.AM.chatTurns(ai).forEach((h) => {
+    const role = h.role === 'model' ? 'model' : 'user';
+    const last = contents[contents.length - 1];
+    if (last && last.role === role) last.parts.push({ text: h.text }); else contents.push({ role, parts: [{ text: h.text }] });
+  });
   if (contents.length && contents[0].role === 'model') contents.shift();
+  const stamp = new Date().toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   const user = audio
-    ? { role: 'user', parts: [{ text: 'The user said this out loud (audio attached). Write down what they said in "heard", then answer.' }, { inlineData: { mimeType: 'audio/wav', data: audio } }] }
-    : { role: 'user', parts: [{ text }] };
+    ? { role: 'user', parts: [{ text: `[${stamp}] The user said this out loud (audio attached). Write down what they said in "heard", then answer.` }, { inlineData: { mimeType: 'audio/wav', data: audio } }] }
+    : { role: 'user', parts: [{ text: `[${stamp}] ${text}` }] };
   if (contents.length && contents[contents.length - 1].role === 'user') contents[contents.length - 1].parts.push(...user.parts);
   else contents.push(user);
+  const who = A.operator();
+  const mem = A.AM.memoryLines(ai);
   const body = {
-    systemInstruction: { parts: [{ text: `${persona()}\n\nUse only the information below about the user's day; if something isn't there, say you don't have it. You can't change their tasks or calendar yourself: when adding something would help, offer it as a suggestion and mention it briefly.\n\n${contextBlock()}` }] },
+    systemInstruction: { parts: [{ text: [
+      persona(),
+      ...A.AM.AI_RULES(who),
+      `Doing things: when ${who} plainly asks you to add, schedule, remind, time, complete or note something, put the command(s) in "act" and write the reply as if it is done (the phone runs them and shows each one; deletions still ask ${who} to confirm). When something would merely help, offer it as the suggestion instead.`,
+      '',
+      mem.length ? `WHAT YOU REMEMBER ABOUT ${who.toUpperCase()} (oldest first):\n${mem.map((m) => `- ${m}`).join('\n')}` : 'WHAT YOU REMEMBER: nothing yet.',
+      '',
+      'THE DECK RIGHT NOW:',
+      contextBlock()
+    ].join('\n') }] },
     contents,
-    generationConfig: { responseMimeType: 'application/json', responseSchema: REPLY_SCHEMA, temperature: 0.6, maxOutputTokens: 600 }
+    generationConfig: { responseMimeType: 'application/json', responseSchema: REPLY_SCHEMA, temperature: 0.8, maxOutputTokens: 6000, thinkingConfig: { thinkingBudget: 1024 } }
   };
   let out;
   try {
-    const json = await generate(body);
-    out = JSON.parse(textOf(json).map((p) => p.text || '').join('').replace(/^```(?:json)?\s*|\s*```$/g, ''));
+    let json;
+    try { json = await generate(body); } catch (e) {
+      // Some models don't take a thinking budget: once more without it.
+      if (!/thinking/i.test(String(e && e.message))) throw e;
+      delete body.generationConfig.thinkingConfig;
+      json = await generate(body);
+    }
+    out = JSON.parse(textOf(json).filter((p) => !p.thought).map((p) => p.text || '').join('').replace(/^```(?:json)?\s*|\s*```$/g, ''));
   } catch (err) {
     setState('idle');
     A.C.src = 'builtin';
@@ -856,15 +901,66 @@ export async function think({ text = '', audio = null } = {}) {
     // Something the built-in commands know: they do it (and it syncs), not Gemini.
     if (A.knows(heard)) { setState('idle'); return A.runCommand(heard); }
   }
+  const clean = (t, max) => String(t || '').replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, max);
+  let reply = clean(out.reply, 3000) || 'Hm. I have nothing useful on that.';
+  // Needs the web: look it up and answer from that.
+  const q = clean(out.lookup, 200);
+  if (q) {
+    try { reply = await lookup(audio ? heard : text, q); } catch (e) { reply += '\n(I tried to look that up online and couldn\'t get through.)'; }
+  }
+  // Remember / forget, then save the exchange to the shared conversation.
+  A.AM.applyMemory(ai, {
+    remember: (Array.isArray(out.remember) ? out.remember : []).slice(0, 5),
+    forget: (Array.isArray(out.forget) ? out.forget : []).slice(0, 10)
+  });
+  A.AM.addChat(ai, 'user', audio ? heard : text);
+  A.AM.addChat(ai, 'model', reply);
+  A.aiSave();
   A.C.src = 'gemini';
   setState('idle');
-  await A.say(String(out.reply || 'Hm. I have nothing useful on that.').trim(), '');
+  await A.say(reply, '');
+  // Things it was plainly asked to do: the phone's own commands do them (and show a card each).
+  A.C.src = null;
+  for (const cmd of (Array.isArray(out.act) ? out.act : []).map((c) => clean(c, 200)).filter(Boolean).slice(0, 3)) await A.runCommand(cmd);
   const s = out.suggestion;
   if (s && s.title) {
     const at = parseAt(s.at);
     A.ctAdd({ k: 'sugg', s: { kind: s.kind, title: String(s.title).slice(0, 120), at: at ? at.d.toISOString() : null, allDay: at ? at.allDay : true }, title: String(s.title).slice(0, 120), when: at ? whenShort(at.d, at.allDay) : '', label: String(s.label || 'Add').slice(0, 24) });
   }
   A.C.src = null;
+}
+// A web lookup: Gemini with Google Search, answering in plain text.
+async function lookup(heard, query) {
+  const json = await generate({
+    systemInstruction: { parts: [{ text: `${persona()}\n\nSearch the web and answer from what you find: plainly, short unless detail is needed. Plain text with line breaks, no markdown symbols, no links. Today is ${new Date().toDateString()}.` }] },
+    contents: [{ role: 'user', parts: [{ text: `${heard}\n\n(Search for: ${query})` }] }],
+    tools: [{ google_search: {} }],
+    generationConfig: { temperature: 0.4, maxOutputTokens: 4000 }
+  });
+  const t = textOf(json).filter((p) => !p.thought).map((p) => p.text || '').join('').replace(/[ \t]+/g, ' ').trim().slice(0, 3000);
+  if (!t) throw new Error('empty');
+  return t;
+}
+
+// What it remembers (Settings): the shared notes, each with a remove button, plus clear / forget all.
+export function openMemorySheet() {
+  const ai = A.ai();
+  const row = (m) => `<div class="row" style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--line-2)"><span style="flex:1;overflow-wrap:anywhere">${A.esc(m.t)}</span><button type="button" class="icon-btn" data-ai-x="${A.esc(m.id)}" aria-label="Forget this">${IC.close}</button></div>`;
+  const sh = A.openSheet(`<div class="sheet-head"><span class="label">WHAT IT REMEMBERS</span><button type="button" class="icon-btn" data-close aria-label="Close">${IC.close}</button></div>
+    <div class="hint" style="margin-top:0">One conversation and one set of notes, shared with the deck. ${ai.chat.length} message${ai.chat.length === 1 ? '' : 's'} in the chat. Tell it "remember…" to add a note, or "forget…" to drop one.</div>
+    <div id="aiList" style="margin-top:10px">${ai.memory.length ? ai.memory.map(row).join('') : '<div class="hint">Nothing yet.</div>'}</div>
+    <div class="sheet-foot"><button type="button" class="btn" id="aiChat">CLEAR CHAT</button><button type="button" class="btn" id="aiAll" style="flex:1">FORGET ALL</button></div>`);
+  sh.addEventListener('click', (e) => {
+    if (e.target.closest('[data-close]')) { A.closeSheet(); A.render(); return; }
+    const x = e.target.closest('[data-ai-x]');
+    if (x) { if (A.AM.forgetOne(ai, x.dataset.aiX)) A.aiSave(); x.closest('.row').remove(); return; }
+    if (e.target.closest('#aiChat')) { A.AM.clearChat(ai); A.aiSave(); A.toast('Fresh conversation.'); return; }
+    const all = e.target.closest('#aiAll');
+    if (all) {
+      if (!all.dataset.sure) { all.dataset.sure = '1'; all.textContent = 'SURE? FORGET ALL'; setTimeout(() => { delete all.dataset.sure; all.textContent = 'FORGET ALL'; }, 4000); return; }
+      A.AM.forgetAll(ai); A.aiSave(); A.closeSheet(); A.toast('Memory wiped.'); A.render();
+    }
+  });
 }
 function parseAt(v) {
   const m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/.exec(String(v || ''));

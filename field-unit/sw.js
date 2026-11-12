@@ -1,6 +1,6 @@
 // Field Unit service worker: offline shell + alerts relayed by Command.
-const CACHE = 'field-unit-v1.31.0';
-const SHELL = ['./', 'index.html', 'styles.css', 'boot.css', 'app.js', 'boot.js', 'presence.js', 'presence.css', 'terminal.js', 'terminal.css', 'presence-orb.jpg', 'manifest.webmanifest', 'lib/core.js', 'lib/sync.js', 'lib/util.js', 'lib/manifest.js', 'lib/roster.js', 'icons/icon-192.png'];
+const CACHE = 'field-unit-v1.34.0';
+const SHELL = ['./', 'index.html', 'styles.css', 'boot.css', 'app.js', 'boot.js', 'presence.js', 'presence.css', 'terminal.js', 'terminal.css', 'presence-orb.jpg', 'manifest.webmanifest', 'lib/core.js', 'lib/sync.js', 'lib/util.js', 'lib/manifest.js', 'lib/roster.js', 'lib/aimem.js', 'icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

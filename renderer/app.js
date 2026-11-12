@@ -8,13 +8,14 @@ import * as U from './util.js';
 import { initModals, openTaskEditor, openEventEditor, openNoteEditor, openRecap, openProject, openProjectEditor, openScheduleEditor, openScheduleShare, openSettings, closeModal, isModalOpen } from './modals.js';
 import * as FU from './fieldunit.js';
 import * as Recap from './recap.js';
+import * as AM from '../shared/aimem.js';
 import * as Meet from './meeting.js';
 import * as Motion from './motion.js';
 import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ymd, parseYmd, typeOf, shortName, timeRange, parseTime, chipName } from '../shared/roster.js';
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.33.0';
+const VERSION = 'v1.34.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -2145,49 +2146,28 @@ function towerContext() {
   return lines.join('\n');
 }
 
-// ---- the AI's memory (v1.33): the running conversation and the things it was told to keep
-const CHAT_KEEP = 60;
-const MEMORY_KEEP = 150;
-function chatAdd(role, text) {
-  text = String(text || '').trim();
-  if (!text) return;
-  S.aiChat.push({ role, text: text.slice(0, 3000), at: new Date().toISOString() });
-  if (S.aiChat.length > CHAT_KEEP) S.aiChat.splice(0, S.aiChat.length - CHAT_KEEP);
-  deck.save('aiChat', S.aiChat);
-}
+// ---- the AI's memory (v1.33; shared with Field Unit since v1.34 through meta/ai, see shared/aimem.js)
 function chatStamp(at) {
   const d = new Date(at);
   return `${U.DAY_FULL[d.getDay()].slice(0, 3)} ${U.MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}, ${U.fmtTimeShort(d, false)}`;
 }
-function chatHistory() {
-  // Your lines carry when you said them, so a conversation can run across days.
-  return S.aiChat.slice(-40).map((m) => ({ role: m.role, text: m.role === 'user' ? `[${chatStamp(m.at)}] ${m.text}` : m.text }));
+function aiSave() {
+  deck.save('ai', S.ai);
+  FU.relayAi(S.ai);
 }
-function memoryLines() {
-  return S.aiMemory.map((m) => `${m.t} (noted ${chatStamp(m.at).split(',')[0]})`);
+function chatAdd(role, text) { AM.addChat(S.ai, role, text); aiSave(); }
+const chatHistory = () => AM.chatTurns(S.ai);
+const memoryLines = () => AM.memoryLines(S.ai);
+function memoryApply(g) { if (AM.applyMemory(S.ai, g)) aiSave(); }
+function aiClearChat() { AM.clearChat(S.ai); aiSave(); }
+function aiForget(id) { if (AM.forgetOne(S.ai, id)) aiSave(); }
+function aiForgetAll() { AM.forgetAll(S.ai); aiSave(); }
+// The phone's side came in: put the two together, and send ours back if it had something the phone didn't.
+function adoptAi(remote) {
+  const merged = AM.mergeAi(S.ai, remote);
+  if (AM.aiKey(merged) !== AM.aiKey(S.ai)) { S.ai = merged; deck.save('ai', S.ai); }
+  if (!remote || AM.aiKey(merged) !== AM.aiKey(remote)) FU.relayAi(S.ai);
 }
-function memoryApply(g) {
-  if (!g) return;
-  let changed = false;
-  for (const f of g.forget || []) {
-    const key = String(f).replace(/\s*\(noted [^)]*\)\s*$/, '').trim().toLowerCase();
-    const before = S.aiMemory.length;
-    S.aiMemory = S.aiMemory.filter((m) => m.t.toLowerCase() !== key && !(key.length > 12 && m.t.toLowerCase().includes(key)));
-    if (S.aiMemory.length !== before) changed = true;
-  }
-  for (const r of g.remember || []) {
-    const t = String(r).replace(/\s*\(noted [^)]*\)\s*$/, '').trim();
-    if (!t || /\b(password|passcode|pin|card number|account number|ssn|social security)\b/i.test(t)) continue;
-    if (S.aiMemory.some((m) => m.t.toLowerCase() === t.toLowerCase())) continue;
-    S.aiMemory.push({ t, at: new Date().toISOString() });
-    changed = true;
-  }
-  if (S.aiMemory.length > MEMORY_KEEP) S.aiMemory.splice(0, S.aiMemory.length - MEMORY_KEEP);
-  if (changed) deck.save('aiMemory', S.aiMemory);
-}
-function aiClearChat() { S.aiChat = []; deck.save('aiChat', S.aiChat); }
-function aiForget(i) { S.aiMemory.splice(i, 1); deck.save('aiMemory', S.aiMemory); }
-function aiForgetAll() { S.aiMemory = []; deck.save('aiMemory', S.aiMemory); aiClearChat(); }
 // Long answers show in full, but only the start is read aloud.
 function speakable(reply) {
   const flat = String(reply).replace(/\n+/g, ' ');
@@ -3479,8 +3459,8 @@ async function start() {
   S.notes = S.data.notes || [];
   S.projects = S.data.projects || [];
   S.schedule = S.data.schedule || [];
-  S.aiChat = Array.isArray(S.data.aiChat) ? S.data.aiChat : [];
-  S.aiMemory = Array.isArray(S.data.aiMemory) ? S.data.aiMemory : [];
+  // The AI's memory; v1.33 kept it in aiChat / aiMemory, folded in once here.
+  S.ai = AM.mergeAi(S.data.ai, { chat: S.data.aiChat, memory: S.data.aiMemory });
   S.schedWeek = weekStart(new Date());
   S.tkView = 'queue';
   const now = new Date();
@@ -3610,6 +3590,7 @@ async function start() {
     addLog: addProjectLog,
     onActivity: guestActivity,
     getLook: () => ({ theme: S.settings.theme || 'dusk', font: S.settings.font || 'auto', ink: S.settings.ink || 'theme', trim: S.settings.trim || 'none', clock24: !!S.settings.clock24 }),
+    adoptAi,
     adoptThemes: (d) => {
       const at = d ? Number(d.at) || 0 : 0;
       const mine = S.settings.themeFavsAt || 0;

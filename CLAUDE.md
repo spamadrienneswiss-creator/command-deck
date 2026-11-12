@@ -82,6 +82,8 @@ Shipped recently:
 **Parked list.** The old backlog (Oct 31, 2026) was scrapped on purpose. Don't suggest or revive past ideas from it; older mockups on the design board are archive, not a to-do list. Only what Nick parks himself goes here. Show it to him right before a build so he can confirm (see Who and how); otherwise don't push it. 
 - (empty.)
 
+Explored, not parked (Nick, Nov 11): Command Deck driving his Royal Kludge keyboard's lighting (he thinks it's an RK L75; tri-mode, lit in zones, set by RK Launcher or RK's WebHID web driver). No community support for the L75 (rkcu covers RK100 / RK61, Rangoli the RK71). The plan if he brings it back: record the web driver's WebHID messages while he changes colours, decode them, then a test button in the deck (Electron has WebHID); likely cable only, RK's app closed. Don't raise it; he'll ask.
+
 Presence on Field Unit was scrapped by Nick on Nov 6 (code still in `field-unit/presence.js`, off with `ENABLED = false`; don't bring it back unless he does).
 
 Themes turned down (don't revive): the painted themes Concourse, Spire, Skyline, Silvan (shipped v1.20, removed v1.23; painted backdrops behind panels don't work on the deck), Wayfarer, Habitat, Gateway (space station takes), Nightport (from another AI's reference), Longhaul (painted freighter bridge), Anchorage (live 3D station), Halcyon (pastel sky-city), Homeport (cozy station cabin), Crescent (chrome galley, red planet), Orrery (gold line chart; mocked beside Lumen and Meridian).

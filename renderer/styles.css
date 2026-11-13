@@ -2114,16 +2114,19 @@ body[data-theme="meridian"] .bw.go .dv-ic { background: #F2F4F4; color: #0B0D0E;
 /* Meridian on the Edge: the armillary dial shows (it hides in small clock panels elsewhere) … */
 body[data-theme="meridian"][data-layout="edge"] .clk-art.mer { display: block !important; height: min(150px, calc(100% - 110px)); top: 40px; right: 12px; }
 /* … and every control is big enough for a finger on the touchscreen. */
-body[data-theme="meridian"][data-layout="edge"] .seg button { min-height: 38px; padding: 0 14px; }
-body[data-theme="meridian"][data-layout="edge"] .deck-header .icon-btn, body[data-theme="meridian"][data-layout="edge"] .deck-header .sq-btn { min-width: 42px; min-height: 38px; }
-body[data-theme="meridian"][data-layout="edge"] .sq-btn { width: 44px; height: 38px; }
-body[data-theme="meridian"][data-layout="edge"] .mini-btn, body[data-theme="meridian"][data-layout="edge"] .accent-btn { min-height: 38px; padding: 0 14px; }
-body[data-theme="meridian"][data-layout="edge"] .tk-views button { min-height: 36px; padding: 0 14px; }
-body[data-theme="meridian"][data-layout="edge"] .chip { height: 36px; padding: 0 14px; }
-body[data-theme="meridian"][data-layout="edge"] .tk { min-height: 66px; }
-body[data-theme="meridian"][data-layout="edge"] .tk-box { width: 34px; height: 34px; }
-body[data-theme="meridian"][data-layout="edge"] .tk-title { font-size: 19px; }
-body[data-theme="meridian"][data-layout="edge"] .quick { min-height: 50px; }
-body[data-theme="meridian"][data-layout="edge"] .cal-cell { min-height: 44px; }
+body[data-theme="meridian"][data-layout="edge"] .seg button { min-height: 48px; padding: 0 18px; font-size: 12px; }
+body[data-theme="meridian"][data-layout="edge"] .deck-header .icon-btn, body[data-theme="meridian"][data-layout="edge"] .deck-header .sq-btn { min-width: 54px; min-height: 48px; }
+body[data-theme="meridian"][data-layout="edge"] .sq-btn { width: 56px; height: 48px; }
+body[data-theme="meridian"][data-layout="edge"] .mini-btn, body[data-theme="meridian"][data-layout="edge"] .accent-btn { min-height: 48px; padding: 0 18px; }
+body[data-theme="meridian"][data-layout="edge"] .tk-views button { min-height: 46px; padding: 0 18px; }
+body[data-theme="meridian"][data-layout="edge"] .chip { height: 46px; padding: 0 18px; }
+body[data-theme="meridian"][data-layout="edge"] .tk { min-height: 80px; }
+body[data-theme="meridian"][data-layout="edge"] .tk-box { width: 44px; height: 44px; }
+body[data-theme="meridian"][data-layout="edge"] .tk-title { font-size: 21px; }
+body[data-theme="meridian"][data-layout="edge"] .quick { min-height: 60px; }
+body[data-theme="meridian"][data-layout="edge"] .cal-cell { min-height: 54px; }
+body[data-theme="meridian"][data-layout="edge"] .cal-cell > span:first-child { width: 36px; height: 36px; }
+body[data-theme="meridian"][data-layout="edge"] .ev { min-height: 64px; }
 /* On the Edge, the keys beside the terminal (Discord, Browser) are full finger size in every theme. */
 body[data-layout="edge"] .cmp-keys .dv-ic { --dv: 72px; }
+body[data-theme="meridian"][data-layout="edge"] .cmp-keys .dv-ic { --dv: 90px; }

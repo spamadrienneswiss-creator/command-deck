@@ -51,6 +51,12 @@ contextBridge.exposeInMainWorld('deck', {
     set: (patch) => ipcRenderer.invoke('discord:set', patch),
     onState: (fn) => ipcRenderer.on('discord:state', (_e, st) => fn(st))
   },
+  orb: {
+    state: (st) => ipcRenderer.send('orb:state', st),
+    home: () => ipcRenderer.send('orb:home'),
+    onAct: (fn) => ipcRenderer.on('orb:act', (_e, a) => fn(a)),
+    onHello: (fn) => ipcRenderer.on('orb:hello', () => fn())
+  },
   tower: {
     state: (st) => ipcRenderer.send('tower:state', st),
     home: () => ipcRenderer.send('tower:home'),

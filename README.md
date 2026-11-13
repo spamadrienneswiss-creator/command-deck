@@ -124,6 +124,15 @@ A small glowing core sits in the bottom-right corner of your main monitor, above
 - When you stop, it goes through **Data Recap** like a phone recording: transcribed on this PC, then summarized by Gemini, and Comm Tower 1 tells you when the recap is ready in Notepad › RECAPS. The audio is saved every 10 seconds while it records, so if the deck closes mid-call, what was recorded is recapped the next time it starts.
 - **Heads-up:** in California (and some other places) everyone on a call has to agree to being recorded. This doesn't announce itself the way Zoom's recorder does, so mention it when you start.
 
+### The Orb (on your second screen)
+
+Command Deck as a ball of living light: hundreds of swirling trails round a white-hot heart, sparks drifting about, tendrils that reach out and pull back. It floats around the middle of your second screen (not the main one, not the Xeneon Edge) at desktop level, so the windows you're working in cover it. It leans toward the mouse when you come near.
+
+- **Click it** (or press **Ctrl + Alt + O** from any app) and it blooms: six glass screens grow out of it on veins of light. **Today** (time, weather, what's left), **Calendar** (what's coming up), **Tasks** (click the circle to finish one), **Notes · Recaps** (click one to bring the deck up), **Comms** (type to the deck, the same conversation as the terminal) and **Record** (a meeting into Data Recap, like Comm Tower 1's).
+- **Click a screen** to bring it close; empty space sends it back. Click the orb, empty space or Esc to fold it all away.
+- **Its color tells you how things stand:** blue at rest, amber when something is due within the hour, a red heartbeat when something is overdue, churning lavender while Comms thinks, a red heart (with the time under it) while a meeting records.
+- **Drag the closed orb** to give it a new home, on any screen. **Settings › System › THE ORB**: on or off, DESKTOP or ON TOP, BACK TO THE MIDDLE. The tray menu has *Show the Orb* too.
+
 ### Projects
 
 Panel 06 has two views: **QUEUE** (the task list) and **PROJECTS**.

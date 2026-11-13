@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; font-src 'self'; script-src 'self'">
+<title>The Orb</title>
+<link rel="stylesheet" href="../node_modules/@fontsource/exo-2/latin-200.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/exo-2/latin-300.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/exo-2/latin-400.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/exo-2/latin-600.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/ibm-plex-mono/latin-400.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/ibm-plex-mono/latin-500.css">
+<link rel="stylesheet" href="orb.css">
+</head>
+<body data-state="closed" data-mood="rest">
+<!-- The Orb (v1.35). Two canvases: bg is redrawn clean every frame (the glow it casts, sparks,
+     the veins to the screens); tr keeps fading trails (the swirling body). orb.js draws both. -->
+<canvas id="bg" class="ob-cv" aria-hidden="true"></canvas>
+<canvas id="tr" class="ob-cv ob-tr" aria-label="Command Deck orb: click to open"></canvas>
+<div class="ob-hub" id="hubTime" aria-hidden="true"></div>
+<div class="ob-tip" id="tip" aria-hidden="true">COMMAND DECK</div>
+
+<div class="ob-pans" id="pans">
+  <section class="ob-pan" data-k="today" aria-label="Today">
+    <header><span>TODAY</span><i></i></header>
+    <div class="ob-pb">
+      <div class="ob-big"><span id="clk">--:--</span><small id="ampm"></small></div>
+      <div class="ob-sub" id="date"></div>
+      <div class="ob-row"><span id="wx"></span><span class="ob-ok" id="link">DECK LINKED</span></div>
+      <div class="ob-line" id="hello"></div>
+    </div>
+  </section>
+  <section class="ob-pan" data-k="cal" aria-label="Calendar">
+    <header><span>CALENDAR</span><i></i></header>
+    <div class="ob-pb"><div class="ob-list ob-evs" id="evs"></div></div>
+  </section>
+  <section class="ob-pan" data-k="tasks" aria-label="Tasks">
+    <header><span>TASKS</span><i></i><em id="tkMore"></em></header>
+    <div class="ob-pb"><div class="ob-list ob-tks" id="tks"></div></div>
+  </section>
+  <section class="ob-pan" data-k="notes" aria-label="Notes and recaps">
+    <header><span>NOTES · RECAPS</span><i></i></header>
+    <div class="ob-pb"><div class="ob-list ob-nts" id="nts"></div></div>
+  </section>
+  <section class="ob-pan" data-k="comms" aria-label="Comms">
+    <header><span>COMMS</span><i></i></header>
+    <div class="ob-pb">
+      <div class="ob-chat" id="chat"></div>
+      <form class="ob-form" id="cform" autocomplete="off"><span>›</span><input id="cin" maxlength="500" placeholder="Type to the deck…" spellcheck="false" aria-label="Type to the deck"></form>
+    </div>
+  </section>
+  <section class="ob-pan" data-k="rec" aria-label="Record a meeting">
+    <header><span>RECORD</span><i></i></header>
+    <div class="ob-pb">
+      <div id="recIdle">
+        <input class="ob-in" id="recName" maxlength="80" placeholder="Meeting name (optional)" spellcheck="false" aria-label="Meeting name">
+        <div class="ob-recrow">
+          <button type="button" class="ob-recb" id="recGo" aria-label="Start recording"><i></i></button>
+          <div class="ob-tg">
+            <button type="button" class="on" id="recSys" aria-pressed="true">COMPUTER AUDIO</button>
+            <button type="button" class="on" id="recMic" aria-pressed="true">MY MIC</button>
+          </div>
+        </div>
+        <div class="ob-sub">Records into Data Recap. Let everyone know.</div>
+      </div>
+      <div id="recLive" hidden>
+        <div class="ob-rtime"><b></b><span id="recTime">00:00</span></div>
+        <div class="ob-sub ob-c" id="recTitle"></div>
+        <div class="ob-btns">
+          <button type="button" id="recPause">PAUSE</button>
+          <button type="button" class="hot" id="recStop">STOP + RECAP</button>
+          <button type="button" id="recDrop">DISCARD</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<script src="orb.js"></script>
+</body>
+</html>

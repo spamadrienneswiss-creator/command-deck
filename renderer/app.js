@@ -15,7 +15,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.34.1';
+const VERSION = 'v1.35.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -857,6 +857,7 @@ function recapMeta(n) {
 }
 
 function renderNotes() {
+  orbPush();
   const el = $('#ntList');
   if (!el) return;
   const norm = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
@@ -1075,6 +1076,7 @@ function wireNotes() {
 }
 
 function renderEvents() {
+  orbPush();
   const now = new Date();
   const sel = S.selectedDate || U.startOfDay(now);
   const fromToday = U.sameDay(sel, now);
@@ -1179,6 +1181,7 @@ function taskRow(t, now) {
 }
 
 function renderTasks() {
+  orbPush();
   $$('.tk-views button[data-tkview]').forEach((b) => b.classList.toggle('on', b.dataset.tkview === S.tkView));
   $('#btnAddTask').textContent = S.tkView === 'projects' ? '+ PROJECT' : S.tkView === 'schedule' ? '+ ADD' : '+ ADD TASK';
   $('#tkChips').hidden = S.tkView !== 'queue';
@@ -2305,6 +2308,82 @@ const towerSink = {
   card: (c) => towerSend({ line: { k: 'card', ...c } }),
   busy: (b) => towerSend({ busy: b })
 };
+
+// ---------------------------------------------------------------- the Orb (v1.35)
+// Its own window on the second screen (renderer/orb.*). The deck sends it a snapshot of the
+// day whenever something changes, and runs what it asks for: Comms lines go through the same
+// responder as the terminals, task check-offs, and the meeting recorder.
+function orbSend(st) {
+  if (deck.orb) deck.orb.state(st);
+}
+const orbSink = {
+  line: (k, t) => orbSend({ line: { k, t } }),
+  card: (c) => orbSend({ line: { k: 'card', ...c } }),
+  busy: (b) => orbSend({ busy: b })
+};
+function orbWhen(d, allDay, now = new Date()) {
+  const day = U.sameDay(d, now) ? 'TODAY' : U.sameDay(d, U.addDays(now, 1)) ? 'TMRW' : U.DAY_FULL[d.getDay()].slice(0, 3).toUpperCase();
+  return allDay ? day : `${day} ${U.fmtTimeShort(d, S.settings.clock24)}`;
+}
+function orbSnap() {
+  const now = new Date();
+  const hour = new Date(now.getTime() + 3600e3);
+  const events = allEvents().filter((e) => e.end > now).slice(0, 8);
+  const open = sortTasks(activeTasks(), now);
+  const late = open.filter((t) => isOverdue(t, now));
+  const dueToday = open.filter((t) => t.due && U.sameDay(new Date(t.due), now));
+  const soon = events.some((e) => !e.allDay && e.start > now && e.start <= hour) || open.some((t) => t.dueHasTime && !isOverdue(t, now) && new Date(t.due) <= hour);
+  const byDate = (n) => new Date(n.editedAt || n.createdAt || 0);
+  const notes = (S.notes || []).slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || byDate(b) - byDate(a)).slice(0, 6).map((n) => {
+    let sub = U.dayLabel(byDate(n), now);
+    if (Recap.isRecap(n)) {
+      const r = n.recap;
+      sub = r.status === 'recording' ? 'Recording now' : r.summary ? `Recap · ${(r.actions || []).length} action item${(r.actions || []).length === 1 ? '' : 's'}` : 'Recap · working on it';
+    } else if (n.body) sub += ` · ${String(n.body).replace(/\s+/g, ' ').slice(0, 48)}`;
+    return { id: n.id, title: n.title || 'Untitled', sub, recap: Recap.isRecap(n) };
+  });
+  let wx = '';
+  try {
+    const w = S.weather;
+    if (w && w.current) wx = `${Math.round(w.current.temperature_2m)}° ${wxInfo(w.current.weather_code, w.current.is_day).words} · low ${Math.round(w.daily.temperature_2m_min[0])}°`;
+  } catch (e) { /* no weather yet */ }
+  const left = dueToday.length + late.length;
+  const name = S.settings.operatorName || '';
+  const part = U.partOfDay();
+  const hello = `Good ${part === 'night' ? 'evening' : part}${name ? `, ${name}` : ''}.`;
+  return {
+    at: now.getTime(),
+    name, clock24: !!S.settings.clock24, motion: S.settings.motion || 'full',
+    hello: `${hello} ${late.length ? `${late.length} overdue, ` : ''}${left ? `${left} thing${left === 1 ? '' : 's'} on today.` : 'Nothing else due today.'}`,
+    wx, late: late.length > 0, soon,
+    events: events.map((e) => ({ when: orbWhen(e.start, e.allDay, now), title: e.title || 'Event', soon: !e.allDay && e.start > now && e.start <= hour, now: e.start <= now })),
+    tasks: open.slice(0, 8).map((t) => ({ id: t.id, title: t.title, due: t.due ? dueLabel(t, now) : '', late: isOverdue(t, now) })),
+    more: Math.max(0, open.length - 8),
+    notes
+  };
+}
+let orbT = null;
+function orbPush() {
+  if (!deck.orb) return;
+  clearTimeout(orbT);
+  orbT = setTimeout(() => { try { orbSend({ snap: orbSnap() }); } catch (e) { console.warn('orb snapshot', e); } }, 250);
+}
+function wireOrb() {
+  if (!deck.orb) return;
+  deck.orb.onHello(() => { orbPush(); orbSend({ rec: Meet.recState() }); });
+  deck.orb.onAct(async (a) => {
+    if (!a) return;
+    if (a.kind === 'send' && a.text) await respond(a.text, orbSink);
+    else if (a.kind === 'done' && a.id) completeTask(a.id);
+    else if (a.kind === 'rec') {
+      const res = await meetingDo(a);
+      orbSink.line(res.kind === 'err' ? 'err' : 'c', res.reply);
+    }
+    orbPush();
+  });
+  setInterval(orbPush, 60 * 1000);
+  orbPush();
+}
 function termChips() {
   const chips = [['Status report', 'status report'], ["What's next", "what's next"], ['Take a note', 'take a note: ', true], ['Add to calendar', 'schedule ', true], ['Timer 10 min', 'set a timer for 10 minutes']];
   if (DV.status === 'live') chips.push(DV.mute || DV.deaf ? ['Unmute me', 'unmute me'] : ['Mute me', 'mute me']);
@@ -2412,7 +2491,7 @@ async function meetingDo(c) {
 function wireMeeting() {
   Meet.initMeeting({
     deck,
-    send: (st) => towerSend({ rec: st }),
+    send: (st) => { towerSend({ rec: st }); orbSend({ rec: st }); },
     createNote: (id, title, sources) => {
       const now = new Date().toISOString();
       S.notes.unshift({
@@ -3475,6 +3554,7 @@ async function start() {
   Motion.start();
   if (deck.onAway) deck.onAway((away) => { Motion.setAway(away); voicesAway(away); });
   if (deck.tower) deck.tower.onText((t) => respond(t, towerSink));
+  wireOrb();
   wireTerm();
   wireDiscord();
   window.__discordState = (st) => renderDiscord(st); // test hook: tools/deck-shots.js shows the icon states

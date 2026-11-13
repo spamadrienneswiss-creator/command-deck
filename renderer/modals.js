@@ -1055,6 +1055,11 @@ export function openSettings(welcome = false) {
           </div>
           <div class="inline" style="flex:none;margin-top:6px"><button type="button" class="btn line" id="sTest">TEST VOICE</button></div>
         </div>
+        <div class="f"><span class="f-label">THE ORB · ON YOUR SECOND SCREEN</span>
+          <div class="toggle-row"><span>Show the Orb</span>${switchHtml('swOrb', (draft.orb || {}).on !== false, 'Show the Orb')}</div>
+          <span class="f-label" style="margin-top:12px">ORB SITS</span>
+          <div class="inline" style="flex:none;gap:8px"><div class="pills" id="sOrbLayer" style="flex:1">${[['desktop', 'DESKTOP'], ['top', 'ON TOP']].map(([v, l]) => `<button type="button" class="pill${((draft.orb || {}).layer === 'top' ? 'top' : 'desktop') === v ? ' on' : ''}" data-layer="${v}">${l}</button>`).join('')}</div><button type="button" class="btn line" id="sOrbHome">BACK TO THE MIDDLE</button></div>
+          <div class="f-hint">Command Deck as a ball of living light, floating on your second screen. Click it (or press Ctrl + Alt + O from any app) and six screens grow out of it: Today, Calendar, Tasks, Notes · Recaps, Comms (type to the deck) and Record (a meeting into Data Recap). Click a screen to bring it close, empty space to send it back, the orb (or Esc) to fold it all away. Its color tells you how things stand: amber when something is due within the hour, a red heartbeat when something is overdue, churning while Comms thinks, a red heart while a meeting records. Drag the closed orb to give it a new home, on any screen. DESKTOP lets your windows cover it; ON TOP keeps it above them.</div></div>
         <div class="f"><span class="f-label">COMM TOWER 1 · THE DIAL</span>
           <div class="toggle-row"><span>Show the dial on screen</span>${switchHtml('swTower', (draft.tower || {}).on !== false, 'Show Comm Tower 1')}</div>
           <div class="toggle-row"><span>Gemini words replies and answers questions</span>${switchHtml('swTowerTalk', (draft.tower || {}).talk !== false, 'Conversational replies')}</div>
@@ -1509,6 +1514,14 @@ export function openSettings(welcome = false) {
       slider('#sHumor', 'humor', (v) => v);
       wireSwitch($('#swAuto', body), (on) => { draft.autoStart = on; });
       wireSwitch($('#swTower', body), (on) => { draft.tower = { ...(draft.tower || {}), on }; });
+      wireSwitch($('#swOrb', body), (on) => { draft.orb = { ...(draft.orb || {}), on }; });
+      $('#sOrbLayer', body).addEventListener('click', (e) => {
+        const b = e.target.closest('[data-layer]');
+        if (!b) return;
+        draft.orb = { ...(draft.orb || {}), layer: b.dataset.layer };
+        $('#sOrbLayer', body).querySelectorAll('[data-layer]').forEach((x) => x.classList.toggle('on', x === b));
+      });
+      $('#sOrbHome', body).addEventListener('click', () => { if (window.deck.orb && window.deck.orb.home) window.deck.orb.home(); app.toast('The Orb is back in the middle.', 1800); });
       wireSwitch($('#swTowerTalk', body), (talk) => { draft.tower = { ...(draft.tower || {}), talk }; });
       wireDiscordSettings(body);
       $('#sTowerName', body).addEventListener('input', (e) => { draft.tower = { ...(draft.tower || {}), name: e.target.value.trim().toUpperCase() || 'COMM TOWER 1' }; });

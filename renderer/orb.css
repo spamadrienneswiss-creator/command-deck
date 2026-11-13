@@ -1,0 +1,96 @@
+/* The Orb (v1.35): Command Deck as living light on the second screen. ob- classes.
+   The page has a strict CSP (style-src 'self'): no inline style="" in orb.html; orb.js sets
+   positions and transforms from script. */
+:root {
+  --ice: #8FE8FF; --teal: #38C6E8; --vio: #9D8CFF; --red: #FF5468; --amb: #FFB65C;
+  --wh: #F1FBFF; --dim: #7E97A8; --line: rgba(143, 232, 255, .14);
+  --sans: 'Exo 2', 'Segoe UI', sans-serif; --mono: 'IBM Plex Mono', Consolas, monospace;
+}
+html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; user-select: none; }
+body { font-family: var(--sans); color: var(--wh); }
+.ob-cv { position: absolute; left: 0; top: 0; display: block; pointer-events: none; }
+.ob-cv.ob-tr { pointer-events: auto; z-index: 2; }
+body.drag .ob-cv.ob-tr { cursor: grabbing; }
+
+/* under the orb: the time while recording, a name on hover */
+.ob-hub, .ob-tip { position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none; white-space: nowrap; transform: translate(-999px, -999px); }
+.ob-hub { font: 500 12px/1 var(--mono); letter-spacing: .12em; color: #FFC2CA; text-shadow: 0 0 12px rgba(255, 84, 104, .7); }
+.ob-tip { font: 400 10px/1 var(--mono); letter-spacing: .32em; color: var(--dim); opacity: 0; transition: opacity .5s ease; }
+body.hover .ob-tip { opacity: 1; }
+body[data-state="open"] .ob-tip { opacity: 0; }
+
+/* the six screens */
+.ob-pans { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.ob-pan {
+  position: absolute; left: 0; top: 0; width: 290px; height: 176px; box-sizing: border-box; padding: 12px 16px;
+  border-radius: 18px; overflow: hidden; cursor: pointer; opacity: 0; transform-origin: 50% 50%;
+  background: linear-gradient(160deg, rgba(143, 232, 255, .14), rgba(10, 26, 42, .62) 40%, rgba(8, 18, 30, .8));
+  backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), inset 0 0 0 1px rgba(143, 232, 255, .28), 0 24px 60px rgba(0, 0, 0, .45), 0 0 40px rgba(56, 198, 232, .12);
+  transition: transform 1.15s cubic-bezier(.2, .9, .25, 1.06), opacity .7s ease, filter .6s ease;
+}
+.ob-pan { pointer-events: none; }
+body[data-state="open"] .ob-pan { pointer-events: auto; }
+.ob-pan.on { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 0 0 1px rgba(143, 232, 255, .5), 0 40px 90px rgba(0, 0, 0, .6), 0 0 80px rgba(56, 198, 232, .25); }
+.ob-pan header { display: flex; align-items: center; gap: 10px; font: 500 9.5px/1 var(--mono); letter-spacing: .26em; color: var(--ice); }
+.ob-pan header i { flex: 1; height: 1px; background: linear-gradient(90deg, rgba(143, 232, 255, .5), transparent); }
+.ob-pan header em { font-style: normal; letter-spacing: .12em; color: var(--dim); }
+.ob-pb { margin-top: 10px; font: 300 12.5px/1.45 var(--sans); }
+.ob-big { font: 200 46px/1 var(--sans); letter-spacing: -.02em; text-shadow: 0 0 24px rgba(143, 232, 255, .5); }
+.ob-big small { font-size: 14px; margin-left: 6px; color: var(--ice); }
+.ob-sub { margin-top: 4px; font: 300 12px/1.3 var(--sans); color: var(--dim); }
+.ob-c { text-align: center; }
+.ob-row { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; font: 400 10px/1 var(--mono); letter-spacing: .06em; }
+.ob-ok { color: var(--ice); }
+.ob-ok.off { color: var(--dim); }
+.ob-line { margin-top: 10px; font: 300 12px/1.4 var(--sans); }
+
+.ob-list { max-height: 128px; overflow: hidden; }
+.ob-pan.on .ob-list { overflow-y: auto; scrollbar-width: none; }
+.ob-list > div { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.ob-list .ob-empty { color: var(--dim); border: 0; }
+.ob-evs b { width: 72px; flex: none; font: 500 10px/1 var(--mono); color: var(--ice); letter-spacing: .06em; }
+.ob-evs span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ob-evs .soon b { color: var(--amb); }
+.ob-evs .now b { color: var(--wh); }
+.ob-tks span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: opacity .4s ease; }
+.ob-tks em { font: 500 9px/1 var(--mono); font-style: normal; letter-spacing: .1em; color: var(--dim); white-space: nowrap; }
+.ob-ck { width: 14px; height: 14px; flex: none; padding: 0; border: 0; border-radius: 50%; background: transparent; box-shadow: inset 0 0 0 1.5px var(--ice); cursor: pointer; }
+.ob-ck:hover { background: rgba(143, 232, 255, .25); }
+.ob-tks .late .ob-ck { box-shadow: inset 0 0 0 1.5px var(--red), 0 0 10px var(--red); }
+.ob-tks .late em { color: var(--red); }
+.ob-tks .done span { opacity: .35; text-decoration: line-through; }
+.ob-tks .done .ob-ck { background: var(--ice); }
+.ob-nts > div { display: block; cursor: pointer; }
+.ob-nts b { display: block; font: 400 12.5px/1.3 var(--sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ob-nts span { display: block; font: 400 9.5px/1.4 var(--mono); color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ob-nts .rc b::before { content: '◉ '; color: var(--ice); }
+
+.ob-chat { height: 92px; overflow-y: auto; scrollbar-width: none; font: 300 12px/1.4 var(--sans); }
+.ob-chat div { margin-top: 4px; white-space: pre-line; overflow-wrap: anywhere; }
+.ob-chat .you { text-align: right; color: var(--ice); }
+.ob-chat .err { color: #FFC2CA; }
+.ob-chat .card { padding: 4px 8px; border-radius: 8px; background: rgba(143, 232, 255, .08); font: 400 10px/1.4 var(--mono); color: var(--ice); letter-spacing: .06em; }
+.ob-chat .busy { color: var(--dim); }
+.ob-form { display: flex; align-items: center; gap: 6px; margin-top: 6px; padding: 6px 10px; border-radius: 10px; background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px rgba(143, 232, 255, .25); }
+.ob-form span { font: 400 11px/1 var(--mono); color: var(--ice); }
+.ob-form input, .ob-in { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--wh); font: 400 11px/1.2 var(--mono); }
+.ob-form input::placeholder, .ob-in::placeholder { color: var(--dim); }
+.ob-form:focus-within { box-shadow: inset 0 0 0 1px rgba(143, 232, 255, .6), 0 0 18px rgba(56, 198, 232, .25); }
+
+.ob-in { display: block; width: 100%; box-sizing: border-box; padding: 6px 10px; border-radius: 10px; background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px rgba(143, 232, 255, .25); }
+.ob-recrow { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
+.ob-recb { width: 54px; height: 54px; flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(255, 84, 104, .8), 0 0 24px rgba(255, 84, 104, .35); }
+.ob-recb i { width: 22px; height: 22px; border-radius: 50%; background: var(--red); box-shadow: 0 0 16px var(--red); transition: transform .2s ease; }
+.ob-recb:hover i { transform: scale(1.15); }
+.ob-tg { display: flex; flex-direction: column; gap: 6px; }
+.ob-tg button, .ob-btns button { padding: 5px 10px; border: 0; border-radius: 8px; background: rgba(255, 255, 255, .05); color: var(--dim); font: 500 9px/1 var(--mono); letter-spacing: .14em; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(143, 232, 255, .18); }
+.ob-tg button.on { color: var(--ice); box-shadow: inset 0 0 0 1px rgba(143, 232, 255, .55); background: rgba(143, 232, 255, .1); }
+.ob-rtime { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 4px; font: 200 34px/1 var(--sans); color: #FFC2CA; }
+.ob-rtime b { width: 12px; height: 12px; border-radius: 50%; background: var(--red); box-shadow: 0 0 14px var(--red); animation: obBlink 1.4s ease-in-out infinite; }
+body[data-rec="paused"] .ob-rtime b { animation: none; opacity: .35; }
+@keyframes obBlink { 50% { opacity: .3; } }
+.ob-btns { display: flex; justify-content: center; gap: 6px; margin-top: 12px; }
+.ob-btns button:hover, .ob-tg button:hover { color: var(--wh); }
+.ob-btns .hot { color: #FFC2CA; box-shadow: inset 0 0 0 1px rgba(255, 84, 104, .7); }
+.ob-btns .arm { color: var(--wh); background: rgba(255, 84, 104, .35); }

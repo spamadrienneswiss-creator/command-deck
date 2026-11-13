@@ -34,6 +34,7 @@ if (!gotLock) app.quit();
 
 let win = null;
 let tower = null; // Comm Tower 1: the dial (its own small window)
+let orb = null; // the Orb (v1.35): Command Deck as living light on the second screen
 let discord = null; // Discord voice: live mute / deafen (src/discord.js)
 let tray = null;
 const ICON = path.join(__dirname, 'assets', 'icon.png');
@@ -181,6 +182,15 @@ function rebuildTrayMenu() {
         win.webContents.send('deck:settings-changed', s);
       }
     },
+    {
+      label: 'Show the Orb', type: 'checkbox', checked: orbSettings().on,
+      click: (item) => {
+        s.orb = { ...(s.orb || {}), on: item.checked };
+        store.set('settings', s);
+        applyOrb();
+        win.webContents.send('deck:settings-changed', s);
+      }
+    },
     { type: 'separator' },
     { label: 'Quit', click: () => { app.isQuitting = true; app.quit(); } }
   ]));
@@ -227,6 +237,7 @@ function registerIpc() {
       applyWindowMode();
       applyAutoStart();
       applyTower();
+      applyOrb();
     }
     return ok;
   });
@@ -648,9 +659,137 @@ function registerTowerIpc() {
     setTimeout(() => { if (!answered && tower && !tower.isDestroyed()) rebuildTower('frozen', 0); }, 5000);
   }, 60 * 1000);
   // Waking up: rebuild the dial once things settle (see rebuildTower()).
-  powerMonitor.on('resume', () => rebuildTower('resume'));
-  powerMonitor.on('unlock-screen', () => rebuildTower('unlock'));
-  app.on('child-process-gone', (_e, d) => { if (d && d.type === 'GPU') rebuildTower('gpu', 1500); });
+  powerMonitor.on('resume', () => { rebuildTower('resume'); rebuildOrb('resume'); });
+  powerMonitor.on('unlock-screen', () => { rebuildTower('unlock'); rebuildOrb('unlock'); });
+  app.on('child-process-gone', (_e, d) => { if (d && d.type === 'GPU') { rebuildTower('gpu', 1500); rebuildOrb('gpu', 1500); } });
+}
+
+// ---------------------------------------------------------------- the Orb (v1.35)
+// Command Deck as a ball of living light on the second screen. One frameless, see-through
+// window at desktop level (other windows cover it), unless ON TOP is picked. Closed, it's a
+// box the orb drifts around in; click the orb and the window grows to hold the six screens
+// that come out of it. Placement rules live in src/orb-util.js; the deck window does the work
+// (it sends a snapshot of the day, and runs what the Orb asks for).
+const OU = require('./src/orb-util');
+let orbLay = 'closed';
+let orbSnap = null; // the deck's last snapshot, so a rebuilt Orb has something to show at once
+let orbRec = null; // the last recording state
+let orbDrag = null;
+let orbRebuildT = null;
+function orbSettings() {
+  const o = settings().orb || {};
+  return { on: o.on !== false, layer: o.layer === 'top' ? 'top' : 'desktop' };
+}
+function orbHome() {
+  return OU.home(store.get().orbPos, screen.getAllDisplays(), screen.getPrimaryDisplay().id);
+}
+function orbApply() {
+  if (!orb || orb.isDestroyed()) return;
+  const h = orbHome();
+  if (!h.display) return;
+  const b = OU.box(h, orbLay, h.display.workArea);
+  const cur = orb.getBounds();
+  if (cur.x !== b.x || cur.y !== b.y || cur.width !== b.width || cur.height !== b.height) orb.setBounds(b);
+  sendOrb('orb:layout', { state: orbLay, x: b.x, y: b.y, w: b.width, h: b.height, hx: h.x, hy: h.y });
+}
+function createOrb() {
+  if (orb && !orb.isDestroyed()) return;
+  orbLay = 'closed';
+  const h = orbHome();
+  const b = h.display ? OU.box(h, 'closed', h.display.workArea) : { x: 0, y: 0, width: 720, height: 520 };
+  orb = new BrowserWindow({
+    ...b,
+    frame: false, transparent: true, resizable: false, movable: true, hasShadow: false,
+    skipTaskbar: true, show: false, focusable: true, alwaysOnTop: orbSettings().layer === 'top', minimizable: false, maximizable: false,
+    backgroundColor: '#00000000', title: 'The Orb',
+    webPreferences: { preload: path.join(__dirname, 'orb-preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false }
+  });
+  orbLayer();
+  orb.loadURL('deck://app/renderer/orb.html');
+  orb.once('ready-to-show', () => { if (orb && !orb.isDestroyed()) orb.showInactive(); });
+  orb.webContents.on('did-finish-load', () => {
+    orbApply();
+    if (orbSnap) sendOrb('orb:state', { snap: orbSnap });
+    if (orbRec) sendOrb('orb:state', { rec: orbRec });
+    if (win && !win.isDestroyed()) win.webContents.send('orb:hello'); // ask the deck for a fresh snapshot
+  });
+  orb.webContents.on('render-process-gone', () => rebuildOrb('crash', 500));
+  orb.on('unresponsive', () => rebuildOrb('hang', 500));
+  orb.webContents.on('will-navigate', (e) => e.preventDefault());
+  orb.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  orb.on('closed', () => { if (orb && orb.isDestroyed()) orb = null; });
+}
+function sendOrb(ch, data) {
+  if (orb && !orb.isDestroyed()) orb.webContents.send(ch, data);
+}
+function orbLayer() {
+  if (!orb || orb.isDestroyed()) return;
+  const top = orbSettings().layer === 'top';
+  orb.setAlwaysOnTop(top, top ? 'floating' : 'normal');
+}
+function orbFront() {
+  if (!orb || orb.isDestroyed()) return;
+  if (!orb.isVisible()) orb.showInactive();
+  orb.moveTop();
+}
+function applyOrb() {
+  if (orbSettings().on) { createOrb(); orbLayer(); }
+  else if (orb && !orb.isDestroyed()) orb.destroy();
+}
+// Same recovery as the dial: a fresh window after sleep, a lock or a graphics reset.
+function rebuildOrb(why, ms = 2500) {
+  clearTimeout(orbRebuildT);
+  orbRebuildT = setTimeout(() => {
+    if (!orbSettings().on) return;
+    if (orb && !orb.isDestroyed()) orb.destroy();
+    orb = null;
+    createOrb();
+  }, ms);
+}
+function registerOrbIpc() {
+  ipcMain.on('orb:layout', (_e, state) => {
+    orbLay = state === 'open' ? 'open' : 'closed';
+    orbApply();
+    if (orbLay === 'open') orbFront();
+  });
+  // Drag the closed orb to give it a new home (anywhere, on any screen).
+  ipcMain.on('orb:drag', (_e, phase, sx, sy) => {
+    if (!orb || orb.isDestroyed()) return;
+    if (phase === 'start') { const h = orbHome(); orbDrag = { ...orb.getBounds(), sx, sy, hx: h.x, hy: h.y }; return; }
+    if (!orbDrag) return;
+    const dx = Math.round(sx - orbDrag.sx), dy = Math.round(sy - orbDrag.sy);
+    orb.setBounds({ x: orbDrag.x + dx, y: orbDrag.y + dy, width: orbDrag.width, height: orbDrag.height });
+    if (phase === 'end') {
+      const pos = OU.dropped({ x: orbDrag.hx + dx, y: orbDrag.hy + dy }, screen.getAllDisplays(), screen.getPrimaryDisplay().id);
+      orbDrag = null;
+      if (pos) store.set('orbPos', pos);
+      orbApply();
+    }
+  });
+  ipcMain.on('orb:home', () => { store.set('orbPos', null); orbApply(); });
+  // What the Orb asks the deck to do: send a line to the terminal, finish a task, run the recorder.
+  ipcMain.on('orb:act', (_e, a) => {
+    if (!a || !a.kind || !win || win.isDestroyed()) return;
+    const kind = String(a.kind);
+    if (kind === 'send') win.webContents.send('orb:act', { kind, text: String(a.text || '').slice(0, 500) });
+    else if (kind === 'done') win.webContents.send('orb:act', { kind, id: String(a.id || '') });
+    else if (kind === 'rec') win.webContents.send('orb:act', { kind, action: String(a.action || ''), title: String(a.title || '').slice(0, 80), sys: a.sys !== false, mic: a.mic !== false });
+    else if (kind === 'deck') { if (!win.isVisible()) win.show(); win.focus(); }
+  });
+  // From the deck: the day's snapshot, terminal lines, the recorder's state.
+  ipcMain.on('orb:state', (_e, st) => {
+    if (!st) return;
+    if (st.snap) orbSnap = st.snap;
+    if (st.rec && st.rec.state) { const { levels, ...r } = st.rec; orbRec = r; }
+    sendOrb('orb:state', st);
+  });
+  for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, () => orbApply());
+  setInterval(() => {
+    if (!orb || orb.isDestroyed() || !orbSettings().on) return;
+    let answered = false;
+    orb.webContents.executeJavaScript('1').then(() => { answered = true; }).catch(() => {});
+    setTimeout(() => { if (!answered && orb && !orb.isDestroyed()) rebuildOrb('frozen', 0); }, 5000);
+  }, 60 * 1000);
 }
 
 // ---------------------------------------------------------------- Discord voice
@@ -777,10 +916,12 @@ app.whenReady().then(() => {
   serveFiles();
   registerIpc();
   registerTowerIpc();
+  registerOrbIpc();
   registerDiscordIpc();
   allowFirebaseFromApp();
   createWindow();
   applyTower();
+  applyOrb();
   startDiscord();
   watchAway();
   createTray();
@@ -799,6 +940,12 @@ app.whenReady().then(() => {
       win.focus();
       win.webContents.send('term:open');
     }
+  });
+  // Ctrl + Alt + O: brings the Orb forward and opens it (or folds it away again).
+  globalShortcut.register('Control+Alt+O', () => {
+    if (!orb || orb.isDestroyed()) return;
+    orbFront();
+    sendOrb('orb:toggle');
   });
 });
 

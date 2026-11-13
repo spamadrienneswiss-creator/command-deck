@@ -746,6 +746,13 @@ function rebuildOrb(why, ms = 2500) {
     createOrb();
   }, ms);
 }
+// The deck's Browser button (v1.36): the page from Settings › System › BROWSER BUTTON, else the
+// dial's old setting, else Google. Only http(s) addresses get through cleanUrl.
+ipcMain.handle('deck:browser', async () => {
+  const s = settings();
+  const url = TU.cleanUrl(s.browserUrl) || TU.cleanUrl((s.tower || {}).browserUrl) || 'https://www.google.com';
+  try { await shell.openExternal(url); return true; } catch { return false; }
+});
 function registerOrbIpc() {
   ipcMain.on('orb:layout', (_e, state) => {
     orbLay = state === 'open' ? 'open' : 'closed';

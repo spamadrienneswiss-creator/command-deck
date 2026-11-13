@@ -56,6 +56,12 @@
 
 <div id="console" class="console">
   <div class="scanline" aria-hidden="true"></div>
+  <!-- Meridian (v1.36): construction lines that slowly turn behind the panels. Hidden in other themes. -->
+  <svg class="mer-cons" viewBox="0 0 2560 720" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="#FFFFFF">
+    <g class="mc-a"><circle cx="900" cy="520" r="430" stroke-opacity=".07"/><circle cx="900" cy="520" r="300" stroke-opacity=".05" stroke-dasharray="2 10"/><path d="M900 520 H1330" stroke-opacity=".06"/><path d="M470 520 A430 430 0 0 1 900 90" stroke-opacity=".14"/></g>
+    <g class="mc-c"><path d="M900 520 V90" stroke-opacity=".05"/></g>
+    <g class="mc-b"><circle cx="1700" cy="260" r="360" stroke-opacity=".06"/><path d="M1340 260 A360 360 0 0 1 1700 -100" stroke-opacity=".12"/><circle cx="1700" cy="260" r="220" stroke-opacity=".05" stroke-dasharray="1 8"/></g>
+  </g></svg>
   <div class="alert-edge" aria-hidden="true"></div>
   <div class="alert-strip" id="alertStrip" role="alert" hidden></div>
 
@@ -200,7 +206,7 @@
               <div class="hail-ring" aria-hidden="true"></div>
               <button type="button" id="btnHail" class="hail" aria-label="Open the terminal">
                 <span class="hail-term" aria-hidden="true">&gt;_</span>
-                <span class="hail-art" aria-hidden="true"><svg viewBox="0 0 66 66"><g fill="none" stroke="#FFFFFF"><circle class="ha-ring" cx="33" cy="33" r="32" fill="#0D1011"/><circle cx="33" cy="33" r="25" stroke-opacity=".6" stroke-dasharray="1 4"/><path d="M-8 33H1M65 33H74" stroke-opacity=".6"/><path d="M22 23 L36 33 L22 43" stroke-width="2"/><path d="M38 44 H49" stroke-width="2"/></g><circle cx="55.6" cy="10.4" r="3.5" fill="#FFFFFF"/></svg></span>
+                <span class="hail-art" aria-hidden="true"><svg viewBox="0 0 66 66"><g fill="none" stroke="#FFFFFF"><circle class="ha-ring" cx="33" cy="33" r="32" fill="#0D1011"/><circle class="ha-dots" cx="33" cy="33" r="25" stroke-opacity=".6" stroke-dasharray="1 4"/><path d="M-8 33H1M65 33H74" stroke-opacity=".6"/><path d="M22 23 L36 33 L22 43" stroke-width="2"/><path class="ha-cur" d="M38 44 H49" stroke-width="2"/></g><g class="ha-orbit"><circle cx="55.6" cy="10.4" r="3.5" fill="#FFFFFF"/></g></svg></span>
               </button>
             </div>
             <div class="cmp-side">
@@ -208,6 +214,7 @@
               <div class="cmp-title" id="cmpTitle">OPEN TERMINAL</div>
               <div class="cmp-sub" id="cmpSub">Click, or just start typing · tasks, events, notes</div>
             </div>
+            <div class="cmp-keys">
             <div class="dv" id="dv" data-status="off" hidden>
               <div class="dv-pair">
                 <button type="button" class="dv-ic" id="dvMic" aria-label="Discord microphone">
@@ -218,6 +225,13 @@
                 </button>
               </div>
               <span class="dv-lab" id="dvLab">DISCORD OFF</span>
+            </div>
+            <div class="bw" id="bw">
+              <button type="button" class="dv-ic" id="btnBrowse" aria-label="Open the browser" title="Open the browser">
+                <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><ellipse cx="9" cy="9" rx="3" ry="7" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M2 9 H16 M3.2 5 H14.8 M3.2 13 H14.8" fill="none" stroke="currentColor" stroke-width="1.1"/></svg>
+              </button>
+              <span class="dv-lab" id="bwLab">BROWSER</span>
+            </div>
             </div>
           </div>
           <div class="cmp-timers" id="cmpTimers" hidden></div>

@@ -10,6 +10,7 @@ const DEFAULTS = {
     chipName: '', // your name chip on shared schedules (blank: from operatorName)
     chipColor: '#F4B6A0',
     consoleName: 'Command Deck',
+    browserUrl: '', // the deck's Browser button (v1.36); empty = Google
     orb: { on: true, layer: 'desktop' }, // the Orb (v1.35) on the second screen; layer: desktop | top
     tower: { on: true, name: 'COMM TOWER 1', talk: true, skin: 'eclipse', style: 'sentinel', layer: 'top', browserUrl: '', shortcuts: [] }, // style: sentinel | obsidian | lantern; layer: top | desktop; skin: eclipse | sentinel | prism | halo | theme; shortcuts: [{ id, name, kind, target }]
     termSpeak: true, // the terminal reads its replies out loud // Comm Tower 1: the talk-to-capture chip on the main monitor

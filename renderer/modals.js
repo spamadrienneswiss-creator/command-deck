@@ -1055,6 +1055,9 @@ export function openSettings(welcome = false) {
           </div>
           <div class="inline" style="flex:none;margin-top:6px"><button type="button" class="btn line" id="sTest">TEST VOICE</button></div>
         </div>
+        <div class="f"><span class="f-label">BROWSER BUTTON OPENS</span>
+          <input id="sBrowserUrl" class="in" maxlength="300" aria-label="Page the Browser button opens" value="${esc(draft.browserUrl || (draft.tower || {}).browserUrl || '')}" placeholder="https://www.google.com" spellcheck="false">
+          <div class="f-hint">The globe button beside Discord in the Ship Computer panel. Leave empty for Google.</div></div>
         <div class="f"><span class="f-label">THE ORB · ON YOUR SECOND SCREEN</span>
           <div class="toggle-row"><span>Show the Orb</span>${switchHtml('swOrb', (draft.orb || {}).on !== false, 'Show the Orb')}</div>
           <span class="f-label" style="margin-top:12px">ORB SITS</span>
@@ -1515,6 +1518,7 @@ export function openSettings(welcome = false) {
       wireSwitch($('#swAuto', body), (on) => { draft.autoStart = on; });
       wireSwitch($('#swTower', body), (on) => { draft.tower = { ...(draft.tower || {}), on }; });
       wireSwitch($('#swOrb', body), (on) => { draft.orb = { ...(draft.orb || {}), on }; });
+      $('#sBrowserUrl', body).addEventListener('input', (e) => { draft.browserUrl = e.target.value.trim(); });
       $('#sOrbLayer', body).addEventListener('click', (e) => {
         const b = e.target.closest('[data-layer]');
         if (!b) return;

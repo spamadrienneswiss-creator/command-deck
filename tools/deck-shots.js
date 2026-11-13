@@ -14,6 +14,7 @@ const [W, H] = (process.env.SIZE || '1280x800').split('x').map(Number);
 let towerWin = null;
 app.on('browser-window-created', (_e, win) => {
   // Comm Tower 1 is its own small window: keep a handle for its pictures, don't drive it.
+  if (win.getTitle() === 'The Orb') return; // the Orb's own window (v1.35): not the deck
   if (win.getTitle() === 'Comm Tower 1') { towerWin = win; win.webContents.on('console-message', (ev) => { if (ev.level === 'error' || ev.level === 3) console.log('[tower err]', ev.message); }); return; }
   win.webContents.on('console-message', (ev) => { if (ev.level === 'error' || ev.level === 3) console.log('[renderer err]', ev.message); });
   setTimeout(async () => {

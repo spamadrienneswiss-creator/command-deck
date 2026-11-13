@@ -2052,3 +2052,78 @@ body[data-theme="meridian"] .hexs .hx-tag { color: #FFFFFF; }
 /* Settings › System › TERMINAL · WHAT IT REMEMBERS (v1.33) */
 .ai-mem { max-height: 220px; overflow-y: auto; margin-top: 6px; }
 .ai-mem .toggle-row span { white-space: normal; overflow-wrap: anywhere; }
+
+/* ============================================================
+   v1.36: the Browser button beside Discord (every theme), and Meridian on the Edge,
+   alive: turning construction lines, the clock's armillary dial at Edge size, the hour
+   blinking on the day bar, a pulse round today, a countdown thread to the next event,
+   a slow scan across overdue tasks, the terminal key's ring turning and its dot in orbit,
+   and touch-sized controls. Movement only with MOTION · FULL (SUBTLE keeps it slower).
+   ============================================================ */
+.cmp-keys { flex-shrink: 0; display: flex; align-items: flex-start; gap: clamp(10px, 1.6cqw, 22px); }
+.bw { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: clamp(5px, 0.8cqw, 9px); }
+.cmp-keys .dv:not([hidden]) + .bw { padding-left: clamp(10px, 1.6cqw, 22px); box-shadow: inset 1px 0 0 var(--line-2); }
+.bw.go .dv-ic { background: var(--amber); color: var(--panel-solid); box-shadow: none; }
+.ev-in, .ev-prog { display: none; }
+.mer-cons { display: none; }
+
+body[data-theme="meridian"][data-frame="dark"] .mer-cons { display: block; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+body[data-theme="meridian"] .mer-cons g { transform-box: view-box; }
+.motion-full body[data-theme="meridian"] .mc-a, body.motion-full[data-theme="meridian"] .mc-a { transform-origin: 900px 520px; animation: merTurn 240s linear infinite; }
+body.motion-full[data-theme="meridian"] .mc-b { transform-origin: 1700px 260px; animation: merTurn 320s linear infinite reverse; }
+body.motion-full[data-theme="meridian"] .mc-c { transform-origin: 900px 520px; animation: merTurn 40s linear infinite; }
+body.motion-subtle[data-theme="meridian"] .mc-a { transform-origin: 900px 520px; animation: merTurn 600s linear infinite; }
+@keyframes merTurn { to { transform: rotate(360deg); } }
+@keyframes merBlink { 50% { opacity: 0.25; } }
+/* the hour you're in, on the day bar */
+body.motion-full[data-theme="meridian"] .cycle-bar i.tip { animation: merBlink 1.6s ease-in-out infinite; }
+/* today, gently pulsing */
+body.motion-full[data-theme="meridian"] .cal-cell.today > span:first-child { animation: merToday 3.2s ease-in-out infinite; }
+@keyframes merToday {
+  0%, 100% { box-shadow: inset 0 0 0 1px #FFFFFF, 0 0 0 4px #15191A, 0 0 0 5px rgba(255, 255, 255, 0.45), 0 0 0 5px rgba(255, 255, 255, 0.5); }
+  60% { box-shadow: inset 0 0 0 1px #FFFFFF, 0 0 0 4px #15191A, 0 0 0 5px rgba(255, 255, 255, 0.45), 0 0 0 15px rgba(255, 255, 255, 0); }
+}
+/* the next event: how long until it, and a line filling toward it */
+body[data-theme="meridian"] .ev-in { display: block; margin-top: 5px; font: 500 10px/1 var(--mono); letter-spacing: 0.16em; color: #FFFFFF; }
+body[data-theme="meridian"] .ev-prog { display: block; position: relative; height: 1px; margin-top: 7px; background: rgba(255, 255, 255, 0.22); overflow: hidden; }
+body[data-theme="meridian"] .ev-prog i { position: absolute; left: 0; top: 0; bottom: 0; background: #FFFFFF; }
+body[data-theme="meridian"] .ev:has(.ev-in) { position: relative; }
+body.motion-full[data-theme="meridian"] .ev:has(.ev-in)::before { content: ''; position: absolute; left: -12px; top: 6px; width: 7px; height: 7px; background: #FFFFFF; transform: rotate(45deg); animation: merBead 5s ease-in-out infinite; }
+@keyframes merBead { 0% { top: -14px; opacity: 0; } 20%, 80% { opacity: 1; } 100% { top: 22px; opacity: 0; } }
+/* overdue: the row turns white, and a slow light passes across it */
+body[data-theme="meridian"] .tk.overdue { background: #F2F4F4; color: #0B0D0E; position: relative; overflow: hidden; border-bottom-color: transparent; }
+body[data-theme="meridian"] .tk.overdue .tk-title, body[data-theme="meridian"] .tk.overdue .tk-meta, body[data-theme="meridian"] .tk.overdue .tk-pri span { color: #0B0D0E !important; }
+body[data-theme="meridian"] .tk.overdue .tk-box { background: transparent; box-shadow: inset 0 0 0 2px #0B0D0E; }
+body[data-theme="meridian"] .tk.overdue .tk-meta .over { background: #0B0D0E; color: #FFFFFF; }
+body[data-theme="meridian"] .tk.overdue .tk-pri i { background: rgba(11, 13, 14, 0.25) !important; }
+body[data-theme="meridian"] .tk.overdue .tk-pri i.lit { background: #0B0D0E !important; }
+body[data-theme="meridian"] .tk.overdue .tk-meta .tag, body[data-theme="meridian"] .tk.overdue .tk-meta .ic { color: #0B0D0E !important; box-shadow: inset 0 0 0 1px rgba(11, 13, 14, 0.5) !important; }
+body[data-theme="meridian"] .tk.overdue .tk-meta .pj-tag i { background: #0B0D0E !important; }
+body.motion-full[data-theme="meridian"] .tk.overdue::after { content: ''; position: absolute; top: 0; bottom: 0; left: -140px; width: 140px; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(11, 13, 14, 0.12), transparent); animation: merScan 3.6s ease-in-out infinite; }
+@keyframes merScan { to { left: 110%; } }
+/* the terminal key: its dotted ring turns, the dot orbits, the cursor blinks, the rim breathes */
+body[data-theme="meridian"] .hail-art .ha-dots, body[data-theme="meridian"] .hail-art .ha-orbit { transform-box: view-box; transform-origin: 33px 33px; }
+body.motion-full[data-theme="meridian"] .hail-art .ha-dots { animation: merTurn 40s linear infinite; }
+body.motion-full[data-theme="meridian"] .hail-art .ha-orbit { animation: merTurn 14s linear infinite; }
+body.motion-full[data-theme="meridian"] .hail-art .ha-cur { animation: merBlink 1s steps(1) infinite; }
+body.motion-full[data-theme="meridian"] .hail-art .ha-ring { animation: merBreathe 4s ease-in-out infinite; }
+@keyframes merBreathe { 50% { stroke-width: 2; } }
+body[data-theme="meridian"] .hail:active { transform: scale(0.96); }
+body[data-theme="meridian"] .bw.go .dv-ic { background: #F2F4F4; color: #0B0D0E; }
+
+/* Meridian on the Edge: the armillary dial shows (it hides in small clock panels elsewhere) … */
+body[data-theme="meridian"][data-layout="edge"] .clk-art.mer { display: block !important; height: min(150px, calc(100% - 110px)); top: 40px; right: 12px; }
+/* … and every control is big enough for a finger on the touchscreen. */
+body[data-theme="meridian"][data-layout="edge"] .seg button { min-height: 38px; padding: 0 14px; }
+body[data-theme="meridian"][data-layout="edge"] .deck-header .icon-btn, body[data-theme="meridian"][data-layout="edge"] .deck-header .sq-btn { min-width: 42px; min-height: 38px; }
+body[data-theme="meridian"][data-layout="edge"] .sq-btn { width: 44px; height: 38px; }
+body[data-theme="meridian"][data-layout="edge"] .mini-btn, body[data-theme="meridian"][data-layout="edge"] .accent-btn { min-height: 38px; padding: 0 14px; }
+body[data-theme="meridian"][data-layout="edge"] .tk-views button { min-height: 36px; padding: 0 14px; }
+body[data-theme="meridian"][data-layout="edge"] .chip { height: 36px; padding: 0 14px; }
+body[data-theme="meridian"][data-layout="edge"] .tk { min-height: 66px; }
+body[data-theme="meridian"][data-layout="edge"] .tk-box { width: 34px; height: 34px; }
+body[data-theme="meridian"][data-layout="edge"] .tk-title { font-size: 19px; }
+body[data-theme="meridian"][data-layout="edge"] .quick { min-height: 50px; }
+body[data-theme="meridian"][data-layout="edge"] .cal-cell { min-height: 44px; }
+/* On the Edge, the keys beside the terminal (Discord, Browser) are full finger size in every theme. */
+body[data-layout="edge"] .cmp-keys .dv-ic { --dv: 72px; }

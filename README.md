@@ -95,6 +95,10 @@ Two small icons at the right end of the Ship Computer's Hail row show your Disco
 
 The icons stay hidden until Discord is set up.
 
+### The Browser button
+
+A globe button sits beside the Discord icons in the Ship Computer panel (in every theme). Tap it to open your browser. **Settings › System › BROWSER BUTTON OPENS** picks the page; empty means Google.
+
 ### The terminal (type to the ship computer)
 
 Listening is switched off for now (v1.27): you type, and the deck answers, out loud too if you like.
@@ -132,6 +136,10 @@ Command Deck as a ball of living light: hundreds of swirling trails round a whit
 - **Click a screen** to bring it close; empty space sends it back. Click the orb, empty space or Esc to fold it all away.
 - **Its color tells you how things stand:** blue at rest, amber when something is due within the hour, a red heartbeat when something is overdue, churning lavender while Comms thinks, a red heart (with the time under it) while a meeting records.
 - **Drag the closed orb** to give it a new home, on any screen. **Settings › System › THE ORB**: on or off, DESKTOP or ON TOP, BACK TO THE MIDDLE. The tray menu has *Show the Orb* too.
+
+### Meridian on the Xeneon Edge
+
+In the Meridian theme the deck comes alive, most of all on the Edge: construction lines slowly turn behind the panels, the clock's armillary dial shows even in the Edge's smaller clock panel, the hour you're in blinks on the day bar, today pulses on the calendar, the next event shows how long until it starts with a line filling toward it, overdue tasks turn white with a slow light passing across, and the terminal key's dotted ring turns while its dot orbits. On the Edge every control is finger-sized: taller header buttons, task rows with big circles, larger calendar arrows, filter chips and the quick-add line. All movement follows MOTION (FULL moves, SUBTLE slows the background, STILL stops it).
 
 ### Projects
 

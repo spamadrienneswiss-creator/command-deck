@@ -15,7 +15,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.35.1';
+const VERSION = 'v1.36.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -1090,6 +1090,8 @@ function renderEvents() {
     el.innerHTML = `<div class="empty">No events in range.${hasCals ? '' : '<br>Add calendar links in <b>Settings › Calendars</b>,<br>or tap <b>+ New event</b>.'}</div>`;
     return;
   }
+  // The next thing still to come today or tomorrow gets a countdown (shown by themes that want it, e.g. Meridian).
+  const next = list.find((e) => !e.allDay && e.start > now && e.start - now < 36 * 3600e3);
   el.innerHTML = list.map((e) => {
     const startDay = e.start < U.startOfDay(now) ? now : e.start;
     const day = U.dayLabel(startDay, now);
@@ -1101,9 +1103,18 @@ function renderEvents() {
     const tag = `<span class="src" style="color:${esc(e.color)};box-shadow:inset 0 0 0 1px ${esc(e.color)}66">${esc((e.calName || '').toUpperCase().slice(0, 12))}</span>`;
     return `<div class="ev${e.local ? ' local' : ''}${happening ? ' now' : ''}" ${e.local ? `data-ev="${esc(e.id)}" role="button" tabindex="0"` : ''} title="${esc(e.title)}">
       <div><div class="ev-day${isToday ? ' today' : ''}">${day}</div><div class="ev-time">${time}</div></div>
-      <div style="min-width:0"><div class="ev-title">${esc(e.title)}</div><div class="ev-meta">${tag}<span class="loc">${esc(meta)}</span></div></div>
+      <div style="min-width:0"><div class="ev-title">${esc(e.title)}</div><div class="ev-meta">${tag}<span class="loc">${esc(meta)}</span></div>${e === next ? evCountdown(e, now) : ''}</div>
     </div>`;
   }).join('');
+}
+
+// "IN 1 HR 59 MIN" and a thin line that fills over the last six hours before it starts.
+function evCountdown(e, now) {
+  const mins = Math.max(1, Math.round((e.start - now) / 60000));
+  const h = Math.floor(mins / 60), m = mins % 60;
+  const words = h ? `IN ${h} HR${m ? ` ${m} MIN` : ''}` : `IN ${m} MIN`;
+  const fill = Math.round(Math.max(0, Math.min(1, 1 - (e.start - now) / (6 * 3600e3))) * 100);
+  return `<div class="ev-in">${words}</div><div class="ev-prog"><i style="width:${fill}%"></i></div>`;
 }
 
 // ---------------------------------------------------------------- tasks
@@ -2573,6 +2584,19 @@ function wireDiscord() {
     discordDo({ deaf: !DV.deaf }).then((r) => { if (r.kind === 'err') toast(r.reply); });
   });
 }
+// The Browser button beside Discord (v1.36): opens the page set in Settings › System › BROWSER BUTTON.
+function wireBrowser() {
+  const b = $('#btnBrowse');
+  if (!b || !deck.openBrowser) { if (b) $('#bw').hidden = true; return; }
+  b.addEventListener('click', async () => {
+    sounds.click();
+    $('#bw').classList.add('go');
+    $('#bwLab').textContent = 'OPENING…';
+    const ok = await deck.openBrowser().catch(() => false);
+    if (!ok) toast("Couldn't open the browser.");
+    setTimeout(() => { $('#bw').classList.remove('go'); $('#bwLab').textContent = 'BROWSER'; }, 1200);
+  });
+}
 
 // ---------------------------------------------------------------- timers & alarms
 function saveTimers() {
@@ -3557,6 +3581,7 @@ async function start() {
   wireOrb();
   wireTerm();
   wireDiscord();
+  wireBrowser();
   window.__discordState = (st) => renderDiscord(st); // test hook: tools/deck-shots.js shows the icon states
   window.__termSend = (t) => { openTerm(); return respond(t, deckSink); }; // test hooks: tools/deck-shots.js types into the terminals
   window.__towerSend = (t) => respond(t, towerSink);

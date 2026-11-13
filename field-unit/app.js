@@ -12,7 +12,7 @@ import * as T from './terminal.js';
 import * as AM from './lib/aimem.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.35.0';
+const VERSION = 'v1.35.1';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;

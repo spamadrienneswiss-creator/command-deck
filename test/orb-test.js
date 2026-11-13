@@ -31,7 +31,7 @@ ok('a dragged home comes back on the same screen, even renumbered', () => {
 ok('the window is centred on home, closed and open', () => {
   const h = OU.home(null, all, 1);
   const c = OU.box(h, 'closed', SECOND.workArea);
-  assert.deepStrictEqual([c.x + c.width / 2, c.y + c.height / 2, c.width, c.height], [h.x, h.y, 720, 520]);
+  assert.deepStrictEqual([c.x + c.width / 2, c.y + c.height / 2, c.width, c.height], [h.x, h.y, 1440, 900]);
   const o = OU.box(h, 'open', SECOND.workArea);
   assert.deepStrictEqual([o.width, o.height], [1440, 900]);
 });

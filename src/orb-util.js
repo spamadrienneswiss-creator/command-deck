@@ -5,7 +5,9 @@
 // The orb's "home" is a point on a display; the window is placed around it, kept on screen.
 const TU = require('./tower-util');
 
-const SIZES = { closed: { w: 720, h: 520 }, open: { w: 1440, h: 900 } };
+// One size, open or closed (v1.35.1): resizing a see-through window on Windows can flash,
+// and the screens should grow straight out of the orb without waiting on a resize.
+const SIZES = { closed: { w: 1440, h: 900 }, open: { w: 1440, h: 900 } };
 const PAD = 8; // keep the window this far inside the work area
 
 // The screen the orb lives on: the one it was dragged to if that's still around; otherwise the

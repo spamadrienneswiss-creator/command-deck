@@ -37,7 +37,7 @@
   };
   const ob = {
     x: 360, y: 260, vx: 0, vy: 0, tx: 360, ty: 260, R: 92, Rt: 92, wander: 190, spd: 1, spdT: 1, mood: 'rest',
-    pal: clonePal(PALS.rest), seed: Math.random() * 100, glow: 0, burst: 0, t: Math.random() * 40,
+    pal: clonePal(PALS.rest), seed: Math.random() * 100, glow: 0, burst: 0, squeeze: 0, t: Math.random() * 40,
     parts: [], tend: [], motes: [], rips: []
   };
   for (let i = 0; i < 1100; i++) ob.parts.push(spawn(true));
@@ -50,7 +50,7 @@
     return g(0.08, 0.045) + 0.7 * g(0.26, 0.05);
   };
   const shape = (a, ph = 0) => { const t = ob.t; return 1 + 0.14 * Math.sin(3 * a + t * 0.7 + ob.seed + ph) + 0.08 * Math.sin(5 * a - t * 1.1 + ph) + 0.05 * Math.sin(8 * a + t * 1.9 + ob.seed * 2); };
-  const size = () => ob.R * (1 + 0.045 * Math.sin(ob.t * 0.9) + 0.02 * Math.sin(ob.t * 2.3) + 0.07 * beat() + ob.burst * 0.22 + ob.glow * 0.04);
+  const size = () => ob.R * (1 + 0.045 * Math.sin(ob.t * 0.9) + 0.02 * Math.sin(ob.t * 2.3) + 0.07 * beat() + ob.burst * 0.22 + ob.glow * 0.04 - ob.squeeze * 0.16);
 
   // Float: a soft spring toward a target that itself wanders, so it drifts, overshoots a little and settles.
   function step(dt) {
@@ -70,6 +70,7 @@
     ob.x += ob.vx * dt; ob.y += ob.vy * dt;
     ob.R += (ob.Rt - ob.R) * Math.min(1, dt * 2.2);
     ob.burst = Math.max(0, ob.burst - dt * 0.9);
+    ob.squeeze = Math.max(0, ob.squeeze - dt * 4.5);
   }
 
   // The body: trails that swirl, breathe in and out, and smear as it moves (on the fading layer).
@@ -79,7 +80,7 @@
     for (const p of ob.parts) {
       const f = Math.sin(p.a * 3 + t * 0.6 + p.r * 4 + p.sd) + 0.6 * Math.sin(p.a * 5 - t * 0.9 + p.sd * 2);
       p.a += dt * sp * (p.w * (1.5 - p.r * 0.7) + 0.8 * f);
-      p.r += dt * sp * (0.1 * Math.sin(t * 1.3 + p.a * 2 + p.sd) + 0.06 * f) + dt * ob.burst * 1.8 * (0.3 + p.r);
+      p.r += dt * sp * (0.1 * Math.sin(t * 1.3 + p.a * 2 + p.sd) + 0.06 * f) + dt * ob.burst * 1.8 * (0.3 + p.r) - dt * ob.squeeze * 2.4 * p.r;
       p.life += dt * sp;
       if (p.r > 1.2 || p.r < 0.02 || p.life > p.max) { Object.assign(p, spawn(false)); continue; }
       const sh = shape(p.a);
@@ -232,7 +233,7 @@
     if (resized || !bg) fit();
     else if (dx || dy) tr.clearRect(0, 0, VIEW.w, VIEW.h);
     if (l.state === 'open' && S.open && !S.shown) bloom();
-    place();
+    if (resized || dx || dy || !S.open) place();
   });
 
   // ------------------------------------------------------------ the six screens
@@ -262,32 +263,77 @@
       else if (S.focus === el) { const f = focusSpot(); tf = `translate(${f.x - c.x}px, ${f.y - c.y}px) scale(${FS})`; z = 5; dl = '0s'; }
       else if (S.focus) { tf = `translate(${(c.x - midX()) * 0.12}px, ${(c.y - midY()) * 0.12}px) scale(0.82)`; op = 0.25; fl = 'blur(2px)'; dl = '0s'; }
       else { tf = 'translate(0px, 0px) scale(1)'; dl = `${0.4 + i * 0.09}s`; }
+      if (!open && !instant && el.getAnimations().length) return; // flying in: leave it
       if (instant) el.style.transition = 'none';
       el.style.transform = tf; el.style.opacity = String(op); el.style.transitionDelay = dl; el.style.zIndex = String(z); el.style.filter = fl;
       el.classList.toggle('on', S.focus === el);
       if (instant) { void el.offsetWidth; el.style.transition = ''; }
     });
   }
+  // Opening: the orb draws in for a beat, then bursts, and each screen is carried out on its
+  // vein: a blurred, over-bright speck that flies out along a curve, unfolds, overshoots a
+  // touch and settles, a glint crosses it, then its contents fade up. Closing pulls them back in.
+  const OPEN_STYLE = { transform: 'translate(0px, 0px) scale(1)', opacity: '1', filter: 'none' };
+  const glints = PANS.map((el) => { const g = document.createElement('i'); g.className = 'ob-glint'; el.appendChild(g); return g; });
+  const settle = (el, a) => a.finished.then(() => { el.style.transition = ''; }).catch(() => {});
+  function flyOut() {
+    PANS.forEach((el, i) => {
+      el.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+      const c = panCenter(el), dx = ob.x - c.x, dy = ob.y - c.y, d = Math.hypot(dx, dy) || 1;
+      const bend = (i % 2 ? 1 : -1) * 0.16 * d, nx = (-dy / d) * bend, ny = (dx / d) * bend;
+      el.style.transition = 'none';
+      Object.assign(el.style, OPEN_STYLE, { zIndex: '4', transitionDelay: '0s' });
+      el.classList.remove('on');
+      const delay = 40 + i * 115;
+      settle(el, el.animate([
+        { transform: `translate(${dx}px, ${dy}px) scale(0.04)`, opacity: 0, filter: 'blur(14px) brightness(2.4)', offset: 0 },
+        { transform: `translate(${dx * 0.45 + nx}px, ${dy * 0.45 + ny}px) scale(0.38, 0.22)`, opacity: 0.85, filter: 'blur(7px) brightness(1.9)', offset: 0.42 },
+        { transform: `translate(${-dx * 0.02}px, ${-dy * 0.02}px) scale(1.035, 0.985)`, opacity: 1, filter: 'blur(0px) brightness(1.35)', offset: 0.78 },
+        { transform: 'translate(0px, 0px) scale(1)', opacity: 1, filter: 'blur(0px) brightness(1)', offset: 1 }
+      ], { duration: 1150, delay, easing: 'cubic-bezier(.22,.8,.26,1)', fill: 'backwards' }));
+      for (const ch of el.children) {
+        if (ch === glints[i]) continue;
+        ch.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'translateY(0px)' }], { duration: 500, delay: delay + 760, easing: 'ease-out', fill: 'backwards' });
+      }
+      glints[i].animate([{ opacity: 0, backgroundPosition: '130% 0' }, { opacity: 1, offset: 0.3 }, { opacity: 0, backgroundPosition: '-30% 0' }], { duration: 1000, delay: delay + 620, easing: 'ease-out' });
+    });
+  }
+  function flyIn() {
+    PANS.forEach((el, i) => {
+      const cs = getComputedStyle(el);
+      const from = { transform: cs.transform === 'none' ? 'translate(0px, 0px) scale(1)' : cs.transform, opacity: Number(cs.opacity), filter: S.focus && S.focus !== el ? 'blur(2px) brightness(1)' : 'blur(0px) brightness(1)' };
+      el.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+      const c = panCenter(el), dx = ob.x - c.x, dy = ob.y - c.y;
+      el.style.transition = 'none';
+      Object.assign(el.style, { transform: `translate(${dx}px, ${dy}px) scale(0.04)`, opacity: '0', filter: 'none' });
+      el.classList.remove('on');
+      if (from.opacity < 0.02) return;
+      settle(el, el.animate([
+        from,
+        { transform: `translate(${dx * 0.6}px, ${dy * 0.6}px) scale(0.35, 0.2)`, opacity: Math.min(from.opacity, 0.7), filter: 'blur(6px) brightness(1.8)', offset: 0.55 },
+        { transform: `translate(${dx}px, ${dy}px) scale(0.04)`, opacity: 0, filter: 'blur(12px) brightness(2.4)', offset: 1 }
+      ], { duration: 640, delay: (5 - i) * 45, easing: 'cubic-bezier(.55,0,.8,.35)', fill: 'backwards' }));
+    });
+  }
   function openOrb() {
     if (S.open) return;
     S.open = true; S.shown = false; S.focus = null; S.shrinkAt = 0;
-    ob.burst = 1; ob.rips.push({ age: 0 }, { age: -0.22 });
+    ob.squeeze = 1; // draw in…
     document.body.dataset.state = 'opening';
-    O.layout('open'); // main grows the window, then answers with orb:layout → bloom()
+    O.layout('open'); // brings the window forward (it doesn't change size any more)
+    setTimeout(() => { if (S.open && !S.shown) bloom(); }, 180); // …then burst
   }
   function bloom() {
     S.shown = true; S.openAt = performance.now();
-    S.origin = { x: ob.x, y: ob.y };
-    paintPans(true); // start them inside the orb, wherever it is now…
+    ob.burst = 1; ob.rips.push({ age: 0 }, { age: -0.22 });
     document.body.dataset.state = 'open';
-    requestAnimationFrame(() => paintPans()); // …then let them grow out
+    flyOut();
   }
   function closeOrb() {
     if (!S.open) return;
-    S.open = false; S.focus = null;
-    ob.burst = 0.5; ob.rips.push({ age: 0 });
-    S.origin = { x: ob.x, y: ob.y };
-    paintPans();
+    flyIn();
+    S.open = false; S.shown = false; S.focus = null;
+    ob.squeeze = 0.6; setTimeout(() => { if (!S.open) { ob.burst = 0.35; ob.rips.push({ age: 0 }); } }, 560);
     document.body.dataset.state = 'closing';
     S.shrinkAt = performance.now();
     const a = document.activeElement; if (a && a.blur) a.blur();
@@ -487,14 +533,18 @@
       bg.clearRect(0, 0, VIEW.w, VIEW.h);
       aura(bg, dt);
       PANS.forEach((el, i) => {
-        const due = S.open && S.shown && (now - S.openAt) / 1000 > 0.25 + i * 0.09;
-        const want = due && (!S.focus || S.focus === el) ? 1 : 0;
-        vs[i] += (want - vs[i]) * Math.min(1, dt * (want ? 1.6 : 4));
-        if (vs[i] < 0.01) return;
-        let c = panCenter(el), hw = PW / 2, hh = PH / 2;
-        if (S.focus === el) { c = focusSpot(); hw *= FS; hh *= FS; }
-        const dx = ob.x - c.x, dy = ob.y - c.y, k = Math.min(hw / Math.max(1, Math.abs(dx)), hh / Math.max(1, Math.abs(dy)));
-        vein(bg, c.x + dx * k, c.y + dy * k, 1 - Math.pow(1 - vs[i], 3), i, S.focus === el ? 1.4 : 1);
+        // the veins carry the screens: each is drawn to where its screen is right now
+        const want = S.focus && S.focus !== el ? 0 : 1;
+        vs[i] += (want - vs[i]) * Math.min(1, dt * 4);
+        const op = Number(getComputedStyle(el).opacity) * vs[i];
+        if (op < 0.02) return;
+        const r = el.getBoundingClientRect();
+        if (r.width < 2) return;
+        const cx = r.left + r.width / 2, cy = r.top + r.height / 2, hw = r.width / 2, hh = r.height / 2;
+        const dx = ob.x - cx, dy = ob.y - cy;
+        if (Math.hypot(dx, dy) < ob.R * 0.7) return;
+        const k = Math.min(1, hw / Math.max(1, Math.abs(dx)), hh / Math.max(1, Math.abs(dy)));
+        vein(bg, cx + dx * k, cy + dy * k, 1, i, (S.focus === el ? 1.4 : 1) * op);
       });
       fade(dt);
       body(tr, dt);

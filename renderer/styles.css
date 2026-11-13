@@ -2126,4 +2126,4 @@ body[data-theme="meridian"][data-layout="edge"] .tk-title { font-size: 19px; }
 body[data-theme="meridian"][data-layout="edge"] .quick { min-height: 50px; }
 body[data-theme="meridian"][data-layout="edge"] .cal-cell { min-height: 44px; }
 /* On the Edge, the keys beside the terminal (Discord, Browser) are full finger size in every theme. */
-body[data-layout="edge"] .cmp-keys .dv-ic { --dv: 72px; }
+body[data-layout="edge"] .cmp-keys .dv-ic { --dv: 96px; }

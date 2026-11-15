@@ -124,6 +124,11 @@ for (const look of LOOK ? [LOOK] : ['cockpit', 'hairline']) {
   await page.click('#ft [data-ft-tab="projects"]'); await page.waitForTimeout(200);
   check((await page.$$('#ft [data-ft-pj]')).length === 2, `${look}: projects`);
   await page.screenshot({ path: path.join(OUT, `${look}-projects.png`) });
+  await page.click('#ft [data-ft-tab="schedule"]'); await page.waitForTimeout(300);
+  check(await page.evaluate(() => !document.body.classList.contains('ft-live') && !!document.querySelector('[data-new-sched]')), `${look}: SCHEDULE tab opens the schedule`);
+  await page.screenshot({ path: path.join(OUT, `${look}-schedule.png`) });
+  await page.click('.ft-back'); await page.waitForTimeout(250);
+  check(await page.evaluate(() => document.body.classList.contains('ft-live')), `${look}: back from the schedule returns to the look`);
   await page.click('#ft [data-ft-tab="done"]'); await page.waitForTimeout(200);
   await page.click('#ft [data-ft-done="t5"]'); await page.waitForTimeout(400);
   check(await page.evaluate(() => JSON.parse(localStorage.getItem('fu.tasks')).find((t) => t.id === 't5').done === false), `${look}: untick from Done`);

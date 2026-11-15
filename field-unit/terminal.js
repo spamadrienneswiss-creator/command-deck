@@ -274,7 +274,7 @@ const C = {
         <div class="ftc-id"><b>QUEUE</b><span class="ftc-code">${L.list.length} OPEN · ${L.over.length} OVERDUE · ${L.today.length} TODAY</span></div>
         <button type="button" class="ftc-key sq" data-ft="newtask" aria-label="Add a task">+</button>
       </header>
-      <div class="ftc-tabs" role="tablist" aria-label="View">${tab('queue', 'QUEUE')}${tab('projects', 'PROJECTS')}${tab('done', 'DONE')}</div>
+      <div class="ftc-tabs" role="tablist" aria-label="View">${tab('queue', 'QUEUE')}${tab('projects', 'PROJECTS')}${tab('schedule', 'SCHEDULE')}${tab('done', 'DONE')}</div>
       <div class="ftc-list">${body}</div>
       <div class="ftc-fill"></div>
       ${tally}
@@ -402,7 +402,7 @@ const H = {
       <div class="fth-clock"><div class="fth-time">${two(L.list.length)}</div><div class="fth-sm fth-date"><span class="red">${two(L.over.length)} LATE</span><br>${two(L.today.length)} TODAY<br>${two(L.later.length)} LATER</div></div>
       <svg class="fth-week" width="${W}" height="14" viewBox="0 0 ${W} 14" aria-hidden="true"><line x1="0" y1="7" x2="${W}" y2="7" stroke="rgba(255,255,255,0.18)"/><line x1="${nowX.toFixed(1)}" y1="0" x2="${nowX.toFixed(1)}" y2="14" stroke="#fff"/>${dots}</svg>
       <div class="fth-sm fth-wl"><span>NOW</span><span>+7 DAYS</span></div>
-      <div class="fth-tabs" role="tablist" aria-label="View">${tab('queue', 'QUEUE')}${tab('projects', 'PROJECTS')}${tab('done', 'DONE')}</div>
+      <div class="fth-tabs" role="tablist" aria-label="View">${tab('queue', 'QUEUE')}${tab('projects', 'PROJECTS')}${tab('schedule', 'SCHEDULE')}${tab('done', 'DONE')}</div>
       <div class="fth-list">${body}</div>
     </section>`;
   }
@@ -423,7 +423,11 @@ function onClick(e) {
   const g = t.closest('[data-ft-go]');
   if (g) { go(g.dataset.ftGo); return; }
   const tb = t.closest('[data-ft-tab]');
-  if (tb) { T.tab = tb.dataset.ftTab; render(); return; }
+  if (tb) {
+    // SCHEDULE opens the full schedule screen (week paging, add, share links), dressed in the look.
+    if (tb.dataset.ftTab === 'schedule') { A.S.tkView = 'schedule'; A.classic('tasks'); return; }
+    T.tab = tb.dataset.ftTab; render(); return;
+  }
   const dn = t.closest('[data-ft-done]');
   if (dn) {
     const task = A.S.tasks.find((x) => x.id === dn.dataset.ftDone);

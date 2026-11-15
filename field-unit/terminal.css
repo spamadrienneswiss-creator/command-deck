@@ -126,7 +126,8 @@ button.ftc-plate { cursor: pointer; }
 .ftc-cmd input::placeholder { color: #5E6F7D; }
 .ftc-send { width: 48px; height: 44px; flex: none; border: 0; border-radius: 5px; cursor: pointer; display: grid; place-items: center; background: linear-gradient(180deg, #8FE0EE, #5BBFD4); box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 0 18px rgba(122,214,232,0.35); color: #06222A !important; }
 
-.ftc-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.ftc-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.ftc-tabs .ftc-key { padding: 0 6px; gap: 5px; letter-spacing: 0.08em; }
 .ftc-list { display: flex; flex-direction: column; gap: 8px; }
 .ftc-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 14px; box-shadow: inset 3px 0 0 #2C3B4B, inset 0 1px 0 rgba(255,255,255,0.07), inset 0 0 0 1px #243241; }
 .ftc-row.late { box-shadow: inset 3px 0 0 #E5484D, inset 0 1px 0 rgba(255,255,255,0.07), inset 0 0 0 1px #243241; }
@@ -199,7 +200,7 @@ button.ftc-plate { cursor: pointer; }
 .fth-send { height: 44px; padding: 0; border: 0; background: transparent; cursor: pointer; color: #fff !important; font: 400 9.5px/1 'Space Mono', monospace !important; letter-spacing: 0.14em; }
 .fth-week { display: block; margin-top: 18px; max-width: 100%; }
 .fth-wl { display: flex; justify-content: space-between; margin-top: 6px; }
-.fth-tabs { margin-top: 18px; display: grid; grid-template-columns: repeat(3, 1fr); }
+.fth-tabs { margin-top: 18px; display: grid; grid-template-columns: repeat(4, 1fr); }
 .fth-tab { color: #8A8A8A !important; border-bottom: 1px solid rgba(255,255,255,0.14); }
 .fth-tab.on { color: #fff !important; border-bottom-color: #fff; }
 .fth-list { margin-top: 6px; display: flex; flex-direction: column; }

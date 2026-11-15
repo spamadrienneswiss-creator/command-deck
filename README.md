@@ -95,6 +95,10 @@ Two small icons at the right end of the Ship Computer's Hail row show your Disco
 
 The icons stay hidden until Discord is set up.
 
+### Shortcut keys
+
+Up to four folder buttons sit in a row under Discord and Browser in the Ship Computer panel. Tap one to open that folder in File Explorer, so nothing needs to live on your desktop. Set them in **Settings › System › SHORTCUT KEYS** (+ PICK A FOLDER; ✕ removes one). On the Edge they're the same finger size as the keys above them.
+
 ### The Browser button
 
 A globe button sits beside the Discord icons in the Ship Computer panel (in every theme). Tap it to open your browser. **Settings › System › BROWSER BUTTON OPENS** picks the page; empty means Google.

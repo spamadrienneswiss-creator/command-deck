@@ -2127,3 +2127,13 @@ body[data-theme="meridian"][data-layout="edge"] .quick { min-height: 50px; }
 body[data-theme="meridian"][data-layout="edge"] .cal-cell { min-height: 44px; }
 /* On the Edge, the keys beside the terminal (Discord, Browser) are full finger size in every theme. */
 body[data-layout="edge"] .cmp-keys .dv-ic { --dv: 96px; }
+
+/* v1.37: shortcut keys under Discord / Browser */
+.cmp-keys { flex-direction: column; align-items: center; }
+.cmp-keyrow { display: flex; align-items: flex-start; gap: clamp(10px, 1.6cqw, 22px); }
+.cmp-keyrow[hidden] { display: none; }
+.cmp-keyrow.fk { margin-top: clamp(6px, 1cqw, 12px); }
+.fkey .dv-lab { max-width: calc(var(--dv, 56px) + 24px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fkey.go .dv-ic { background: var(--amber); color: var(--panel-solid); box-shadow: none; }
+body[data-theme="meridian"] .fkey.go .dv-ic { background: #F2F4F4; color: #0B0D0E; }
+body[data-layout="edge"] .cmp-keys .fk .dv-ic { --dv: 96px; }

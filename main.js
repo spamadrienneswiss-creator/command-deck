@@ -753,6 +753,26 @@ ipcMain.handle('deck:browser', async () => {
   const url = TU.cleanUrl(s.browserUrl) || TU.cleanUrl((s.tower || {}).browserUrl) || 'https://www.google.com';
   try { await shell.openExternal(url); return true; } catch { return false; }
 });
+// The deck's shortcut keys (v1.37): folders (or programs / sites) under Discord and Browser.
+// Saved in settings.deckKeys; cleaned with the dial's rules, so only real paths and http(s) open.
+const DECK_KEYS = 4;
+ipcMain.handle('deck:keys', async (_e, a) => {
+  if (!a || !a.action) return { ok: false };
+  if (a.action === 'pick') {
+    const res = await dialog.showOpenDialog(win && !win.isDestroyed() ? win : undefined, { title: 'Pick a folder for a shortcut key', properties: ['openDirectory'] });
+    if (res.canceled || !res.filePaths[0]) return { ok: false };
+    const n = TU.normalizeShortcut({ target: res.filePaths[0] });
+    return n.ok ? { ok: true, kind: n.kind, target: n.target, name: n.name } : n;
+  }
+  if (a.action === 'open') {
+    const sc = TU.cleanShortcuts(settings().deckKeys).slice(0, DECK_KEYS).find((x) => x.id === String(a.id));
+    if (!sc) return { ok: false };
+    if (sc.kind === 'web') { try { await shell.openExternal(sc.target); return { ok: true }; } catch { return { ok: false }; } }
+    const err = await shell.openPath(sc.target);
+    return err ? { ok: false, error: err } : { ok: true };
+  }
+  return { ok: false };
+});
 function registerOrbIpc() {
   ipcMain.on('orb:layout', (_e, state) => {
     orbLay = state === 'open' ? 'open' : 'closed';

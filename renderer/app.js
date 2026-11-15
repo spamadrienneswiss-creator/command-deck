@@ -15,7 +15,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.36.2';
+const VERSION = 'v1.37.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -197,6 +197,7 @@ function towerColors() {
 }
 
 function applySettings() {
+  renderKeys();
   const s = S.settings;
   document.body.classList.remove('motion-full', 'motion-subtle', 'motion-still');
   document.body.classList.add(`motion-${s.motion}`);
@@ -2584,6 +2585,30 @@ function wireDiscord() {
     discordDo({ deaf: !DV.deaf }).then((r) => { if (r.kind === 'err') toast(r.reply); });
   });
 }
+// Shortcut keys (v1.37): a second row under Discord / Browser, one key per folder picked in
+// Settings › System › SHORTCUT KEYS. Hidden until there's at least one.
+function renderKeys() {
+  const box = $('#fk');
+  if (!box) return;
+  const keys = (Array.isArray(S.settings.deckKeys) ? S.settings.deckKeys : []).filter((k) => k && k.id && k.target).slice(0, 4);
+  box.hidden = !keys.length || !deck.keys;
+  box.innerHTML = keys.map((k) => `<div class="bw fkey"><button type="button" class="dv-ic" data-key="${esc(k.id)}" aria-label="Open ${esc(k.name)}" title="${esc(k.target)}"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M1.8 4.2 a1 1 0 0 1 1-1 H7 l1.6 1.8 H15.2 a1 1 0 0 1 1 1 V14 a1 1 0 0 1 -1 1 H2.8 a1 1 0 0 1 -1 -1 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M1.8 7.2 H16.2" fill="none" stroke="currentColor" stroke-width="1.2"/></svg></button><span class="dv-lab">${esc(String(k.name || 'Folder').toUpperCase())}</span></div>`).join('');
+}
+function wireKeys() {
+  const box = $('#fk');
+  if (!box) return;
+  box.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-key]');
+    if (!b || !deck.keys) return;
+    sounds.click();
+    const k = b.closest('.fkey');
+    k.classList.add('go');
+    const r = await deck.keys({ action: 'open', id: b.dataset.key }).catch(() => null);
+    if (!r || !r.ok) toast("Couldn't open that folder. Has it moved? Pick it again in Settings › System › SHORTCUT KEYS.");
+    setTimeout(() => k.classList.remove('go'), 900);
+  });
+  renderKeys();
+}
 // The Browser button beside Discord (v1.36): opens the page set in Settings › System › BROWSER BUTTON.
 function wireBrowser() {
   const b = $('#btnBrowse');
@@ -3582,6 +3607,7 @@ async function start() {
   wireTerm();
   wireDiscord();
   wireBrowser();
+  wireKeys();
   window.__discordState = (st) => renderDiscord(st); // test hook: tools/deck-shots.js shows the icon states
   window.__termSend = (t) => { openTerm(); return respond(t, deckSink); }; // test hooks: tools/deck-shots.js types into the terminals
   window.__towerSend = (t) => respond(t, towerSink);

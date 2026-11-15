@@ -1058,6 +1058,10 @@ export function openSettings(welcome = false) {
         <div class="f"><span class="f-label">BROWSER BUTTON OPENS</span>
           <input id="sBrowserUrl" class="in" maxlength="300" aria-label="Page the Browser button opens" value="${esc(draft.browserUrl || (draft.tower || {}).browserUrl || '')}" placeholder="https://www.google.com" spellcheck="false">
           <div class="f-hint">The globe button beside Discord in the Ship Computer panel. Leave empty for Google.</div></div>
+        <div class="f"><span class="f-label">SHORTCUT KEYS</span>
+          <div id="sKeys"></div>
+          <button type="button" class="btn line" id="sKeyAdd" style="margin-top:8px">+ PICK A FOLDER</button>
+          <div class="f-hint">Up to four folder buttons in a row under Discord and Browser. Tap one on the deck to open it in File Explorer.</div></div>
         <div class="f"><span class="f-label">THE ORB · ON YOUR SECOND SCREEN</span>
           <div class="toggle-row"><span>Show the Orb</span>${switchHtml('swOrb', (draft.orb || {}).on !== false, 'Show the Orb')}</div>
           <span class="f-label" style="margin-top:12px">ORB SITS</span>
@@ -1519,6 +1523,28 @@ export function openSettings(welcome = false) {
       wireSwitch($('#swTower', body), (on) => { draft.tower = { ...(draft.tower || {}), on }; });
       wireSwitch($('#swOrb', body), (on) => { draft.orb = { ...(draft.orb || {}), on }; });
       $('#sBrowserUrl', body).addEventListener('input', (e) => { draft.browserUrl = e.target.value.trim(); });
+      const paintKeys = () => {
+        const keys = Array.isArray(draft.deckKeys) ? draft.deckKeys : [];
+        $('#sKeys', body).innerHTML = keys.length ? keys.map((k) => `<div class="toggle-row"><span><b>${esc(k.name)}</b><br><small style="opacity:.6">${esc(k.target)}</small></span><button type="button" class="btn line" data-key-x="${esc(k.id)}" aria-label="Remove ${esc(k.name)}">✕</button></div>`).join('') : '<div class="f-hint">No shortcut keys yet.</div>';
+        $('#sKeyAdd', body).disabled = keys.length >= 4;
+      };
+      paintKeys();
+      $('#sKeyAdd', body).addEventListener('click', async () => {
+        if (!window.deck.keys) return;
+        const r = await window.deck.keys({ action: 'pick' });
+        if (!r || !r.ok) { if (r && r.error) app.toast(r.error, 2400); return; }
+        const keys = Array.isArray(draft.deckKeys) ? draft.deckKeys.slice() : [];
+        if (keys.some((k) => k.target === r.target)) { app.toast('That folder already has a key.', 1800); return; }
+        keys.push({ id: `k_${Date.now().toString(36)}`, name: r.name, kind: r.kind, target: r.target });
+        draft.deckKeys = keys.slice(0, 4);
+        paintKeys();
+      });
+      $('#sKeys', body).addEventListener('click', (e) => {
+        const x = e.target.closest('[data-key-x]');
+        if (!x) return;
+        draft.deckKeys = (draft.deckKeys || []).filter((k) => k.id !== x.dataset.keyX);
+        paintKeys();
+      });
       $('#sOrbLayer', body).addEventListener('click', (e) => {
         const b = e.target.closest('[data-layer]');
         if (!b) return;

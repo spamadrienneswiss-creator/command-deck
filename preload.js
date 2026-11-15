@@ -52,6 +52,7 @@ contextBridge.exposeInMainWorld('deck', {
     onState: (fn) => ipcRenderer.on('discord:state', (_e, st) => fn(st))
   },
   openBrowser: () => ipcRenderer.invoke('deck:browser'),
+  keys: (a) => ipcRenderer.invoke('deck:keys', a),
   orb: {
     state: (st) => ipcRenderer.send('orb:state', st),
     home: () => ipcRenderer.send('orb:home'),

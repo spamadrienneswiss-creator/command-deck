@@ -92,7 +92,7 @@ Shipped recently:
 - v1.16: Data Recap (Voice Memos → Field Unit → transcribed on the PC → Gemini summary; RECAPS tab on both; per-recording audio keep / 30 days / delete now); deck pages (page 2 with picked panels); the "Signal" load-up on the deck, Field Unit and both shared links. The Signal *theme* was mocked and turned down.
 
 **Parked list.** The old backlog (Oct 31, 2026) was scrapped on purpose. Don't suggest or revive past ideas from it; older mockups on the design board are archive, not a to-do list. Only what Nick parks himself goes here. Show it to him right before a build so he can confirm (see Who and how); otherwise don't push it. 
-- (empty.)
+- **Command Deck connector for Claude / Duet** (Nick, Nov 18: "hold off, I'll come back to it"): a custom remote MCP connector that pairs with the deck like a phone and lets Claude (and Duet, if it carries custom connectors) list / add / finish / edit / delete tasks, plus schedule, notes, events. Needs hosting outside Firebase's free plan (planned: a free Cloudflare Worker using Firestore REST with a paired member's token); added in Claude settings as a custom connector. Plan goes on the board first.
 
 Explored, not parked (Nick, Nov 11): Command Deck driving his Royal Kludge keyboard's lighting (he thinks it's an RK L75; tri-mode, lit in zones, set by RK Launcher or RK's WebHID web driver). No community support for the L75 (rkcu covers RK100 / RK61, Rangoli the RK71). The plan if he brings it back: record the web driver's WebHID messages while he changes colours, decode them, then a test button in the deck (Electron has WebHID); likely cable only, RK's app closed. Don't raise it; he'll ask.
 

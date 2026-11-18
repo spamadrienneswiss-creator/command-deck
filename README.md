@@ -2,7 +2,7 @@
 
 A sci-fi HUD desktop console for Windows 11: clock, month calendar, weather, upcoming events, a task queue, and a voice-driven ship's computer. Built with Electron.
 
-Its iPhone companion, **Field Unit**, syncs tasks, projects, notes, events and timers with the console, and has a keyboard **Comms Terminal** that answers like a ship's mainframe. Setting it up is optional and free: see **[FIELD-UNIT-SETUP.md](FIELD-UNIT-SETUP.md)**.
+Its iPhone companion, **Field Unit**, syncs tasks, notes, events, the schedule and timers with the console, and has a keyboard **Comms Terminal** that answers like a ship's mainframe. Setting it up is optional and free: see **[FIELD-UNIT-SETUP.md](FIELD-UNIT-SETUP.md)**.
 
 ---
 
@@ -68,8 +68,6 @@ Mark pay electric bill as done
 Set humor to 75 percent
 Take a note: gate code is 1357      Jot this down: oat milk, basil
 
-New project garage cleanout         Add sweep the floor to the garage cleanout project
-How's the holiday party project?    List my projects
 
 Set a timer for 10 minutes          Start a 25 minute timer called focus
 Wake me at 7                        Set an alarm for 6:30 PM tomorrow called gym
@@ -110,70 +108,29 @@ Listening is switched off for now (v1.27): you type, and the deck answers, out l
 - The Ship Computer's big button now reads **> _ OPEN TERMINAL**. Click it, or just **start typing anywhere on the deck**, and the terminal opens over the panels with what you typed already in it. It's the same as Field Unit's terminal: your lines in amber, replies below, a **✓ TASK LOGGED** card (or event, note, timer) when something's filed, and chips for Status report, What's next, Take a note, Add to calendar, Timer 10 min and Mute me (when Discord is connected).
 - **Enter** sends, **Esc** closes, **↑ / ↓** bring back earlier commands. **VOICE REPLIES** in the terminal's header turns the spoken replies on or off (the text always shows).
 - Everything the Computer understood by voice works typed: tasks, events, notes, timers and alarms, "what's next", "status report", "mute me".
-- **With a Gemini key it's a proper conversation (v1.33).** Talk to it like an assistant: questions, plans, advice, general knowledge, or just chatter. It sees your calendar (the past few days and next two months), schedule, tasks, projects, recent notes, meeting recaps, timers and the forecast, and answers short or long as the question needs (long answers show in full; only the start is read aloud).
-- **It remembers.** One running conversation, shared by the deck terminal and Comm Tower 1, carries across days (the last 60 messages), so you can say *"and Friday?"* or *"what did I ask you this morning?"*. Tell it lasting things (*"remember that Adrienne's birthday is May 3"*, *"I prefer morning appointments"*) and it keeps a note. Ask *"what do you remember?"*, tell it to forget something, or see and remove the notes in **Settings › System › TERMINAL · WHAT IT REMEMBERS**. *Clear chat* starts a fresh conversation; *forget everything* clears both.
+- **With a Gemini key it's a proper conversation (v1.33).** Talk to it like an assistant: questions, plans, advice, general knowledge, or just chatter. It sees your calendar (the past few days and next two months), schedule, tasks, recent notes, meeting recaps, timers and the forecast, and answers short or long as the question needs (long answers show in full; only the start is read aloud).
+- **It remembers.** One running conversation, shared by the deck terminal and Field Unit, carries across days (the last 60 messages), so you can say *"and Friday?"* or *"what did I ask you this morning?"*. Tell it lasting things (*"remember that Adrienne's birthday is May 3"*, *"I prefer morning appointments"*) and it keeps a note. Ask *"what do you remember?"*, tell it to forget something, or see and remove the notes in **Settings › System › TERMINAL · WHAT IT REMEMBERS**. *Clear chat* starts a fresh conversation; *forget everything* clears both.
 - **It does things when asked** (*"put a call with Sam on Tuesday at 2 and remind me to prep the night before"*) and shows a card for each; anything that throws something away waits for a **yes**. When it only suggests something, type **yes** or **no**.
 - **It can look things up online** (news, scores, opening hours) through Google Search, when Gemini's free allowance for that permits.
 - **Field Unit shares it (v1.34).** Comms on the phone, in every look, talks to the same AI with the same conversation and notes, synced through your deck's Firebase: start something at the desk and carry on from your phone.
 - A plain task (*"add…"*, *"remind me to…"*, *"buy…"*) still goes straight onto your list, instantly.
 
-### Comm Tower 1 (the dial)
+### Record a meeting
 
-A small glowing core sits in the bottom-right corner of your main monitor, above everything else.
+Type *record meeting* in the terminal (optionally *called …*). It records **computer audio** (everyone else on Zoom, Teams or a browser call) and **your microphone**. While it runs, a red **REC** tag in the header shows the running time; click it to stop and recap. Typing works too: *stop recording*, *pause recording*, *resume recording*, *discard recording*.
 
-- **Click it** (or press **Ctrl + Alt + T** from any app) and it opens into a fan of keys over turning rings: **Record** (a meeting, into Data Recap), **Terminal** (the typing terminal), **Browser**, **Note** (the terminal, started with *take a note:*), **Files** (File Explorer) and **+** (your own shortcut). Hover a key and its name shows in the corner of the fan; click it, or press **1** to **6**. **Esc**, a click on the core, or a click anywhere else folds it away.
-- **Your own shortcuts:** **+** asks for a website address, or lets you pick a program or a folder, and a name. Up to five; they sit on the inner arc with their initials. The same box lists them with **REMOVE**.
-- **The terminal** pops up beside the core. Type, press Enter, and the reply shows there (and is spoken, if voice replies are on). It closes itself after a minute untouched.
-- **Move it:** drag the closed core. Let go near any corner of any screen and it **locks to that corner** (the rings run off the screen's edge there), and stays on that monitor even if Windows reorders the displays. The fan opens toward wherever there's room.
-- **Settings › System › COMM TOWER 1:** show or hide it, rename it, **BACK TO CORNER**, **DIAL STYLE** (Sentinel: rings of light; Obsidian: machined titanium and dark glass; Lantern: a hologram projected up from a lens, with drifting light dust), **DIAL SITS** (ON TOP of every window, or DESKTOP: other windows cover it and Ctrl + Alt + T brings it forward), the **DIAL COLOR** (Eclipse, Sentinel, Prism, Halo, or Match theme; the dial keeps its own colors unless you pick Match theme; any style with any color), and the page the **Browser** key opens. The tray menu can show or hide it too.
-- The deck does the work, so it needs to be running (it can be hidden in the tray).
-- **Gemini** (with a key in **Settings › Field Unit › DATA RECAP**): the same conversation, memory and abilities as the deck's terminal (above). What it needs (your deck data, the recent chat and its notes) is sent to Google with each message. No key, no signal, or too slow: the deck's own replies.
-- **Record a meeting:** the dial's **Record** key (or the red **● REC** in the terminal's header, or type *record meeting*, optionally *called …*). Name it if you like and pick the sources: **computer audio** (everyone else on Zoom, Teams, a browser call) and **my microphone** (you); both are on. While it records, the terminal shows the time and two level meters with **STOP + RECAP**, **PAUSE** and **DISCARD**, and the core burns in the accent color with the running time under it, so you can close the terminal and keep working. Typing works too: *stop recording*, *pause recording*, *resume recording*, *discard recording*.
-- When you stop, it goes through **Data Recap** like a phone recording: transcribed on this PC, then summarized by Gemini, and Comm Tower 1 tells you when the recap is ready in Notepad › RECAPS. The audio is saved every 10 seconds while it records, so if the deck closes mid-call, what was recorded is recapped the next time it starts.
-- **Heads-up:** in California (and some other places) everyone on a call has to agree to being recorded. This doesn't announce itself the way Zoom's recorder does, so mention it when you start.
-
-### The Orb (on your second screen)
-
-Command Deck as a ball of living light: hundreds of swirling trails round a white-hot heart, sparks drifting about, tendrils that reach out and pull back. It floats around the middle of your second screen (not the main one, not the Xeneon Edge) at desktop level, so the windows you're working in cover it. It leans toward the mouse when you come near.
-
-- **Click it** (or press **Ctrl + Alt + O** from any app) and it blooms: six glass screens grow out of it on veins of light. **Today** (time, weather, what's left), **Calendar** (what's coming up), **Tasks** (click the circle to finish one), **Notes · Recaps** (click one to bring the deck up), **Comms** (type to the deck, the same conversation as the terminal) and **Record** (a meeting into Data Recap, like Comm Tower 1's).
-- **Click a screen** to bring it close; empty space sends it back. Click the orb, empty space or Esc to fold it all away.
-- **Its color tells you how things stand:** blue at rest, amber when something is due within the hour, a red heartbeat when something is overdue, churning lavender while Comms thinks, a red heart (with the time under it) while a meeting records.
-- **Drag the closed orb** to give it a new home, on any screen. **Settings › System › THE ORB**: on or off, DESKTOP or ON TOP, BACK TO THE MIDDLE. The tray menu has *Show the Orb* too.
+- When you stop, it goes through **Data Recap** like a phone recording: transcribed on this PC, then summarized by Gemini; the terminal tells you when the recap is ready in Notepad › RECAPS. The audio is saved every 10 seconds, so if the deck closes mid-call, what was recorded is recapped the next time it starts.
+- **Heads-up:** in California (and some other places) everyone on a call has to agree to being recorded. Mention it when you start.
+- **Ctrl + Alt + T** opens the terminal from any app.
+- Comm Tower 1's dial and the Orb were removed in v1.38 to keep the screen clear; the terminal does everything they did.
 
 ### Meridian on the Xeneon Edge
 
 In the Meridian theme the deck comes alive, most of all on the Edge: construction lines slowly turn behind the panels, the clock's armillary dial shows even in the Edge's smaller clock panel, the hour you're in blinks on the day bar, today pulses on the calendar, the next event shows how long until it starts with a line filling toward it, overdue tasks turn white with a slow light passing across, and the terminal key's dotted ring turns while its dot orbits. On the Edge every control is finger-sized: taller header buttons, task rows with big circles, larger calendar arrows, filter chips and the quick-add line. All movement follows MOTION (FULL moves, SUBTLE slows the background, STILL stops it).
 
-### Projects
+### Tasks
 
-Panel 06 has two views: **QUEUE** (the task list) and **PROJECTS**.
-- The **QUEUE** keeps tasks that aren't in a project. Tasks in a live project live under **PROJECTS** instead, except ones due today or overdue, which stay in the queue tagged with their project. A line at the bottom ("+ 3 project tasks live under Projects") jumps there.
-- **+ Project** starts one: a name, an optional goal, an optional finish-by date and a color.
-- Each project is a group you can fold: its header shows progress, open and done counts and the finish-by date; click it to show or hide its tasks (check them off right there), **+ Add task**, and **Open project** for the whole project: **Edit**, the log, sharing, and **Mark complete** once everything is done. Each project remembers whether you left it open.
-- Any task can join a project from the task editor's **Project** list.
-- Say or type *"add buy string lights to the holiday party project"*. If that project doesn't exist yet, it's started for you. *"How's the holiday party project?"* reads out the progress; *"list my projects"* runs through them all.
-- Deleting a project keeps its tasks in the queue.
-
-### Project Manifest (sharing a project)
-
-Send someone a link to one project so they can work through its checklist. It opens in any phone or computer browser, with no app or account. Their changes come straight back to Command Deck and Field Unit. Sharing runs through the Field Unit link, so set that up first ([FIELD-UNIT-SETUP.md](FIELD-UNIT-SETUP.md)).
-
-- Open a project and press **SHARE** (on the phone: the **SHARE** pill at the top of the project).
-- Type their name and choose what they can do:
-  - **Check off only:** tick tasks done, and untick a mistake.
-  - **Check off + notes:** also leave notes on tasks and post to the project log.
-  - **Project administrator:** also add, rename, re-date and delete tasks.
-- Choose when the link stops working: **when the project is done**, **in 7 days**, or **never**.
-- **CREATE LINK** copies the link and shows a QR code. On the phone, **SEND…** opens iPhone's share menu (Messages, Mail, AirDrop).
-- They see the project name, goal, progress and checklist (a page titled **PROJECT MANIFEST**). They never see other projects, your private task notes, reminders or anything else on the deck.
-- **Crew on your side:**
-  - Shared projects show the crew's initials on their cards.
-  - Tasks show **DONE BY** or **ADDED BY** with their name, and their notes appear under the task.
-  - Each change shows up as a toast and a line in the activity log.
-- **Project log:** a running board inside the project for notes that aren't about a single task (*"dumpster arrives Friday"*). You and the crew can both post.
-- **People with access** (the CREW chip, or SHARE again) lists everyone you've shared with and when they were last active. From there you can change someone's access, copy their link again, or **STOP** it (press twice). Stopping a link removes their copy of the project at once.
-- **If the computer is off:** guests keep working. Field Unit relays their changes whenever it's open, and Command Deck catches up when it starts. With both off, guest changes wait on the link and are applied the moment either one comes online. Until then, other guests already see each other's check-offs.
+Panel 06 has two views: **QUEUE** (every task) and **SCHEDULE**. Projects were removed in v1.38 to keep things simple; tasks that were in a project now sit in the Queue, and nothing was deleted.
 
 ### Schedule (shifts & appointments, shared by link)
 
@@ -227,10 +184,10 @@ Command Deck has two arrangements of the same panels. The **standard** layout su
 
 ### Pages
 
-The deck has two pages. **Page 1 (MAIN)** is always the whole deck, in your own arrangement. **Page 2 (WORK)** holds just the panels you pick, so they can be much bigger: by default a slim clock strip across the top with **Tasks** and **Notepad** filling the rest. Every tab still works on page 2 (QUEUE, PROJECTS and SCHEDULE on Tasks; NOTES and RECAPS on Notepad).
+The deck has two pages. **Page 1 (MAIN)** is always the whole deck, in your own arrangement. **Page 2 (WORK)** holds just the panels you pick, so they can be much bigger: by default a slim clock strip across the top with **Tasks** and **Notepad** filling the rest. Every tab still works on page 2 (QUEUE and SCHEDULE on Tasks; NOTES and RECAPS on Notepad).
 
 - **Flip pages** with the **PAGE · 1 / 2** chip at the top, `Ctrl` + `1` / `Ctrl` + `2`, a quick sideways swipe on a touchscreen like the Xeneon Edge, or say *"page two"*, *"go to the work page"*, *"main page"*, *"next page"*.
-- **Settings › System › PAGES:** rename the pages and tap panels on or off for page 2 (at least one), with a small preview of how page 2 is laid out.
+- **Settings › System › PAGE 2:** rename page 2 and tap its panels on or off (at least one), with a small preview of how page 2 is laid out.
 - Page 2 has its own arrangement, in both the standard and the Edge layout: unlock the layout there to drag and resize without touching page 1. The clock can shrink to a one-line strip on page 2.
 - The deck remembers which page you were on.
 
@@ -254,19 +211,18 @@ During quiet hours only timers and alarms light the rig. If the panel says it's 
 
 Once set up (see [FIELD-UNIT-SETUP.md](FIELD-UNIT-SETUP.md)), **Settings › Field Unit** shows the uplink status, a **Show pairing code** button (QR code plus a 6-character code, valid 10 minutes), the list of paired phones with **Unpair**, and **Unlink this console**.
 
-- Tasks, projects, notes, the schedule, local events and timers sync both ways. Changes made without signal on either side are sent when the connection returns, and the newest edit wins.
+- Tasks, notes, the schedule, local events and timers sync both ways. Changes made without signal on either side are sent when the connection returns, and the newest edit wins.
 - The console relays its calendars, categories, crew list and weather location to the phone.
 - While the console is running, it sends the phone notifications for task reminders, alarms, and timers set on the phone.
 - **Interface (Settings › Interface):** three looks for the same Field Unit. Switching is instant; tasks, schedule, notes, recaps and sync are shared.
   - **Cockpit** (after Starfield's cockpit): slate plates with clipped corners, a glowing dot-matrix clock on an inset screen with a ring for how much of the day has passed, an orange striped **▲ PRIORITY** plate for the first overdue task, **Next** and **Queue** plates, and a **Flight Plan** of the next five days. Hardware keys along the bottom (**BRIEF**, **AGENDA**, **QUEUE**, **NOTES**) and a command bar: type and send to open Comms with it. The gear at the top opens Settings.
   - **Hairline** (black and white, thin lines): a big light clock and your week drawn as an orbit, with today in the middle and the coming events as points around it (nearer days on the inner ring). One red dot and a vertical **OVERDUE** label for anything late. The same keys and command bar, drawn as outlines.
   - **Classic:** the original Field Unit in your color theme (the theme, typeface, frame and trim settings apply here).
-  - In Cockpit and Hairline, **QUEUE** opens the look's own task screen (Queue / Projects / Done, tap the box to finish one, a tally or a week line at the top). Calendar, Notes and Settings open the classic screens in the look's colors, with **‹ Back to Field Unit** at the top; the tab bar's Today and Tasks also go back. Comms is restyled to match.
+  - In Cockpit and Hairline, **QUEUE** opens the look's own task screen (Queue / Schedule / Done, tap the box to finish one, a tally or a week line at the top). Calendar, Notes and Settings open the classic screens in the look's colors, with **‹ Back to Field Unit** at the top; the tab bar's Today and Tasks also go back. Comms is restyled to match.
   - **Gemini in Comms (Cockpit / Hairline):** questions and chat (*"can I fit the dentist in before my shift?"*) go to Gemini, which sees your tasks, calendar and projects, and can offer to add something (*Add reminder · Not now*; nothing changes without your tap). Commands stay on Field Unit (instant, offline). Key: Settings › **Gemini** (free from aistudio.google.com; kept with your deck so every phone shares it; Wine Log's key is used until you add one). Without a key, questions get an honest "can't answer" instead of becoming tasks.
 - The footer shows **UPLINK ONLINE · 1 FIELD UNIT** when everything is connected.
 - **Notes tab:** the same notes as the desktop Notepad, synced within seconds. To copy text from paper, open a note, tap in the text and choose iPhone's own **Scan Text**; it reads printed pages and handwriting. (Field Scan, the in-app page reader, is switched off for now.) **DATA RECAP** at the top sends a Voice Memos recording to the deck for a meeting recap (see *Data Recap* above); recaps are listed under **RECAPS**.
 - **Load-up:** Field Unit opens with the same *Signal* load-up as the deck, its log ticking through the real steps (local data, sync relay, Command Deck), then **SIGNAL LOCKED · Welcome back**.
-- **Projects** on the phone: Tasks › **PROJECTS** shows the same foldable project groups (the queue leaves project tasks there too, except ones due today or overdue); tap a header to show its tasks, or **Open project** for + Add task, Edit and Mark complete. **SHARE** sends a Project Manifest link (see *Project Manifest* above), the crew strip shows who has access, and **PROJECT LOG** opens the project's shared board.
 - **Schedule** on the phone: Tasks › **SCHEDULE** has the same week-by-week list, **+** to add an entry, **SHARE** to send the link (SEND opens iPhone's share menu) with the same color and access choices, and everyone's name chips on each entry. New types are added on Command Deck.
 - **Comms Terminal:** the `>_` button in the middle of the tab bar opens a keyboard terminal. Type anything you'd have said to the computer (*"call sam thursday at 3, high priority"*, *"take a note: gate code 1357"*, *"new project garage cleanout"*). Field Unit prints its replies like a mainframe readout ("Copy." · "Transmitting data to Command…" · "Command acknowledges."), with a readout card for each change and an **UNDO** button. Deletes wait for **CONFIRM**, or type **y** / **n**. The chips above the keyboard are *Status report*, *Take a note*, *New project* and *Add to calendar* (the last three fill in the start of the command so you just finish the sentence, e.g. *schedule* → *dentist friday at 2*). Type **help** for examples. **CLEAR** (top right) or typing **clear** wipes the screen; **CLOSE TERMINAL** next to it puts the terminal away. The transcript stays while you switch between apps, and is wiped when Field Unit is closed completely (swiped away), so each launch starts fresh. Tap the readout to skip ahead.
 - **Terminal sound:** Settings › Comms terminal sound: *Mainframe* (readout chirps, relay clicks and the low computer-room hum), *Soft* (gentle beeps only) or *Off*. Comms is keyboard-only; Cockpit and Hairline are silent.
@@ -274,31 +230,21 @@ Once set up (see [FIELD-UNIT-SETUP.md](FIELD-UNIT-SETUP.md)), **Settings › Fie
 
 ### A second Command Deck (another computer, like a Surface)
 
-Run Command Deck on two computers with the same tasks, projects, notes and events on both.
+Run Command Deck on two computers with the same tasks, notes and events on both.
 
 1. On the second computer, run the same installer (from the [latest release](https://github.com/spamadrienneswiss-creator/command-deck/releases/latest)). Nothing else needs installing there, and it updates itself the same way.
 2. On the **main console** (the one your phones are paired with): **Settings › Field Unit › SHOW PAIRING CODE**.
 3. On the second computer: **Settings › Field Unit**. Paste the same Field Unit web address, enter the code under **OR JOIN ANOTHER COMMAND DECK**, and press **JOIN DECK**. Don't press LINK there, because that would start a separate deck.
 
 What to expect:
-- Tasks, projects, notes, the schedule, local events and timers sync both ways, with each phone too. Anything already on the second computer is added to the shared deck.
+- Tasks, notes, the schedule, local events and timers sync both ways, with each phone too. Anything already on the second computer is added to the shared deck.
 - Categories, crew, location, units and calendar feeds follow the main console, so change them there. Theme, typeface, frame, layout and window settings stay separate on each computer.
 - Phones pair with the main console only. Phone notifications come from the main console; when it's off, the phone rings reminders itself whenever Field Unit is open, as before.
 - The main console lists the second computer under **PAIRED DEVICES**, where **REMOVE** takes it off the deck. On the second computer, **LEAVE THIS DECK** does the same; its own copy of everything stays.
 
-### Wine Log (tasting journal on the phone)
+### Wine Log
 
-A separate home-screen app for wine tastings, published with Field Unit at **your Field Unit address + `/wine/`** (for example `https://YOUR-PROJECT-ID.web.app/wine/`). Open it in Safari, **Share › Add to Home Screen**, then pair it like a phone: on the main console, **Settings › Field Unit › SHOW PAIRING CODE**, and enter the code in Wine Log. It shows in **PAIRED DEVICES** as *Wine Log · iPhone*.
-
-- **Entries** follow the paper tasting sheet: date, where (Winery / Restaurant / Shop / Home), producer, wine name, vintage, classification, variety, region, label photo; **The Look** (red, white, rosé or sparkling, intensity, hue); **The Nose** (the aroma finder plus notes: seven families, Fruit, Floral, Herbal & Green, Spice, Oak & Toast, Earth & Mineral and Yeast & Cream, each opening into groups of aromas to tap; Fruit follows the style picked under The Look, and *Your aromas* lists the picks); **The Palate** (the same finder for flavors, with *Same as nose*, and tap-to-fill body, tannin, acidity, alcohol and sweetness, each with a note); **Final Thoughts** and a five-star rating.
-- **Scan the label** takes a photo, keeps it as the label photo, and has Gemini read the producer, name, vintage, grape, region, classification and style into the form ("Not on label" when it isn't printed). It needs a free Gemini key pasted once in Wine Log's **Settings** (gear on the log screen); it's kept with the deck, so a re-paired phone keeps it. Without a key, scanning still saves the photo.
-- **Where:** type a name and tap the magnifier to look it up (OpenStreetMap, no key). Pick a match to save its address with buttons that open it in **Maps** and on its **website** (or a web search when it has none). No match is fine; what you typed is kept.
-- **My log:** newest first, with search (producer, grape, region, aroma, place, notes) and **All / Red / White / Rosé / Sparkling** filters. Tap a bottle for its page: the label photo, details, Edit and Delete.
-- **Day and night:** the *Estate Terrace* look by day, the *Private Cellar* look after sunset, switching at real sunset (Los Angeles until you tap **Settings › Use my current location**). The sun / moon button flips it until the next sunrise or sunset.
-- **No signal?** Entries save on the phone and sync when the connection returns. Photos are kept small (about 1,200 px) and stored in Firestore, so no paid Storage plan is needed.
-- Unpairing Wine Log on the deck sends it back to its pairing screen; the tastings stay with the deck.
-
----
+Wine Log was set aside in v1.38 and may come back as its own app. Its tastings are still kept with the deck, and its last code is on the `wine-log-archive` branch. Opening the old Home Screen icon shows a short note; you can remove it.
 
 ## 5 · Data & backup
 

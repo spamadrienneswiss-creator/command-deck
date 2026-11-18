@@ -12,8 +12,7 @@ const DEFAULTS = {
     consoleName: 'Command Deck',
     browserUrl: '', // the deck's Browser button (v1.36); empty = Google
     deckKeys: [], // shortcut keys under Discord / Browser (v1.37): [{ id, name, kind: folder|app|web, target }], up to 4
-    orb: { on: true, layer: 'desktop' }, // the Orb (v1.35) on the second screen; layer: desktop | top
-    tower: { on: true, name: 'COMM TOWER 1', talk: true, skin: 'eclipse', style: 'sentinel', layer: 'top', browserUrl: '', shortcuts: [] }, // style: sentinel | obsidian | lantern; layer: top | desktop; skin: eclipse | sentinel | prism | halo | theme; shortcuts: [{ id, name, kind, target }]
+    tower: { name: 'COMM TOWER 1', talk: true }, // the terminal AI's name and Gemini switch (the dial itself was removed in v1.38)
     termSpeak: true, // the terminal reads its replies out loud // Comm Tower 1: the talk-to-capture chip on the main monitor
     location: { name: 'Los Angeles, California', lat: 34.0522, lon: -118.2437 },
     calendars: [], // { id, name, url, color, enabled }
@@ -91,8 +90,6 @@ const DEFAULTS = {
   ai: null, // the terminal AI's memory, shared with Field Unit (shared/aimem.js): { chat, memory, removed, chatClearedAt, memClearedAt }
   aiChat: [], // retired v1.34 (folded into ai): the terminal's running conversation with Gemini: { role: user|model, text, at } (last 60)
   aiMemory: [], // retired v1.34 (folded into ai): what the terminal's AI was told to keep: { t, at } (up to 150)
-  orbPos: null, // the Orb's home: { disp, fx, fy } (a spot on a display, as fractions of its work area); null = the middle of the second screen
-  towerPos: null, // Comm Tower 1's dial: { pin: 'bl', disp } locked to a screen corner, { cx, cy } out in the open (null: bottom-right of the main display)
   meta: { lastBriefingDate: null, lastLaunch: null, page: 1 },
   push: { publicKey: null, privateKey: null }
 };

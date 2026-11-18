@@ -2137,3 +2137,65 @@ body[data-layout="edge"] .cmp-keys .dv-ic { --dv: 96px; }
 .fkey.go .dv-ic { background: var(--amber); color: var(--panel-solid); box-shadow: none; }
 body[data-theme="meridian"] .fkey.go .dv-ic { background: #F2F4F4; color: #0B0D0E; }
 body[data-layout="edge"] .cmp-keys .fk .dv-ic { --dv: 96px; }
+
+/* ================================================================ v1.38: meeting REC tag
+   The dial (where recording used to show) is gone; while a meeting records, a tag in the header
+   shows the time. Click it to stop and recap. */
+.rec-tag { flex-shrink: 0; display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 10px; border: 1px solid var(--coral); cursor: pointer; background: transparent; color: var(--coral); font: 600 10.5px/1 var(--mono); letter-spacing: 0.14em; white-space: nowrap; -webkit-app-region: no-drag; }
+.rec-tag[hidden] { display: none; }
+body.rec .brand { overflow: hidden; }
+body.rec .brand-op { display: none; }
+.rec-tag::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: recBlink 1.4s ease-in-out infinite; }
+body.motion-still .rec-tag::before { animation: none; }
+@keyframes recBlink { 50% { opacity: 0.25; } }
+
+/* ================================================================ v1.38: Settings › System, tidied
+   Each row of chips is a dropdown (.dd: a face showing the pick, the pills as its menu), grouped
+   under short headings (.sys-h); one-line rows (.sys-row) and sliders (.sys-sl). */
+.sys-h { display: flex; align-items: center; gap: 12px; margin-top: 10px; font: 500 10.5px/1 var(--mono); letter-spacing: 0.3em; color: var(--muted-2); }
+.sys-h:first-child { margin-top: 0; }
+.sys-h { margin-top: 18px; }
+.sys-h:first-child { margin-top: 0; }
+.sys-grid .sel { -webkit-appearance: none; appearance: none; padding-right: 28px; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 17px) 17px, calc(100% - 12px) 17px; background-size: 5px 5px; background-repeat: no-repeat; font-size: 11px; letter-spacing: 0.12em; }
+.sys-h::after { content: ''; flex: 1; height: 1px; background: var(--line-3); opacity: 0.6; }
+.sys-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.sys-grid .f { gap: 6px; }
+.sys-grid .f[hidden], .sys-sl[hidden], .f-hint[hidden] { display: none; }
+#themeBox.th-editing { grid-column: 1 / -1; }
+.sys-sl { display: grid; grid-template-columns: 200px minmax(0, 1fr) 48px; align-items: center; gap: 14px; }
+.sys-sl .amber-t { text-align: right; font: 500 11px/1 var(--mono); }
+.sys-row { display: flex; align-items: center; gap: 12px; min-height: 38px; }
+.sys-row > .f-label:first-child { width: 200px; flex: none; }
+.sys-row.sys-top { align-items: flex-start; }
+.sys-row.sys-top > .f-label:first-child { padding-top: 12px; }
+.sys-row .in { flex: 1; }
+.sys-grow { flex: 1; min-width: 0; }
+.sys-val { font: 400 12px/1.4 var(--mono); color: var(--text-2); }
+.sys-keys { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sys-chip { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 4px 0 10px; box-shadow: inset 0 0 0 1px var(--line-3); font: 500 10.5px/1 var(--mono); letter-spacing: 0.1em; color: var(--text); }
+.sys-chip button { width: 22px; height: 22px; border: 0; padding: 0; cursor: pointer; background: transparent; color: var(--muted); font-size: 11px; }
+.sys-chip button:hover { color: var(--coral); }
+.sys-dc { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.sys-more summary { cursor: pointer; padding: 6px 0; font: 500 10px/1 var(--mono); letter-spacing: 0.2em; color: var(--muted); list-style: none; }
+.sys-more summary::before { content: '▸ '; }
+.sys-more[open] summary::before { content: '▾ '; }
+.sys-more summary::-webkit-details-marker { display: none; }
+.sys-more summary:hover { color: var(--text); }
+.sys-pages .pg-cols { grid-template-columns: minmax(0, 1fr); }
+.dd { position: relative; }
+.dd-face { width: 100%; height: 38px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 0; cursor: pointer; background: rgba(var(--ink-rgb), 0.03); box-shadow: inset 0 0 0 1px var(--line-3); color: var(--text); font: 500 11px/1 var(--mono); letter-spacing: 0.12em; text-align: left; }
+.dd-face:hover { box-shadow: inset 0 0 0 1px var(--text-2); }
+.dd.open .dd-face { box-shadow: inset 0 0 0 1px var(--amber); }
+.dd-v { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; }
+.dd-car { font-size: 10px; color: var(--muted); transition: transform 0.15s; }
+.dd.open .dd-car { transform: rotate(180deg); }
+.pills.dd-menu { display: none; position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px); flex-direction: column; flex-wrap: nowrap; gap: 0; padding: 4px; max-height: 300px; overflow-y: auto; background: var(--sel-bg, #14151B); box-shadow: inset 0 0 0 1px var(--line-3), 0 16px 40px rgba(0, 0, 0, 0.55); }
+.dd.open .pills.dd-menu { display: flex; }
+.dd-menu .pill { width: 100%; height: 32px; flex: none; display: flex; align-items: center; justify-content: flex-start; text-align: left; box-shadow: none; color: var(--text-2); }
+.dd-menu .pill:hover { background: rgba(var(--ink-rgb), 0.07); color: var(--text); }
+.dd-menu .pill.on { box-shadow: none; background: rgba(var(--ink-rgb), 0.12); color: var(--pc, var(--text)); }
+.dd-menu .pill.th-more { margin-top: 4px; box-shadow: inset 0 1px 0 var(--line-3); color: var(--muted); }
+.dd-v .theme-sw, .dd-v .trim-sw { flex: none; }
+.dd-v i { flex: none; margin-right: 8px; }
+.dd-menu .pill i { margin-right: 8px; }
+@media (max-width: 900px) { .sys-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sys-row > .f-label:first-child, .sys-sl { grid-template-columns: 140px minmax(0, 1fr) 44px; } .sys-row > .f-label:first-child { width: 140px; } }

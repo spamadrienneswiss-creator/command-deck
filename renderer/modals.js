@@ -19,11 +19,6 @@ const THEMES = [
   ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']], ['horizon', 'HORIZON', ['#F2C38B', '#FFF4E3']], ['hivis', 'HI-VIS', ['#C6F432', '#FF3D6E']],
   ['lumen', 'LUMEN', ['#FFFFFF', '#FF6A3D']], ['meridian', 'MERIDIAN', ['#FFFFFF', '#8B9295']]
 ];
-// Comm Tower 1's dial colors: [id, label, [light, partner, accent]]. The dial itself is styled in tower.css.
-const DIAL_SKINS = [
-  ['eclipse', 'ECLIPSE', ['#FFFFFF', '#A3A3A3', '#FF6A3D']], ['sentinel', 'SENTINEL', ['#5CFFB0', '#E0FFF0', '#FFC857']],
-  ['prism', 'PRISM', ['#B48CFF', '#7CF3FF', '#FF7AD9']], ['halo', 'HALO', ['#6FE6FF', '#D6FAFF', '#FFB347']], ['theme', 'MATCH THEME', []]
-];
 const FONTS = [
   ['auto', 'THEME DEFAULT', ''], ['chakra', 'CHAKRA', "'Chakra Petch'"], ['michroma', 'MICHROMA', "'Michroma'"],
   ['spacemono', 'SPACE MONO', "'Space Mono'"], ['exo2', 'EXO 2', "'Exo 2'"], ['b612', 'B612 MONO', "'B612 Mono'"],
@@ -109,13 +104,18 @@ export function wireThemeBox(box, draft) {
     const favs = themeFavs(draft);
     const hidden = THEMES.length - favs.length;
     if (!editing) {
-      box.innerHTML = `<div class="th-head"><span class="f-label">COLOR THEME</span>${Array.isArray(draft.themeFavs) ? '<span class="f-label th-yours">★ YOUR THEMES</span>' : ''}</div>
-        <div class="pills">${THEMES.filter(([v]) => favs.includes(v)).map(([v, l, cs]) => `<button type="button" class="pill theme-pill${cur === v ? ' on' : ''}" data-pick="${v}" style="--pc:${pc(cs)}">${sw(cs)}${l}</button>`).join('')}
-        <button type="button" class="pill th-more" data-edit>${hidden ? `+ ${hidden} MORE · EDIT LIST` : '★ PICK YOUR THEMES'}</button></div>
+      // Settings › System shows the list as a dropdown (v1.38); the pills are its menu.
+      const list = `${THEMES.filter(([v]) => favs.includes(v)).map(([v, l, cs]) => `<button type="button" class="pill theme-pill${cur === v ? ' on' : ''}" data-pick="${v}" style="--pc:${pc(cs)}">${sw(cs)}${l}</button>`).join('')}
+        <button type="button" class="pill th-more" data-edit>${hidden ? `+ ${hidden} MORE · EDIT LIST` : '★ PICK YOUR THEMES'}</button>`;
+      box.innerHTML = box.dataset.dd ? `<span class="f-label">COLOR THEME</span>${dd('', list)}`
+        : `<div class="th-head"><span class="f-label">COLOR THEME</span>${Array.isArray(draft.themeFavs) ? '<span class="f-label th-yours">★ YOUR THEMES</span>' : ''}</div>
+        <div class="pills">${list}</div>
         <div class="f-hint" style="margin-top:8px">${Array.isArray(draft.themeFavs) ? 'Only your starred themes show here and on Field Unit. The rest stay installed.' : 'Star the themes you use to tidy this list. Nothing gets removed.'}</div>`;
+      box.classList.remove('th-editing');
       return;
     }
     const starred = Array.isArray(draft.themeFavs) ? draft.themeFavs : THEMES.map((t) => t[0]);
+    box.classList.add('th-editing');
     box.innerHTML = `<div class="th-head"><span class="f-label">ALL THEMES · ${favs.length} STARRED</span><button type="button" class="pill on th-done" data-done>DONE</button></div>
       <div class="f-hint" style="margin:2px 0 10px">Tap a card to try it. Tap ★ to keep it in your list. The theme in use always stays.</div>
       <div class="th-grid">${THEMES.map(([v, l, cs]) => {
@@ -144,6 +144,38 @@ export function wireThemeBox(box, draft) {
   render();
 }
 
+// Settings dropdowns (v1.38): a row of pills becomes the menu of a dropdown. The pills keep
+// their own click handlers; the face shows the one that's on, and the menu closes after a pick.
+function dd(key, inner, extra = '') {
+  return `<div class="dd"><button type="button" class="dd-face" aria-haspopup="true" aria-expanded="false"></button><div class="pills dd-menu"${key ? ` data-key="${key}"` : ''}${extra}>${inner}</div></div>`;
+}
+function ddFaces(root) {
+  $$('.dd', root).forEach((d) => {
+    const menu = d.querySelector('.dd-menu');
+    const on = menu.querySelector('.pill.on') || menu.querySelector('.pill');
+    d.querySelector('.dd-face').innerHTML = `<span class="dd-v">${on ? on.innerHTML : ''}</span><span class="dd-car" aria-hidden="true">▾</span>`;
+  });
+}
+function wireDropdowns(root) {
+  const closeAll = (except) => $$('.dd.open', root).forEach((d) => { if (d !== except) { d.classList.remove('open'); d.querySelector('.dd-face').setAttribute('aria-expanded', 'false'); } });
+  root.addEventListener('click', (e) => {
+    const face = e.target.closest('.dd-face');
+    if (face && root.contains(face)) {
+      const d = face.parentNode;
+      closeAll(d);
+      const open = d.classList.toggle('open');
+      face.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) { const on = d.querySelector('.pill.on'); if (on) on.scrollIntoView({ block: 'nearest' }); }
+      return;
+    }
+    if (e.target.closest('.dd-menu .pill')) closeAll();
+    else if (!e.target.closest('.dd')) closeAll();
+    ddFaces(root);
+  });
+  root.addEventListener('keydown', (e) => { if (e.key === 'Escape' && root.querySelector('.dd.open')) { e.stopPropagation(); closeAll(); } }, true);
+  ddFaces(root);
+}
+
 function switchHtml(id, on, label) {
   return `<button type="button" class="switch" id="${id}" role="switch" aria-checked="${on ? 'true' : 'false'}" aria-label="${esc(label)}"><i></i></button>`;
 }
@@ -170,7 +202,7 @@ export function openTaskEditor(task, preset = {}) {
   const people = [['', 'NONE']].concat(S.settings.people.map((p) => [p, p.toUpperCase()]));
   if (t.assignee && !S.settings.people.includes(t.assignee)) people.push([t.assignee, t.assignee.toUpperCase()]);
 
-  const projOpts = [['', 'NONE']].concat((S.projects || []).filter((p) => p.status !== 'done' || p.id === t.projectId).map((p) => [p.id, p.name.toUpperCase()]));
+  const projOpts = []; // Projects were removed in v1.38; a task keeps any project it had, hidden
   const m = mount(`
     <i class="br br-tr amber"></i><i class="br br-bl lav"></i>
     <div class="m-head"><span>${isNew ? 'NEW TASK' : 'TASK EDITOR'}</span><button type="button" class="x-btn" data-x aria-label="Close">${X_SVG}</button></div>
@@ -1006,111 +1038,64 @@ export function openSettings(welcome = false) {
     },
     system() {
       const voices = app.englishVoices();
+      // v1.38: every row of chips is one dropdown (dd()), grouped under short headings.
       return `
-        <div class="f" id="themeBox"></div>
-        <div class="f"><span class="f-label">TYPEFACE</span>
-          <div class="pills" data-key="font">${FONTS.map(([v, l, fam]) => `<button type="button" class="pill font-pill${(draft.font || 'auto') === v ? ' on' : ''}" data-v="${v}"${fam ? ` style="font-family:${fam}"` : ''}>${l}</button>`).join('')}</div>
-          <div class="f-hint" style="margin-top:8px">Theme default follows the color theme: Moonbase uses Michroma, Blueprint Space Mono, Cryo Exo 2, Freighter B612 Mono, Skydock Quantico, Vector Tektur, Horizon Jura, Hi-Vis Anybody.</div></div>
-        <div class="f"><span class="f-label">TEXT COLOR</span>
-          <div class="pills" data-key="ink">${INKS.map(([v, l, c]) => `<button type="button" class="pill theme-pill${(draft.ink || 'theme') === v ? ' on' : ''}" data-v="${v}">${c ? `<i style="background:${c};box-shadow:inset 0 0 0 1px #6E6A78"></i>` : ''}${l}</button>`).join('')}</div>
-          <div class="f-hint" style="margin-top:8px">Recolors the main text. Accents, warnings and checkmarks stay with the theme; light themes get a deeper shade so it stays readable.</div></div>
-        <div style="display:flex;flex-direction:column;gap:18px">
-          <div class="f"><span class="f-label">FRAME</span><div class="pills" data-key="frame">${FRAMES.map(([v, l, c]) => `<button type="button" class="pill theme-pill${(draft.frame || 'dark') === v ? ' on' : ''}" data-v="${v}" style="--pc:${c === '#14151B' ? '#9C98A6' : v === 'bone' ? c : '#C9CDD3'}"><i style="background:${c};box-shadow:inset 0 0 0 1px #6E6A78"></i>${l}</button>`).join('')}</div></div>
-          <div class="f"><span class="f-label">PANEL TRIM</span><div class="pills" data-key="trim">${TRIMS.map(([v, l, cs]) => `<button type="button" class="pill${(draft.trim || 'none') === v ? ' on' : ''}" data-v="${v}">${cs.length ? `<span class="trim-sw">${cs.map((c) => `<i style="background:${c}"></i>`).join('')}</span>` : ''}${l}</button>`).join('')}</div></div>
+        <div class="sys-h">LOOK</div>
+        <div class="sys-grid">
+          <div class="f" id="themeBox" data-dd="1"></div>
+          <div class="f"><span class="f-label">TYPEFACE</span>${dd('font', FONTS.map(([v, l, fam]) => `<button type="button" class="pill font-pill${(draft.font || 'auto') === v ? ' on' : ''}" data-v="${v}"${fam ? ` style="font-family:${fam}"` : ''}>${l}</button>`).join(''))}</div>
+          <div class="f"><span class="f-label">TEXT COLOR</span>${dd('ink', INKS.map(([v, l, c]) => `<button type="button" class="pill theme-pill${(draft.ink || 'theme') === v ? ' on' : ''}" data-v="${v}">${c ? `<i style="background:${c};box-shadow:inset 0 0 0 1px #6E6A78"></i>` : ''}${l}</button>`).join(''))}</div>
+          <div class="f"><span class="f-label">FRAME</span>${dd('frame', FRAMES.map(([v, l, c]) => `<button type="button" class="pill theme-pill${(draft.frame || 'dark') === v ? ' on' : ''}" data-v="${v}"><i style="background:${c};box-shadow:inset 0 0 0 1px #6E6A78"></i>${l}</button>`).join(''))}</div>
+          <div class="f"><span class="f-label">PANEL TRIM</span>${dd('trim', TRIMS.map(([v, l, cs]) => `<button type="button" class="pill${(draft.trim || 'none') === v ? ' on' : ''}" data-v="${v}">${cs.length ? `<span class="trim-sw">${cs.map((c) => `<i style="background:${c}"></i>`).join('')}</span>` : ''}${l}</button>`).join(''))}</div>
+          <div class="f"><span class="f-label">MOTION</span>${dd('motion', pills([['full', 'FULL'], ['subtle', 'SUBTLE'], ['still', 'STILL']], draft.motion))}</div>
+          <div class="f"><span class="f-label">SOUND EFFECTS</span>${dd('sound', pills([['full', 'FULL'], ['key', 'KEY MOMENTS'], ['silent', 'SILENT']], draft.sound))}</div>
         </div>
-        <div class="f-row">
-          <div class="f"><span class="f-label">MOTION</span><div class="pills" data-key="motion">${pills([['full', 'FULL'], ['subtle', 'SUBTLE'], ['still', 'STILL']], draft.motion)}</div></div>
-          <div class="f"><span class="f-label">SOUND EFFECTS</span><div class="pills" data-key="sound">${pills([['full', 'FULL'], ['key', 'KEY MOMENTS'], ['silent', 'SILENT']], draft.sound)}</div></div>
+        <div class="sys-sl"><label class="f-label" for="sOpacity">CONSOLE OPACITY</label><input id="sOpacity" class="range" type="range" min="30" max="100" step="5" value="${Math.round((draft.opacity ?? 1) * 100)}"><span id="sOpacityVal" class="amber-t">${Math.round((draft.opacity ?? 1) * 100)}%</span></div>
+        <div class="sys-sl"><label class="f-label" for="sDark">BACKGROUND DARKNESS</label><input id="sDark" class="range" type="range" min="20" max="97" step="1" value="${Math.round((draft.frameDarkness ?? 0.8) * 100)}"><span id="sDarkVal" class="amber-t">${Math.round((draft.frameDarkness ?? 0.8) * 100)}%</span></div>
+
+        <div class="sys-h">WINDOW &amp; LAYOUT</div>
+        <div class="sys-grid">
+          <div class="f"><span class="f-label">WINDOW</span>${dd('windowMode', pills([['top', 'ON TOP'], ['desk', 'DESKTOP']], draft.windowMode))}</div>
+          <div class="f"><span class="f-label">LAYOUT</span>${dd('layoutMode', pills([['auto', 'AUTO'], ['standard', 'STANDARD'], ['edge', 'XENEON EDGE']], draft.layoutMode || 'auto'))}</div>
+          <div class="f"><span class="f-label">CLOCK</span>${dd('clock24', pills([['false', '12-HOUR'], ['true', '24-HOUR']], String(draft.clock24)))}</div>
+          <div class="f"><span class="f-label">TEMPERATURE</span>${dd('tempUnit', pills([['F', '°F'], ['C', '°C']], draft.tempUnit))}</div>
         </div>
-        <div class="f-row three">
-          <div class="f"><span class="f-label">WINDOW</span><div class="pills" data-key="windowMode">${pills([['top', 'ON TOP'], ['desk', 'DESKTOP']], draft.windowMode)}</div></div>
-          <div class="f"><span class="f-label">CLOCK</span><div class="pills" data-key="clock24">${pills([['false', '12-HOUR'], ['true', '24-HOUR']], String(draft.clock24))}</div></div>
-          <div class="f"><span class="f-label">TEMPERATURE</span><div class="pills" data-key="tempUnit">${pills([['F', '°F'], ['C', '°C']], draft.tempUnit)}</div></div>
-        </div>
-        <div class="f"><label class="f-label" for="sOpacity" style="display:flex;justify-content:space-between"><span>CONSOLE OPACITY</span><span id="sOpacityVal" class="amber-t">${Math.round((draft.opacity ?? 1) * 100)}%</span></label>
-          <input id="sOpacity" class="range" type="range" min="30" max="100" step="5" value="${Math.round((draft.opacity ?? 1) * 100)}">
-          <div class="f-hint">Fades the whole console, text included, so the desktop shows through. Previews live as you drag.</div></div>
-        <div class="f"><label class="f-label" for="sDark" style="display:flex;justify-content:space-between"><span>BACKGROUND DARKNESS</span><span id="sDarkVal" class="amber-t">${Math.round((draft.frameDarkness ?? 0.8) * 100)}%</span></label>
-          <input id="sDark" class="range" type="range" min="20" max="97" step="1" value="${Math.round((draft.frameDarkness ?? 0.8) * 100)}">
-          <div class="f-hint">Darkens only the space between and behind the panels.</div></div>
-        <div class="f"><span class="f-label">COMPUTER VOICE</span>
-          <div class="toggle-row"><span>Spoken greetings, answers and reminders</span>${switchHtml('swVoice', draft.voiceEnabled, 'Computer voice')}</div>
-          <div class="f-row" style="margin-top:6px">
-            <div class="f"><span class="f-label">ENGINE</span><div class="pills" data-key="voiceEngine">${pills([['neural', 'NEURAL'], ['windows', 'WINDOWS']], draft.voiceEngine)}</div></div>
-            <div class="f"><label class="f-label" for="sRate">SPEED</label><select id="sRate" class="sel">${[[0.85, 'SLOWER'], [1, 'NORMAL'], [1.15, 'FASTER']].map(([v, l]) => `<option value="${v}"${Number(draft.voiceRate) === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
-          </div>
-          <div id="neuralOpts" class="f" ${draft.voiceEngine === 'neural' ? '' : 'hidden'} style="margin-top:6px">
-            <select id="sNeural" class="sel" aria-label="Neural voice">${NEURAL_VOICES.map(([v, l]) => `<option value="${v}"${draft.neuralVoice === v ? ' selected' : ''}>${l}</option>`).join('')}</select>
-            <div class="f" style="margin-top:6px"><span class="f-label">VOICE CHARACTER</span><div class="pills" data-key="voiceFx">${pills([['robot', 'ROBOT COMPANION'], ['comms', 'SHIP COMMS'], ['radio', 'RADIO'], ['off', 'OFF']], draft.voiceFx || 'robot')}</div></div>
-            <div class="f-row">
-              <div class="f"><label class="f-label" for="sDepth" style="display:flex;justify-content:space-between"><span>DEPTH</span><span id="sDepthVal" class="amber-t">${draft.voiceDepth ?? 35}%</span></label>
-                <input id="sDepth" class="range" type="range" min="0" max="100" step="5" value="${draft.voiceDepth ?? 35}"></div>
-              <div class="f"><label class="f-label" for="sStrength" style="display:flex;justify-content:space-between"><span>EFFECT STRENGTH</span><span id="sStrengthVal" class="amber-t">${draft.voiceFxStrength ?? 60}%</span></label>
-                <input id="sStrength" class="range" type="range" min="0" max="100" step="5" value="${draft.voiceFxStrength ?? 60}"></div>
-            </div>
-            <div class="f-hint" id="synthHint"></div>
-          </div>
-          <div id="windowsOpts" class="f" ${draft.voiceEngine === 'windows' ? '' : 'hidden'} style="margin-top:6px">
-            <select id="sVoice" class="sel" aria-label="Windows voice"><option value="">AUTOMATIC</option>${voices.map((v) => `<option value="${esc(v.name)}"${draft.voiceName === v.name ? ' selected' : ''}>${esc(v.name.replace(/^Microsoft /, '').toUpperCase())}</option>`).join('')}</select>
-          </div>
-          <div class="inline" style="flex:none;margin-top:6px"><button type="button" class="btn line" id="sTest">TEST VOICE</button></div>
-        </div>
-        <div class="f"><span class="f-label">BROWSER BUTTON OPENS</span>
-          <input id="sBrowserUrl" class="in" maxlength="300" aria-label="Page the Browser button opens" value="${esc(draft.browserUrl || (draft.tower || {}).browserUrl || '')}" placeholder="https://www.google.com" spellcheck="false">
-          <div class="f-hint">The globe button beside Discord in the Ship Computer panel. Leave empty for Google.</div></div>
-        <div class="f"><span class="f-label">SHORTCUT KEYS</span>
-          <div id="sKeys"></div>
-          <button type="button" class="btn line" id="sKeyAdd" style="margin-top:8px">+ PICK A FOLDER</button>
-          <div class="f-hint">Up to four folder buttons in a row under Discord and Browser. Tap one on the deck to open it in File Explorer.</div></div>
-        <div class="f"><span class="f-label">THE ORB · ON YOUR SECOND SCREEN</span>
-          <div class="toggle-row"><span>Show the Orb</span>${switchHtml('swOrb', (draft.orb || {}).on !== false, 'Show the Orb')}</div>
-          <span class="f-label" style="margin-top:12px">ORB SITS</span>
-          <div class="inline" style="flex:none;gap:8px"><div class="pills" id="sOrbLayer" style="flex:1">${[['desktop', 'DESKTOP'], ['top', 'ON TOP']].map(([v, l]) => `<button type="button" class="pill${((draft.orb || {}).layer === 'top' ? 'top' : 'desktop') === v ? ' on' : ''}" data-layer="${v}">${l}</button>`).join('')}</div><button type="button" class="btn line" id="sOrbHome">BACK TO THE MIDDLE</button></div>
-          <div class="f-hint">Command Deck as a ball of living light, floating on your second screen. Click it (or press Ctrl + Alt + O from any app) and six screens grow out of it: Today, Calendar, Tasks, Notes · Recaps, Comms (type to the deck) and Record (a meeting into Data Recap). Click a screen to bring it close, empty space to send it back, the orb (or Esc) to fold it all away. Its color tells you how things stand: amber when something is due within the hour, a red heartbeat when something is overdue, churning while Comms thinks, a red heart while a meeting records. Drag the closed orb to give it a new home, on any screen. DESKTOP lets your windows cover it; ON TOP keeps it above them.</div></div>
-        <div class="f"><span class="f-label">COMM TOWER 1 · THE DIAL</span>
-          <div class="toggle-row"><span>Show the dial on screen</span>${switchHtml('swTower', (draft.tower || {}).on !== false, 'Show Comm Tower 1')}</div>
-          <div class="toggle-row"><span>Gemini words replies and answers questions</span>${switchHtml('swTowerTalk', (draft.tower || {}).talk !== false, 'Conversational replies')}</div>
-          <div class="inline" style="flex:none;margin-top:6px"><input id="sTowerName" class="in" maxlength="20" aria-label="Comm Tower name" value="${esc((draft.tower || {}).name || 'COMM TOWER 1')}" placeholder="COMM TOWER 1" style="flex:1"><button type="button" class="btn line" id="sTowerHome">BACK TO CORNER</button></div>
-          <span class="f-label" style="margin-top:12px">DIAL SITS</span>
-          <div class="pills" id="sTowerLayer">${[['top', 'ON TOP'], ['desktop', 'DESKTOP']].map(([v, l]) => `<button type="button" class="pill${((draft.tower || {}).layer === 'desktop' ? 'desktop' : 'top') === v ? ' on' : ''}" data-layer="${v}">${l}</button>`).join('')}</div>
-          <span class="f-label" style="margin-top:12px">DIAL STYLE</span>
-          <div class="pills" id="sTowerStyle">${[['sentinel', 'SENTINEL'], ['obsidian', 'OBSIDIAN'], ['lantern', 'LANTERN']].map(([v, l]) => `<button type="button" class="pill${((draft.tower || {}).style || 'sentinel') === v ? ' on' : ''}" data-style="${v}">${l}</button>`).join('')}</div>
-          <span class="f-label" style="margin-top:12px">DIAL COLOR</span>
-          <div class="pills" id="sTowerSkin">${DIAL_SKINS.map(([v, l, cs]) => `<button type="button" class="pill theme-pill${((draft.tower || {}).skin || 'eclipse') === v ? ' on' : ''}" data-skin="${v}" style="--pc:${cs[2] || '#888'}"><span class="theme-sw">${cs.map((c) => `<i style="background:${c}"></i>`).join('')}</span>${l}</button>`).join('')}</div>
-          <span class="f-label" style="margin-top:12px">BROWSER KEY OPENS</span>
-          <input id="sTowerUrl" class="in" maxlength="300" aria-label="Page the Browser key opens" value="${esc((draft.tower || {}).browserUrl || '')}" placeholder="https://www.google.com" spellcheck="false">
-          <div class="f-hint">Click the glowing core (or press Ctrl + Alt + T from any app) and it opens into a fan of keys: Record a meeting, the typing Terminal, your Browser, a Note, File Explorer, and + for your own shortcuts (a website, a program or a folder; up to 5). Esc closes it. DIAL STYLE is its shape and finish (Sentinel: rings of light; Obsidian: machined hardware; Lantern: a projected hologram); DIAL COLOR its colors, in any mix. ON TOP keeps it above every window; DESKTOP lets other windows cover it, and Ctrl + Alt + T brings it forward. Drag the closed core to move it; let go near any corner of any screen and it locks there, even if Windows shuffles the displays. The dial keeps its own colors whatever the deck's theme, unless you pick MATCH THEME. The name is whatever you call it.<br>With a Gemini key (Field Unit › DATA RECAP) replies are worded conversationally and questions about your day get answered from your tasks and schedule (they're sent to Gemini for that). No key or no signal: the deck's own replies. The deck's voice reads replies out loud unless you switch VOICE REPLIES off in the terminal.</div></div>
-        <div class="f"><span class="f-label">TERMINAL · WHAT IT REMEMBERS</span>
-          <div id="sAiMem"></div>
-          <div class="f-hint">The terminal (on the deck and in Comm Tower 1) keeps one running conversation with Gemini, the last 60 messages, so it can follow up on what you said earlier, even days later. It also keeps short notes of lasting things you tell it ("remember that…", your people, preferences, plans). Tell it to forget something, or remove notes here. Typing "clear chat" starts a fresh conversation; "forget everything" clears both. Field Unit shares the same conversation and notes, synced through your deck's Firebase; what Gemini needs goes to Google each time you ask it something.</div>
-        </div>
-        <div class="f"><span class="f-label">DISCORD · MUTE AND DEAFEN BESIDE HAIL</span>
-          <div class="f-hint" style="margin-top:0">Shows whether you're muted or deafened in Discord, live, and toggles them (click the icons, or say "mute me" / "deafen me"). One-time setup with your own free Discord app:<br>
-          1. Open the <a href="#" id="dcPortal" style="color:var(--amber)">Discord Developer Portal</a> › <b>New Application</b> (any name, e.g. Command Deck).<br>
-          2. In <b>OAuth2</b>: copy the <b>Client ID</b>, then <b>Reset Secret</b> and copy the <b>Client Secret</b>.<br>
-          3. Still in OAuth2, under <b>Redirects</b>, add <b>http://localhost</b> and save.<br>
-          4. Paste both below, press CONNECT, then click <b>Authorize</b> in the box Discord shows.</div>
-          <div class="inline" style="flex:none;margin-top:8px;gap:8px"><input id="dcId" class="in" placeholder="CLIENT ID" aria-label="Discord Client ID" style="flex:1" autocomplete="off" spellcheck="false"><input id="dcSecret" class="in" type="password" placeholder="CLIENT SECRET" aria-label="Discord Client Secret" style="flex:1" autocomplete="off"></div>
-          <div class="inline" style="flex:none;margin-top:8px;gap:8px;align-items:center"><button type="button" class="btn" id="dcConnect">CONNECT</button><button type="button" class="btn line" id="dcForget">FORGET</button><span class="f-hint" id="dcStatus" style="margin:0"></span></div></div>
-        <div class="f"><label class="f-label" for="sHumor" style="display:flex;justify-content:space-between"><span>HUMOR SETTING</span><span id="sHumorVal" class="amber-t">${draft.humor ?? 40}%</span></label>
-          <input id="sHumor" class="range" type="range" min="0" max="100" step="5" value="${draft.humor ?? 40}">
-          <div class="f-hint">0% is strictly professional; higher settings add dry, deadpan remarks. You can also just say "set humor to 75 percent."</div></div>
-        <div class="f"><span class="f-label">STARTUP</span>
-          <div class="toggle-row"><span>Start with Windows</span>${switchHtml('swAuto', draft.autoStart, 'Start with Windows')}</div>
-          <div class="toggle-row"><span>Daily briefing the first time the console opens each day</span>${switchHtml('swBrief', draft.morningBriefing, 'Daily briefing')}</div>
-        </div>
-        <div class="f"><span class="f-label">LAYOUT</span>
-          <div class="pills" data-key="layoutMode">${pills([['auto', 'AUTO'], ['standard', 'STANDARD'], ['edge', 'XENEON EDGE']], draft.layoutMode || 'auto')}</div>
-          <div class="f-hint">AUTO uses the Edge layout on a wide, short screen like the Xeneon Edge and the standard layout anywhere else, switching as you move the window. The <b>LAYOUT</b> chip at the top of the deck flips between the two on the spot. Each layout remembers its own panel arrangement.</div></div>
-        <div class="f"><span class="f-label">PAGES</span>
+        <div class="f sys-pages"><span class="f-label">PAGE 2</span>
           <div class="pg-cols" id="pgCols"></div>
-          <div class="f-hint">Page 1 always has every panel. Page 2 shows only the ones picked here, so they can be bigger: unlock the layout on page 2 and resize them. Flip pages with the <b>PAGE</b> chip at the top, <span class="kbd">Ctrl</span> + <span class="kbd">1</span> / <span class="kbd">2</span>, a sideways swipe on a touchscreen, or say "page two."</div></div>
-        <div class="f"><span class="f-label">UPDATES</span>
-          <div class="toggle-row"><span id="sUpd">${esc(app.updateInfo().text)}</span><button type="button" class="btn line" id="sUpdBtn">${app.updateInfo().state === 'ready' ? 'RESTART TO UPDATE' : 'CHECK NOW'}</button></div>
-          <div class="f-hint">New versions download in the background. When one is ready, UPDATE READY appears at the top; tap it to restart, or it installs the next time Command Deck closes.</div></div>
-        <div class="f"><span class="f-label">MEMORY</span>
-          <div class="toggle-row"><span id="sMem">Measuring…</span></div>
-          <div class="f-hint">How much memory Command Deck is using right now. The deck's share includes the listening model and the neural voice; both go to sleep a couple of minutes after you step away from the PC and wake when you're back. The recap engine only runs while a recording is being transcribed.</div></div>`;
+          <div class="f-hint">Page 1 always has every panel. Page 2 shows only the ones picked here; flip pages with the PAGE chip, Ctrl + 1 / 2 or a swipe.</div></div>
+
+        <div class="sys-h">VOICE</div>
+        <div class="sys-row"><span class="f-label">COMPUTER VOICE</span>${switchHtml('swVoice', draft.voiceEnabled, 'Computer voice')}<button type="button" class="btn line" id="sTest">TEST VOICE</button></div>
+        <div class="sys-grid">
+          <div class="f"><span class="f-label">ENGINE</span>${dd('voiceEngine', pills([['neural', 'NEURAL'], ['windows', 'WINDOWS']], draft.voiceEngine))}</div>
+          <div class="f"><label class="f-label" for="sRate">SPEED</label><select id="sRate" class="sel">${[[0.85, 'SLOWER'], [1, 'NORMAL'], [1.15, 'FASTER']].map(([v, l]) => `<option value="${v}"${Number(draft.voiceRate) === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+          <div class="f" id="neuralPick" ${draft.voiceEngine === 'neural' ? '' : 'hidden'}><label class="f-label" for="sNeural">VOICE</label><select id="sNeural" class="sel">${NEURAL_VOICES.map(([v, l]) => `<option value="${v}"${draft.neuralVoice === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+          <div class="f" id="windowsOpts" ${draft.voiceEngine === 'windows' ? '' : 'hidden'}><label class="f-label" for="sVoice">VOICE</label><select id="sVoice" class="sel"><option value="">AUTOMATIC</option>${voices.map((v) => `<option value="${esc(v.name)}"${draft.voiceName === v.name ? ' selected' : ''}>${esc(v.name.replace(/^Microsoft /, '').toUpperCase())}</option>`).join('')}</select></div>
+          <div class="f" id="neuralOpts" ${draft.voiceEngine === 'neural' ? '' : 'hidden'}><span class="f-label">VOICE CHARACTER</span>${dd('voiceFx', pills([['robot', 'ROBOT COMPANION'], ['comms', 'SHIP COMMS'], ['radio', 'RADIO'], ['off', 'OFF']], draft.voiceFx || 'robot'))}</div>
+        </div>
+        <div class="sys-sl" data-neural ${draft.voiceEngine === 'neural' ? '' : 'hidden'}><label class="f-label" for="sDepth">DEPTH</label><input id="sDepth" class="range" type="range" min="0" max="100" step="5" value="${draft.voiceDepth ?? 35}"><span id="sDepthVal" class="amber-t">${draft.voiceDepth ?? 35}%</span></div>
+        <div class="sys-sl" data-neural ${draft.voiceEngine === 'neural' ? '' : 'hidden'}><label class="f-label" for="sStrength">EFFECT STRENGTH</label><input id="sStrength" class="range" type="range" min="0" max="100" step="5" value="${draft.voiceFxStrength ?? 60}"><span id="sStrengthVal" class="amber-t">${draft.voiceFxStrength ?? 60}%</span></div>
+        <div class="sys-sl"><label class="f-label" for="sHumor">HUMOR</label><input id="sHumor" class="range" type="range" min="0" max="100" step="5" value="${draft.humor ?? 40}"><span id="sHumorVal" class="amber-t">${draft.humor ?? 40}%</span></div>
+        <div class="f-hint" id="synthHint" data-neural ${draft.voiceEngine === 'neural' ? '' : 'hidden'}></div>
+
+        <div class="sys-h">BUTTONS ON THE DECK</div>
+        <div class="sys-row"><label class="f-label" for="sBrowserUrl">BROWSER BUTTON OPENS</label><input id="sBrowserUrl" class="in" maxlength="300" value="${esc(draft.browserUrl || (draft.tower || {}).browserUrl || '')}" placeholder="google.com" spellcheck="false"></div>
+        <div class="sys-row"><span class="f-label">SHORTCUT KEYS</span><div class="sys-keys" id="sKeys"></div><button type="button" class="btn line" id="sKeyAdd">+ ADD FOLDER</button></div>
+        <div class="sys-row sys-top"><span class="f-label">DISCORD</span><div class="sys-dc">
+          <div class="inline" style="flex:none;gap:8px;align-items:center"><span class="f-hint" id="dcStatus" style="margin:0;flex:1"></span><button type="button" class="btn line" id="dcForget">FORGET</button></div>
+          <details class="sys-more"><summary>SET UP OR RECONNECT</summary>
+            <div class="f-hint">1. Open the <a href="#" id="dcPortal" style="color:var(--amber)">Discord Developer Portal</a> › <b>New Application</b>.<br>2. In <b>OAuth2</b>: copy the <b>Client ID</b>, then <b>Reset Secret</b> and copy the <b>Client Secret</b>.<br>3. Under <b>Redirects</b>, add <b>http://localhost</b> and save.<br>4. Paste both, press CONNECT, then <b>Authorize</b> in Discord.</div>
+            <div class="inline" style="flex:none;margin-top:8px;gap:8px"><input id="dcId" class="in" placeholder="CLIENT ID" aria-label="Discord Client ID" style="flex:1" autocomplete="off" spellcheck="false"><input id="dcSecret" class="in" type="password" placeholder="CLIENT SECRET" aria-label="Discord Client Secret" style="flex:1" autocomplete="off"><button type="button" class="btn" id="dcConnect">CONNECT</button></div>
+          </details></div></div>
+
+        <div class="sys-h">TERMINAL</div>
+        <div class="sys-row"><span class="f-label">GEMINI ANSWERS</span>${switchHtml('swTowerTalk', (draft.tower || {}).talk !== false, 'Gemini answers in the terminal')}</div>
+        <div class="sys-row sys-top"><span class="f-label">WHAT IT REMEMBERS</span><div id="sAiMem" class="sys-grow"></div></div>
+
+        <div class="sys-h">STARTUP &amp; UPDATES</div>
+        <div class="sys-row"><span class="f-label">START WITH WINDOWS</span>${switchHtml('swAuto', draft.autoStart, 'Start with Windows')}<span class="f-label" style="margin-left:24px">DAILY BRIEFING</span>${switchHtml('swBrief', draft.morningBriefing, 'Daily briefing')}</div>
+        <div class="sys-row"><span class="f-label">UPDATES</span><span id="sUpd" class="sys-grow sys-val">${esc(app.updateInfo().text)}</span><button type="button" class="btn line" id="sUpdBtn">${app.updateInfo().state === 'ready' ? 'RESTART TO UPDATE' : 'CHECK NOW'}</button></div>
+        <div class="sys-row"><span class="f-label">MEMORY</span><span id="sMem" class="sys-grow sys-val">Measuring…</span></div>`;
     },
     lighting() {
       const L = { enabled: false, boot: true, alert: true, speaking: true, crew: true, brightness: 80, ...(draft.lighting || {}) };
@@ -1399,6 +1384,7 @@ export function openSettings(welcome = false) {
     },
     system() {
       wireThemeBox($('#themeBox', body), draft);
+      wireDropdowns(body);
       $$('.pills[data-key]', body).forEach((group) => {
         wirePills(group, (v) => {
           const key = group.dataset.key;
@@ -1410,6 +1396,8 @@ export function openSettings(welcome = false) {
           if (key === 'trim') app.previewTrim(v);
           if (key === 'voiceEngine') {
             $('#neuralOpts', body).hidden = v !== 'neural';
+            $('#neuralPick', body).hidden = v !== 'neural';
+            $$('[data-neural]', body).forEach((el) => { el.hidden = v !== 'neural'; });
             $('#windowsOpts', body).hidden = v !== 'windows';
             if (v === 'neural') app.loadTts().catch(() => {});
           }
@@ -1420,16 +1408,14 @@ export function openSettings(welcome = false) {
       const pgBox = $('#pgCols', body);
       const label = Object.fromEntries(PAGE_PANELS);
       const drawPages = () => {
-        pgBox.innerHTML = `<div class="pg-col">
-            <div class="pg-top"><span class="f-label pg-n">PAGE 1</span><input class="in" data-pg-name="1" maxlength="12" aria-label="Page 1 name" value="${esc(draft.pages.names[0] || 'MAIN')}"></div>
-            <div class="f-hint" style="margin:0">Every panel, in your own arrangement.</div>
-          </div>` + [2].map((n) => {
+        // v1.38: page 1 always holds every panel, so only page 2 is shown here.
+        pgBox.innerHTML = [2].map((n) => {
           const tiles = draft.pages[`tiles${n}`];
           const pv = app.pagePreview(n, tiles);
           const rows = Math.max(1, ...pv.tiles.map((t) => t.y + t.h));
           return `<div class="pg-col">
-            <div class="pg-top"><span class="f-label pg-n">PAGE ${n}</span><input class="in" data-pg-name="${n}" maxlength="12" aria-label="Page ${n} name" value="${esc(draft.pages.names[n - 1] || (n === 1 ? 'MAIN' : 'WORK'))}"></div>
-            <span class="f-label">PANELS ON THIS PAGE</span>
+            <div class="pg-top"><span class="f-label pg-n">NAME</span><input class="in" data-pg-name="${n}" maxlength="12" aria-label="Page ${n} name" value="${esc(draft.pages.names[n - 1] || (n === 1 ? 'MAIN' : 'WORK'))}"></div>
+            <span class="f-label">PANELS</span>
             <div class="pills">${PAGE_PANELS.map(([v, l]) => `<button type="button" class="pill pg-pill${tiles.includes(v) ? ' on' : ''}" data-pg="${n}" data-v="${v}" aria-pressed="${tiles.includes(v)}"><i aria-hidden="true"></i>${l}</button>`).join('')}</div>
             <span class="f-label">PREVIEW</span>
             <div class="pg-mini" aria-hidden="true" style="grid-template-columns:repeat(${pv.columns},1fr);grid-template-rows:repeat(${rows},minmax(0,1fr))">${pv.tiles.map((t) => `<b style="grid-column:${t.x + 1} / span ${t.w};grid-row:${t.y + 1} / span ${t.h}">${label[t.id] || t.id}</b>`).join('')}</div>
@@ -1520,12 +1506,10 @@ export function openSettings(welcome = false) {
       slider('#sStrength', 'voiceFxStrength', (v) => v);
       slider('#sHumor', 'humor', (v) => v);
       wireSwitch($('#swAuto', body), (on) => { draft.autoStart = on; });
-      wireSwitch($('#swTower', body), (on) => { draft.tower = { ...(draft.tower || {}), on }; });
-      wireSwitch($('#swOrb', body), (on) => { draft.orb = { ...(draft.orb || {}), on }; });
       $('#sBrowserUrl', body).addEventListener('input', (e) => { draft.browserUrl = e.target.value.trim(); });
       const paintKeys = () => {
         const keys = Array.isArray(draft.deckKeys) ? draft.deckKeys : [];
-        $('#sKeys', body).innerHTML = keys.length ? keys.map((k) => `<div class="toggle-row"><span><b>${esc(k.name)}</b><br><small style="opacity:.6">${esc(k.target)}</small></span><button type="button" class="btn line" data-key-x="${esc(k.id)}" aria-label="Remove ${esc(k.name)}">✕</button></div>`).join('') : '<div class="f-hint">No shortcut keys yet.</div>';
+        $('#sKeys', body).innerHTML = keys.length ? keys.map((k) => `<span class="sys-chip" title="${esc(k.target)}">${esc(k.name)}<button type="button" data-key-x="${esc(k.id)}" aria-label="Remove ${esc(k.name)}">✕</button></span>`).join('') : '<span class="f-hint" style="margin:0">None yet. Up to four folders.</span>';
         $('#sKeyAdd', body).disabled = keys.length >= 4;
       };
       paintKeys();
@@ -1545,41 +1529,15 @@ export function openSettings(welcome = false) {
         draft.deckKeys = (draft.deckKeys || []).filter((k) => k.id !== x.dataset.keyX);
         paintKeys();
       });
-      $('#sOrbLayer', body).addEventListener('click', (e) => {
-        const b = e.target.closest('[data-layer]');
-        if (!b) return;
-        draft.orb = { ...(draft.orb || {}), layer: b.dataset.layer };
-        $('#sOrbLayer', body).querySelectorAll('[data-layer]').forEach((x) => x.classList.toggle('on', x === b));
-      });
-      $('#sOrbHome', body).addEventListener('click', () => { if (window.deck.orb && window.deck.orb.home) window.deck.orb.home(); app.toast('The Orb is back in the middle.', 1800); });
       wireSwitch($('#swTowerTalk', body), (talk) => { draft.tower = { ...(draft.tower || {}), talk }; });
       wireDiscordSettings(body);
-      $('#sTowerName', body).addEventListener('input', (e) => { draft.tower = { ...(draft.tower || {}), name: e.target.value.trim().toUpperCase() || 'COMM TOWER 1' }; });
-      $('#sTowerStyle', body).addEventListener('click', (e) => {
-        const b = e.target.closest('[data-style]');
-        if (!b) return;
-        draft.tower = { ...(draft.tower || {}), style: b.dataset.style };
-        $('#sTowerStyle', body).querySelectorAll('[data-style]').forEach((x) => x.classList.toggle('on', x === b));
-      });
-      $('#sTowerLayer', body).addEventListener('click', (e) => {
-        const b = e.target.closest('[data-layer]');
-        if (!b) return;
-        draft.tower = { ...(draft.tower || {}), layer: b.dataset.layer };
-        $('#sTowerLayer', body).querySelectorAll('[data-layer]').forEach((x) => x.classList.toggle('on', x === b));
-      });
-      $('#sTowerSkin', body).addEventListener('click', (e) => {
-        const b = e.target.closest('[data-skin]');
-        if (!b) return;
-        draft.tower = { ...(draft.tower || {}), skin: b.dataset.skin };
-        $('#sTowerSkin', body).querySelectorAll('[data-skin]').forEach((x) => x.classList.toggle('on', x === b));
-      });
-      $('#sTowerUrl', body).addEventListener('input', (e) => { draft.tower = { ...(draft.tower || {}), browserUrl: e.target.value.trim() }; });
       const aiMem = () => {
         const box = $('#sAiMem', body);
         if (!box) return;
         const mem = (app.S.ai && app.S.ai.memory) || [];
-        box.innerHTML = `<div class="toggle-row"><span>${mem.length} remembered · ${((app.S.ai && app.S.ai.chat) || []).length} messages in the chat</span><span><button type="button" class="btn line" data-ai="chat">CLEAR CHAT</button> <button type="button" class="btn line" data-ai="all">FORGET ALL</button></span></div>`
-          + (mem.length ? `<div class="ai-mem">${mem.map((m) => `<div class="toggle-row"><span>${esc(m.t)}</span><button type="button" class="btn line" data-ai-x="${esc(m.id)}" aria-label="Forget this">✕</button></div>`).join('')}</div>` : '');
+        const open = box.querySelector('details[open]') ? ' open' : '';
+        box.innerHTML = `<div class="inline" style="flex:none;gap:8px;align-items:center"><span class="sys-val" style="flex:1">${mem.length} note${mem.length === 1 ? '' : 's'} · ${((app.S.ai && app.S.ai.chat) || []).length} messages</span><button type="button" class="btn line" data-ai="chat">CLEAR CHAT</button><button type="button" class="btn line" data-ai="all">FORGET ALL</button></div>`
+          + (mem.length ? `<details class="sys-more"${open}><summary>SHOW THE NOTES</summary><div class="ai-mem">${mem.map((m) => `<div class="toggle-row"><span>${esc(m.t)}</span><button type="button" class="btn line" data-ai-x="${esc(m.id)}" aria-label="Forget this">✕</button></div>`).join('')}</div></details>` : '');
       };
       aiMem();
       $('#sAiMem', body).addEventListener('click', (e) => {
@@ -1594,7 +1552,6 @@ export function openSettings(welcome = false) {
         }
         aiMem();
       });
-      $('#sTowerHome', body).addEventListener('click', () => { if (window.deck.tower && window.deck.tower.home) window.deck.tower.home(); app.toast('Back in the corner.', 1800); });
       wireSwitch($('#swBrief', body), (on) => { draft.morningBriefing = on; });
       $('#sVoice', body).addEventListener('change', (e) => { draft.voiceName = e.target.value; });
       $('#sNeural', body).addEventListener('change', (e) => { draft.neuralVoice = e.target.value; });

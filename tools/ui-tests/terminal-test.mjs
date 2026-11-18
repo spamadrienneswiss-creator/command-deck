@@ -121,9 +121,7 @@ for (const look of LOOK ? [LOOK] : ['cockpit', 'hairline']) {
   await page.screenshot({ path: path.join(OUT, `${look}-queue.png`) });
   await page.click('#ft [data-ft-done="t5"]'); await page.waitForTimeout(500);
   check(await page.evaluate(() => JSON.parse(localStorage.getItem('fu.tasks')).find((t) => t.id === 't5').done === true), `${look}: tick marks done`);
-  await page.click('#ft [data-ft-tab="projects"]'); await page.waitForTimeout(200);
-  check((await page.$$('#ft [data-ft-pj]')).length === 2, `${look}: projects`);
-  await page.screenshot({ path: path.join(OUT, `${look}-projects.png`) });
+  check(await page.$('#ft [data-ft-tab="projects"]') === null, `${look}: no PROJECTS tab (removed in v1.38)`);
   await page.click('#ft [data-ft-tab="schedule"]'); await page.waitForTimeout(300);
   check(await page.evaluate(() => !document.body.classList.contains('ft-live') && !!document.querySelector('[data-new-sched]')), `${look}: SCHEDULE tab opens the schedule`);
   await page.screenshot({ path: path.join(OUT, `${look}-schedule.png`) });

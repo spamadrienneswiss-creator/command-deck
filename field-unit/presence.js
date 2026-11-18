@@ -824,7 +824,6 @@ function contextBlock() {
     finished.length ? `Finished in the last week:\n${finished.join('\n')}` : '',
     'Calendar, past 3 days and next 60:', events.join('\n') || '- nothing',
     sched.length ? `Schedule (shifts and appointments):\n${sched.join('\n')}` : '',
-    'Projects:', projects.join('\n') || '- none',
     notes.length ? `Recent notes:\n${notes.join('\n')}` : '',
     recaps.length ? `Recent meeting recaps:\n${recaps.join('\n')}` : ''
   ].filter(Boolean).join('\n');

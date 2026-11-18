@@ -15,7 +15,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.37.0';
+const VERSION = 'v1.38.0';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -188,14 +188,6 @@ function applyLook(theme = look.theme, font = look.font, ink = look.ink) {
   applyPanelNames(look.theme);
 }
 
-// The deck theme's colors, for Comm Tower 1's "Match theme" dial color.
-function towerColors() {
-  if (!deck.tower || !deck.tower.state) return;
-  const cs = getComputedStyle(document.body);
-  const g = (v) => cs.getPropertyValue(v).trim();
-  deck.tower.state({ theme: { p: g('--amber'), s: g('--lav'), a: g('--coral') } });
-}
-
 function applySettings() {
   renderKeys();
   const s = S.settings;
@@ -205,7 +197,6 @@ function applySettings() {
   applyLook(s.theme, s.font, s.ink);
   document.body.dataset.frame = s.frame || 'dark';
   document.body.dataset.trim = s.trim || 'none';
-  towerColors();
   sounds.setQuiet(isQuiet());
   sounds.setLevel(s.sound);
   $('#consoleName').textContent = (s.consoleName || 'Command Deck').toUpperCase();
@@ -547,9 +538,10 @@ function renderCalendar() {
 // ---------------------------------------------------------------- projects
 const PROJECT_COLORS = ['#F2A65A', '#A8B0D8', '#F4B6A0', '#B8E27A', '#D9A9C6', '#4FD1E8'];
 
-function projectActive(id) {
-  const p = id && S.projects.find((x) => x.id === id);
-  return !!(p && p.status !== 'done');
+// Projects were removed from the deck in v1.38 (their saved data stays, so nothing is lost):
+// every task now lives in the Queue, so no project counts as live.
+function projectActive() {
+  return false;
 }
 
 // Finished one-off tasks leave the next day, unless they belong to a live project.
@@ -858,7 +850,6 @@ function recapMeta(n) {
 }
 
 function renderNotes() {
-  orbPush();
   const el = $('#ntList');
   if (!el) return;
   const norm = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
@@ -1077,7 +1068,6 @@ function wireNotes() {
 }
 
 function renderEvents() {
-  orbPush();
   const now = new Date();
   const sel = S.selectedDate || U.startOfDay(now);
   const fromToday = U.sameDay(sel, now);
@@ -1172,7 +1162,6 @@ function taskRow(t, now) {
   if (cat) meta.push(`<span class="tag" style="color:${esc(cat.color)};box-shadow:inset 0 0 0 1px ${esc(cat.color)}66">${esc(cat.name.toUpperCase())}</span>`);
   meta.push(`<span class="${over ? 'over' : ''}">${over ? 'OVERDUE · ' : ''}${dueLabel(t, now)}</span>`);
   const proj = t.projectId && S.projects.find((p) => p.id === t.projectId);
-  if (proj) meta.push(`<span class="ic pj-tag" style="color:${esc(proj.color || 'var(--lav)')}"><i style="background:${esc(proj.color || 'var(--lav)')}"></i>${esc(proj.name.toUpperCase())}</span>`);
   if (t.assignee) meta.push(`<span class="ic">${IC.person}${esc(t.assignee.toUpperCase())}</span>`);
   if (t.reminder != null && t.due) meta.push(`<span class="ic rem" title="Reminder set">${IC.bell}</span>`);
   if (t.repeat && t.repeat.type !== 'none') meta.push(`<span class="ic">${IC.repeat}${U.repeatLabel(t.repeat)}</span>`);
@@ -1193,7 +1182,7 @@ function taskRow(t, now) {
 }
 
 function renderTasks() {
-  orbPush();
+  if (S.tkView === 'projects') S.tkView = 'queue'; // Projects were removed in v1.38
   $$('.tk-views button[data-tkview]').forEach((b) => b.classList.toggle('on', b.dataset.tkview === S.tkView));
   $('#btnAddTask').textContent = S.tkView === 'projects' ? '+ PROJECT' : S.tkView === 'schedule' ? '+ ADD' : '+ ADD TASK';
   $('#tkChips').hidden = S.tkView !== 'queue';
@@ -1793,31 +1782,18 @@ async function handleCommand(text, { fromVoice = false, noEdit = false, skipLog 
   else if (mcmd) { r = { intent: 'meeting' }; ({ reply, kind } = await meetingDo(mcmd)); }
   else switch (r.intent) {
     case 'add-task': {
-      const { projectName, ...fields } = r.task;
-      let started = null;
-      if (!fields.projectId && projectName) { started = newProject(projectName); fields.projectId = started.id; }
+      const { projectName, projectId, ...fields } = r.task;
       const t = { ...blankTask(), ...fields };
       upsertTask(t, true);
       made = t;
-      const proj = t.projectId && S.projects.find((p) => p.id === t.projectId);
-      reply = withQuip(`${started ? `New project started: ${started.name}. ` : ''}${taskConfirmation(t)}${proj && !started ? ` Filed under ${proj.name}.` : ''}`, t.priority === 'high' ? 'taskHigh' : 'task');
+      reply = withQuip(taskConfirmation(t), t.priority === 'high' ? 'taskHigh' : 'task');
       kind = 'ok';
       break;
     }
-    case 'add-project': {
-      const existing = findProject(r.name);
-      if (existing && existing.name.toLowerCase() === r.name.toLowerCase()) { reply = `${existing.name} is already a project.`; kind = 'err'; break; }
-      const p = newProject(r.name);
-      reply = `Project started: ${p.name}. Add tasks with "… to the ${p.name.toLowerCase()} project."`;
-      kind = 'ok';
-      break;
-    }
+    case 'add-project':
     case 'project-status': {
-      const p = findProject(r.query);
-      if (!p) { reply = `No active project matches ${r.query}.`; kind = 'err'; break; }
-      const st = projectStats(p);
-      reply = `${p.name}: ${st.pct} percent complete, ${st.done} of ${st.total} tasks done.${st.next ? ` Next: ${st.next.title}.` : ''}${p.due ? ` Due ${U.spokenDay(projectDue(p))}.` : ''}`;
-      kind = 'ok';
+      reply = 'Projects are off on this deck now. Add it as a task instead.';
+      kind = 'err';
       break;
     }
     case 'list-projects': {
@@ -2087,11 +2063,7 @@ async function listenTurn() {
 
 // ---------------------------------------------------------------- terminal (v1.27)
 // Listening is off: you type, the deck answers (and can still say it out loud). One
-// responder, two screens: the deck's own terminal over the panels, and Comm Tower 1's
-// pop-up (its own window; lines travel there through the main process).
-function towerSend(st) {
-  if (deck.tower) deck.tower.state(st);
-}
+// responder: the deck's own terminal over the panels.
 const CARD_HEAD = { 'add-task': '✓ TASK LOGGED', 'add-event': '✓ EVENT SCHEDULED', 'add-note': '✓ NOTE FILED', 'set-timer': '✓ TIMER SET', 'set-alarm': '✓ ALARM SET', 'add-project': '✓ PROJECT STARTED', 'complete-task': '✓ MARKED DONE' };
 function termCard(intent, t) {
   const head = CARD_HEAD[intent];
@@ -2138,19 +2110,12 @@ function towerContext() {
   lines.push(ev.length ? ev.map((e) => `- ${dayName(e.start)}${e.allDay ? ' (all day)' : ` ${U.fmtTimeShort(e.start, false)}–${U.fmtTimeShort(e.end, false)}`}: ${e.title}${e.end < now ? ' (past)' : ''}`).join('\n') : '- nothing');
   const sched = (S.schedule || []).filter((x) => !x.deleted && x.date && new Date(`${x.date}T00:00`) >= from && new Date(`${x.date}T00:00`) <= soon).slice(0, 40);
   if (sched.length) lines.push('Schedule (shifts and appointments):', sched.map((x) => `- ${x.date}: ${[x.type, x.title, x.start && `${x.start}${x.end ? `–${x.end}` : ''}`, x.note].filter(Boolean).join(' · ')}`).join('\n'));
-  const proj = (id) => { const p = id && S.projects.find((x) => x.id === id); return p ? p.name : ''; };
+  const proj = () => ''; // projects removed in v1.38
   const tasks = activeTasks().slice().sort((a, b) => (a.due ? new Date(a.due) : Infinity) - (b.due ? new Date(b.due) : Infinity)).slice(0, 90);
   lines.push('Open tasks:');
   lines.push(tasks.length ? tasks.map((t) => `- ${t.title}${t.due ? ` (due ${spokenWhen(t.due, t.dueHasTime)}${isOverdue(t, now) ? ', OVERDUE' : ''})` : ''}${t.priority === 'high' ? ' [high priority]' : ''}${proj(t.projectId) ? ` [project: ${proj(t.projectId)}]` : ''}`).join('\n') : '- none');
   const done = S.tasks.filter((t) => t.done && t.doneAt && new Date(t.doneAt) > new Date(now.getTime() - 7 * 864e5)).sort((a, b) => new Date(b.doneAt) - new Date(a.doneAt)).slice(0, 20);
   if (done.length) lines.push('Finished in the last week:', done.map((t) => `- ${t.title} (${dayName(new Date(t.doneAt))})`).join('\n'));
-  const projects = (S.projects || []).filter((p) => p.status !== 'done');
-  if (projects.length) {
-    lines.push('Projects:', projects.map((p) => {
-      const pt = S.tasks.filter((t) => t.projectId === p.id);
-      return `- ${p.name}${p.goal ? `: ${String(p.goal).slice(0, 160)}` : ''} (${pt.filter((t) => t.done).length}/${pt.length} tasks done${p.due ? `, due ${p.due}` : ''})`;
-    }).join('\n'));
-  }
   const byDate = (n) => new Date(n.editedAt || n.createdAt || 0);
   const notes = (S.notes || []).filter((n) => !Recap.isRecap(n)).sort((a, b) => byDate(b) - byDate(a)).slice(0, 12);
   if (notes.length) lines.push('Recent notes:', notes.map((n) => `- ${n.title || 'Untitled'} (${dayName(byDate(n))})${n.body && String(n.body).trim() !== n.title ? `: ${String(n.body).replace(/\s+/g, ' ').slice(0, 400)}` : ''}`).join('\n'));
@@ -2315,87 +2280,7 @@ const deckSink = {
   card: (c) => termAdd({ k: 'card', ...c }),
   busy: (b) => { $('#term').classList.toggle('busy', b); renderTerm(); }
 };
-const towerSink = {
-  line: (k, t) => towerSend({ line: { k, t } }),
-  card: (c) => towerSend({ line: { k: 'card', ...c } }),
-  busy: (b) => towerSend({ busy: b })
-};
 
-// ---------------------------------------------------------------- the Orb (v1.35)
-// Its own window on the second screen (renderer/orb.*). The deck sends it a snapshot of the
-// day whenever something changes, and runs what it asks for: Comms lines go through the same
-// responder as the terminals, task check-offs, and the meeting recorder.
-function orbSend(st) {
-  if (deck.orb) deck.orb.state(st);
-}
-const orbSink = {
-  line: (k, t) => orbSend({ line: { k, t } }),
-  card: (c) => orbSend({ line: { k: 'card', ...c } }),
-  busy: (b) => orbSend({ busy: b })
-};
-function orbWhen(d, allDay, now = new Date()) {
-  const day = U.sameDay(d, now) ? 'TODAY' : U.sameDay(d, U.addDays(now, 1)) ? 'TMRW' : U.DAY_FULL[d.getDay()].slice(0, 3).toUpperCase();
-  return allDay ? day : `${day} ${U.fmtTimeShort(d, S.settings.clock24)}`;
-}
-function orbSnap() {
-  const now = new Date();
-  const hour = new Date(now.getTime() + 3600e3);
-  const events = allEvents().filter((e) => e.end > now).slice(0, 8);
-  const open = sortTasks(activeTasks(), now);
-  const late = open.filter((t) => isOverdue(t, now));
-  const dueToday = open.filter((t) => t.due && U.sameDay(new Date(t.due), now));
-  const soon = events.some((e) => !e.allDay && e.start > now && e.start <= hour) || open.some((t) => t.dueHasTime && !isOverdue(t, now) && new Date(t.due) <= hour);
-  const byDate = (n) => new Date(n.editedAt || n.createdAt || 0);
-  const notes = (S.notes || []).slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || byDate(b) - byDate(a)).slice(0, 6).map((n) => {
-    let sub = U.dayLabel(byDate(n), now);
-    if (Recap.isRecap(n)) {
-      const r = n.recap;
-      sub = r.status === 'recording' ? 'Recording now' : r.summary ? `Recap · ${(r.actions || []).length} action item${(r.actions || []).length === 1 ? '' : 's'}` : 'Recap · working on it';
-    } else if (n.body) sub += ` · ${String(n.body).replace(/\s+/g, ' ').slice(0, 48)}`;
-    return { id: n.id, title: n.title || 'Untitled', sub, recap: Recap.isRecap(n) };
-  });
-  let wx = '';
-  try {
-    const w = S.weather;
-    if (w && w.current) wx = `${Math.round(w.current.temperature_2m)}° ${wxInfo(w.current.weather_code, w.current.is_day).words} · low ${Math.round(w.daily.temperature_2m_min[0])}°`;
-  } catch (e) { /* no weather yet */ }
-  const left = dueToday.length + late.length;
-  const name = S.settings.operatorName || '';
-  const part = U.partOfDay();
-  const hello = `Good ${part === 'night' ? 'evening' : part}${name ? `, ${name}` : ''}.`;
-  return {
-    at: now.getTime(),
-    name, clock24: !!S.settings.clock24, motion: S.settings.motion || 'full',
-    hello: `${hello} ${late.length ? `${late.length} overdue, ` : ''}${left ? `${left} thing${left === 1 ? '' : 's'} on today.` : 'Nothing else due today.'}`,
-    wx, late: late.length > 0, soon,
-    events: events.map((e) => ({ when: orbWhen(e.start, e.allDay, now), title: e.title || 'Event', soon: !e.allDay && e.start > now && e.start <= hour, now: e.start <= now })),
-    tasks: open.slice(0, 8).map((t) => ({ id: t.id, title: t.title, due: t.due ? dueLabel(t, now) : '', late: isOverdue(t, now) })),
-    more: Math.max(0, open.length - 8),
-    notes
-  };
-}
-let orbT = null;
-function orbPush() {
-  if (!deck.orb) return;
-  clearTimeout(orbT);
-  orbT = setTimeout(() => { try { orbSend({ snap: orbSnap() }); } catch (e) { console.warn('orb snapshot', e); } }, 250);
-}
-function wireOrb() {
-  if (!deck.orb) return;
-  deck.orb.onHello(() => { orbPush(); orbSend({ rec: Meet.recState() }); });
-  deck.orb.onAct(async (a) => {
-    if (!a) return;
-    if (a.kind === 'send' && a.text) await respond(a.text, orbSink);
-    else if (a.kind === 'done' && a.id) completeTask(a.id);
-    else if (a.kind === 'rec') {
-      const res = await meetingDo(a);
-      orbSink.line(res.kind === 'err' ? 'err' : 'c', res.reply);
-    }
-    orbPush();
-  });
-  setInterval(orbPush, 60 * 1000);
-  orbPush();
-}
 function termChips() {
   const chips = [['Status report', 'status report'], ["What's next", "what's next"], ['Take a note', 'take a note: ', true], ['Add to calendar', 'schedule ', true], ['Timer 10 min', 'set a timer for 10 minutes']];
   if (DV.status === 'live') chips.push(DV.mute || DV.deaf ? ['Unmute me', 'unmute me'] : ['Mute me', 'mute me']);
@@ -2467,8 +2352,9 @@ function wireTerm() {
 }
 
 // ---------------------------------------------------------------- record a meeting (v1.28)
-// Computer audio + your mic into Data Recap (renderer/meeting.js). Driven from Comm Tower 1
-// (REC in its terminal) or typed: "record meeting [called …]", "stop / pause / resume / discard recording".
+// Computer audio + your mic into Data Recap (renderer/meeting.js). Typed in the terminal:
+// "record meeting [called …]", "stop / pause / resume / discard recording". While it runs, a
+// REC tag in the header shows the time; click it to stop (v1.38, after the dial was removed).
 function meetingCommand(text) {
   const t = String(text || '').trim().replace(/[.!]+$/, '');
   let m = t.match(/^(?:start\s+)?record(?:ing)?\s+(?:a\s+|the\s+|this\s+)?(?:meeting|call|zoom(?:\s+call)?)(?:\s+(?:called|named|titled)\s+(.+))?$/i) || t.match(/^start\s+recording(?:\s+(?:called|named|titled)\s+(.+))?$/i);
@@ -2503,7 +2389,7 @@ async function meetingDo(c) {
 function wireMeeting() {
   Meet.initMeeting({
     deck,
-    send: (st) => { towerSend({ rec: st }); orbSend({ rec: st }); },
+    send: (st) => renderRecTag(st),
     createNote: (id, title, sources) => {
       const now = new Date().toISOString();
       S.notes.unshift({
@@ -2521,14 +2407,16 @@ function wireMeeting() {
       deck.recap.remove(id).catch(() => {});
     }
   });
-  // Comm Tower 1's REC controls.
-  if (deck.tower && deck.tower.onRec) {
-    deck.tower.onRec(async (a) => {
-      const res = await meetingDo(a || {});
-      towerSink.line(res.kind === 'err' ? 'err' : 'c', res.reply);
-    });
-  }
-  towerSend({ rec: Meet.recState() });
+  $('#recTag').addEventListener('click', () => { sounds.click(); openTerm(); respond('stop recording', deckSink); });
+  setInterval(() => { if (Meet.isRecording()) renderRecTag(Meet.recState()); }, 1000);
+  renderRecTag(Meet.recState());
+}
+function renderRecTag(st) {
+  const on = !!st && ['recording', 'paused', 'starting'].includes(st.state);
+  const el = $('#recTag');
+  el.hidden = !on;
+  document.body.classList.toggle('rec', on);
+  if (on) el.textContent = `${st.state === 'paused' ? 'PAUSED' : 'REC'} ${Meet.clock(st.elapsed)}`;
 }
 
 // ---------------------------------------------------------------- Discord voice
@@ -3602,15 +3490,12 @@ async function start() {
   buildWave();
   Motion.start();
   if (deck.onAway) deck.onAway((away) => { Motion.setAway(away); voicesAway(away); });
-  if (deck.tower) deck.tower.onText((t) => respond(t, towerSink));
-  wireOrb();
   wireTerm();
   wireDiscord();
   wireBrowser();
   wireKeys();
   window.__discordState = (st) => renderDiscord(st); // test hook: tools/deck-shots.js shows the icon states
   window.__termSend = (t) => { openTerm(); return respond(t, deckSink); }; // test hooks: tools/deck-shots.js types into the terminals
-  window.__towerSend = (t) => respond(t, towerSink);
   wireUpdates();
   wireLights();
   applySettings();
@@ -3759,8 +3644,8 @@ async function start() {
       if (!n.recap || n.recap.origin !== 'deck') return;
       const acts = (n.recap.actions || []).length;
       const line = `Recap ready: ${n.title}.${acts ? ` ${acts} action${acts === 1 ? '' : 's'} to look at in Notepad › RECAPS.` : ' It\'s in Notepad › RECAPS.'}`;
-      towerSink.line('ok', line);
-      if (termLines.length) deckSink.line('ok', line);
+      deckSink.line('ok', line);
+      toast(line);
     }
   });
   wireMeeting();

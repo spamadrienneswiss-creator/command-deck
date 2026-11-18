@@ -12,7 +12,7 @@ import * as T from './terminal.js';
 import * as AM from './lib/aimem.js';
 
 const { $, $$, esc } = U;
-const VERSION = 'v1.37.0';
+const VERSION = 'v1.38.0';
 // Field Scan (the in-app text reader) is switched off for now; the code stays for when it comes back.
 const FIELD_SCAN = false;
 const STANDALONE = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
@@ -750,10 +750,9 @@ function findProject(query) {
 }
 // The Queue keeps loose tasks; tasks in a live project live under PROJECTS,
 // except ones due today or overdue, which stay in the Queue tagged with their project.
-function inQueue(t, now = new Date()) {
-  const p = projectById(t.projectId);
-  if (!p || p.status === 'done') return true;
-  return isOverdue(t, now) || !!(t.due && U.sameDay(new Date(t.due), now));
+// Projects were removed in v1.38 (their data stays): every task lives in the Queue.
+function inQueue() {
+  return true;
 }
 function pjOpen() { return load('fu.pjOpen', {}); }
 function projectGroup(p, now) {
@@ -816,7 +815,7 @@ function taskRow(t, now, { swipe = true } = {}) {
   if (t.done) cls.push('done');
   if (over) cls.push('over');
   const segs = [0, 1, 2].map((i) => `<i style="${!t.done && i < pri.n ? `background:${pri.color}` : ''}"></i>`).join('');
-  const proj = projectById(t.projectId);
+  const proj = null; // projects removed in v1.38
   const crewBits = [t.done && t.doneBy ? `DONE BY ${t.doneBy.toUpperCase()}` : !t.done && t.addedBy ? `ADDED BY ${t.addedBy.toUpperCase()}` : '', (t.comments || []).length ? `${t.comments.length} NOTE${t.comments.length > 1 ? 'S' : ''}` : ''].filter(Boolean).join(' · ');
   const extra = [crewBits, t.assignee ? t.assignee.toUpperCase() : '', t.repeat && t.repeat.type !== 'none' ? U.repeatLabel(t.repeat) : '', t.subtasks && t.subtasks.length ? `${t.subtasks.filter((s) => s.done).length}/${t.subtasks.length}` : ''].filter(Boolean).join(' · ');
   return `<div class="${cls.join(' ')}" data-id="${esc(t.id)}">
@@ -887,8 +886,7 @@ function viewToday() {
 
 function tasksHead() {
   const n = active().filter((t) => inQueue(t)).length;
-  const live = liveProjects().length;
-  const v = S.tkView;
+  const v = S.tkView === 'projects' ? 'queue' : S.tkView;
   const thisWeek = weekDays(S.schedule, weekStart(new Date())).reduce((k, d) => k + d.items.length, 0);
   const add = v === 'projects' ? 'data-new-project aria-label="New project"' : v === 'schedule' ? 'data-new-sched aria-label="Add to schedule"' : 'data-new-task aria-label="Add task"';
   const tab = (id, label) => `<button type="button" role="tab" aria-selected="${v === id}" class="${v === id ? 'on' : ''}" data-tkview="${id}">${label}</button>`;
@@ -897,7 +895,7 @@ function tasksHead() {
       <h1 class="h1" style="margin:0;font-size:28px">Tasks</h1>
       <button type="button" class="icon-btn accent" ${add} style="margin-right:-8px">${IC.plus}</button>
     </header>
-    <div class="seg seg3" role="tablist" aria-label="View">${tab('queue', `QUEUE · ${n}`)}${tab('projects', `PROJECTS · ${live}`)}${tab('schedule', `SCHEDULE · ${thisWeek}`)}</div>`;
+    <div class="seg" role="tablist" aria-label="View">${tab('queue', `QUEUE · ${n}`)}${tab('schedule', `SCHEDULE · ${thisWeek}`)}</div>`;
 }
 
 // ---------------------------------------------------------------- schedule (shifts & appointments)
@@ -1103,7 +1101,7 @@ function viewProjects() {
 }
 
 function viewTasks() {
-  if (S.tkView === 'projects') return viewProjects();
+  if (S.tkView === 'projects') S.tkView = 'queue'; // Projects were removed in v1.38
   if (S.tkView === 'schedule') return viewSchedule();
   const now = new Date();
   const cats = categories();
@@ -1492,7 +1490,7 @@ function recapSheetHtml(n) {
   const audio = a.deleted ? 'AUDIO DELETED · TRANSCRIPT KEPT' : a.deleting ? 'DELETING THE AUDIO…' : `AUDIO ON COMMAND · ${at == null ? 'KEPT' : `DELETES ${U.MONTHS[new Date(at).getMonth()].slice(0, 3).toUpperCase()} ${new Date(at).getDate()}`}`;
   return `${head}${tabs}${content}
     <div class="rc-audio"><span>${audio}</span>${a.deleted || a.deleting ? '' : `<button type="button" class="chip" data-rc-keep="${a.keep === 'keep' ? 'd30' : 'keep'}">${a.keep === 'keep' ? '30 DAYS' : 'KEEP'}</button><button type="button" class="chip" data-rc-keep="now" style="--pc:var(--coral)">DELETE NOW</button>`}</div>
-    <div class="sheet-foot wrap"><button type="button" class="btn line" data-rc-copy>COPY RECAP</button><button type="button" class="btn line" data-rc-project>ADD TO PROJECT</button><button type="button" class="btn danger" data-rc-del>DELETE</button></div>`;
+    <div class="sheet-foot wrap"><button type="button" class="btn line" data-rc-copy>COPY RECAP</button><button type="button" class="btn danger" data-rc-del>DELETE</button></div>`;
 }
 
 function openRecapSheet(id) {
@@ -1861,7 +1859,7 @@ function openTaskEditor(task, preset = {}) {
       <div><span class="label" style="display:block;margin-bottom:8px">TIME</span><input class="in" type="time" id="eTime" value="${t.dueHasTime ? U.toTimeInput(t.due) : ''}"></div></div>
     <div class="f"><span class="label">PRIORITY</span><div class="pills">${pills([['high', 'HIGH', 'var(--coral)'], ['medium', 'MED', 'var(--amber)'], ['low', 'LOW', 'var(--lav)']], t.priority, 'priority')}</div></div>
     <div class="f"><span class="label">CATEGORY</span><div class="pills">${pills(cats, t.category || '', 'category')}</div></div>
-    ${pjs.length ? `<div class="f"><span class="label">PROJECT</span><div class="pills">${pills(pjOpts, t.projectId || '', 'projectId')}</div></div>` : ''}
+    ${pjs.length && false ? `<div class="f"><span class="label">PROJECT</span><div class="pills">${pills(pjOpts, t.projectId || '', 'projectId')}</div></div>` : ''}
     <div class="f"><span class="label">ASSIGNED TO</span><div class="pills">${pills(ppl, t.assignee || '', 'assignee')}</div></div>
     <div class="f f-row">
       <div><span class="label" style="display:block;margin-bottom:8px">REMINDER</span><select class="sel" id="eRem">${REMINDERS.map(([v, l]) => `<option value="${v == null ? '' : v}"${t.reminder === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
@@ -2243,7 +2241,6 @@ const IC_TERM = '<svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="tr
 const CHIPS = [
   ['Status report', 'status report'],
   ['Take a note', 'take a note: ', true],
-  ['New project', 'new project ', true],
   ['Add to calendar', 'schedule ', true]
 ];
 
@@ -2745,7 +2742,7 @@ function spokenWhen(iso, hasTime) {
 
 function taskFields(t) {
   const cat = categoryById(t.category);
-  const proj = projectById(t.projectId);
+  const proj = null; // projects removed in v1.38
   const f = [['TITLE', t.title]];
   if (t.due) f.push(['DUE', `${U.dayLabel(new Date(t.due))}${t.dueHasTime ? ` · ${U.fmtTimeShort(new Date(t.due), clock24())}` : ''}`]);
   f.push(['PRIORITY', `${(PRI[t.priority] || PRI.medium).label}${cat ? ` · ${cat.name.toUpperCase()}` : ''}`]);
@@ -2873,35 +2870,14 @@ async function runCommand(text) {
     case 'add-task': {
       const { projectName, ...rest } = r.task;
       const t = { ...blankTask(), ...rest };
-      let started = null;
-      if (!t.projectId && projectName) { started = newProject(projectName); t.projectId = started.id; }
-      const proj = projectById(t.projectId);
+      delete t.projectId;
       upsertTask(t);
-      const tail = started ? ` New project started: ${started.name}.` : proj ? ` Filed under ${proj.name}.` : '';
-      return transmit('TASK LOGGED', taskFields(t), `${pick('copy')} ${taskSummary(t)}.${tail}`, () => { deleteTask(t.id); if (started) deleteProject(started.id); });
+      return transmit('TASK LOGGED', taskFields(t), `${pick('copy')} ${taskSummary(t)}.`, () => deleteTask(t.id));
     }
-    case 'add-project': {
-      const name = String(r.name || '').trim().replace(/^(?:the|a|an)\s+/i, '').replace(/\s+project$/i, '');
-      if (!name) return fail('Name the project. Try: new project garage cleanout.');
-      const existing = findProject(name);
-      if (existing && existing.name.toLowerCase() === name.toLowerCase()) return say(`${existing.name} already exists. File tasks with "…to the ${existing.name.toLowerCase()} project."`, 'sys');
-      const p = newProject(name.charAt(0).toUpperCase() + name.slice(1));
-      await transmit('PROJECT STARTED', [['PROJECT', p.name], ['COLOR', 'ASSIGNED']], `${pick('copy')} New project: ${p.name}.`, () => deleteProject(p.id));
-      return say(`File tasks with "…to the ${p.name.toLowerCase()} project."`, 'dim');
-    }
-    case 'project-status': {
-      const p = findProject(r.query);
-      if (!p) return fail(r.query ? `No active project matches ${r.query}.` : 'Which project? Try: how\'s the garage cleanout project.');
-      const rep = projectReport(p);
-      await say(rep.line);
-      return card({ head: 'PROJECT STATUS', tone: 'info', fields: rep.fields });
-    }
-    case 'list-projects': {
-      const list = liveProjects();
-      if (!list.length) return say('No active projects. Try: new project garage cleanout.', 'sys');
-      await say(`${list.length} active project${list.length > 1 ? 's' : ''}.`);
-      return card({ head: 'PROJECTS', tone: 'info', fields: list.slice(0, 8).map((p) => { const st = projectStats(p); return [`${st.pct}%`, `${p.name}${p.due ? ` · ${projectDueLabel(p)}` : ''}`]; }) });
-    }
+    case 'add-project':
+    case 'project-status':
+    case 'list-projects':
+      return say('Projects are off now. Add it as a task instead.', 'sys');
     case 'add-note': {
       if (!r.note) return fail('Ready. Type "take a note:", then what it should say.');
       const n = saveNote({ id: makeId('n_'), title: r.note.title, body: r.note.body, pinned: false, src: 'comms' }, true);

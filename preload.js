@@ -53,19 +53,9 @@ contextBridge.exposeInMainWorld('deck', {
   },
   openBrowser: () => ipcRenderer.invoke('deck:browser'),
   keys: (a) => ipcRenderer.invoke('deck:keys', a),
-  orb: {
-    state: (st) => ipcRenderer.send('orb:state', st),
-    home: () => ipcRenderer.send('orb:home'),
-    onAct: (fn) => ipcRenderer.on('orb:act', (_e, a) => fn(a)),
-    onHello: (fn) => ipcRenderer.on('orb:hello', () => fn())
-  },
   tower: {
-    state: (st) => ipcRenderer.send('tower:state', st),
-    home: () => ipcRenderer.send('tower:home'),
     word: (opts) => ipcRenderer.invoke('tower:word', opts),
-    lookup: (opts) => ipcRenderer.invoke('tower:lookup', opts),
-    onText: (fn) => ipcRenderer.on('tower:text', (_e, t) => fn(t)),
-    onRec: (fn) => ipcRenderer.on('tower:rec', (_e, a) => fn(a))
+    lookup: (opts) => ipcRenderer.invoke('tower:lookup', opts)
   },
   onTermOpen: (fn) => ipcRenderer.on('term:open', () => fn()),
   onSettingsChanged: (fn) => ipcRenderer.on('deck:settings-changed', (_e, s) => fn(s))

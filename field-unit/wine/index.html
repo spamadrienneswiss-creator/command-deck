@@ -1,26 +1,23 @@
 <!doctype html>
-<html lang="en" data-mood="day">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E0C0A">
 <title>Wine Log</title>
-<meta name="theme-color" content="#F6F1E6">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Wine Log">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/icon-180.png">
-<link rel="icon" type="image/png" href="icons/icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;1,6..96,400;1,6..96,500&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Marcellus&family=Jost:wght@300;400;500&display=swap">
-<link rel="stylesheet" href="styles.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #0E0C0A; color: #EFE6D6; font: 16px/1.5 Georgia, serif; }
+  main { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 32px; box-sizing: border-box; }
+  h1 { font-weight: 400; font-size: 30px; margin: 0 0 12px; color: #C9A464; }
+  p { max-width: 320px; margin: 0 0 10px; color: #CFC4B2; }
+</style>
 </head>
 <body>
-<div id="app" aria-live="polite"></div>
-<input type="file" id="camera" accept="image/*" capture="environment" class="sr" tabindex="-1" aria-hidden="true">
-<input type="file" id="library" accept="image/*" class="sr" tabindex="-1" aria-hidden="true">
-<script type="module" src="app.js"></script>
+<main>
+  <h1>Wine Log is resting</h1>
+  <p>It has been set aside for now and will come back as its own app. Your tastings are kept safe with Command Deck.</p>
+  <p>You can remove this icon from your Home Screen.</p>
+</main>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => { if (r.scope.endsWith('/wine/')) r.update(); }));</script>
 </body>
 </html>

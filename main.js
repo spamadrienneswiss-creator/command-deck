@@ -17,9 +17,6 @@ let QRCode = null;
 
 // Sound effects and the boot sequence should play without a click first.
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
-// Windows' window-occlusion check can decide a see-through, always-on-top window is hidden and stop
-// painting it (Comm Tower 1's dial then looks frozen and ignores clicks). Turn that check off.
-app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 
 // A private "deck://" scheme serves the app's own files. It lets the voice
 // engine load its WebAssembly and modules the same way a website would.
@@ -33,8 +30,6 @@ const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
 
 let win = null;
-let tower = null; // Comm Tower 1: the dial (its own small window)
-let orb = null; // the Orb (v1.35): Command Deck as living light on the second screen
 let discord = null; // Discord voice: live mute / deafen (src/discord.js)
 let tray = null;
 const ICON = path.join(__dirname, 'assets', 'icon.png');
@@ -173,24 +168,6 @@ function rebuildTrayMenu() {
         win.webContents.send('deck:settings-changed', s);
       }
     },
-    {
-      label: `Show ${towerSettings().name.replace(/\w\S*/g, (w) => w[0] + w.slice(1).toLowerCase())}`, type: 'checkbox', checked: towerSettings().on,
-      click: (item) => {
-        s.tower = { ...(s.tower || {}), on: item.checked };
-        store.set('settings', s);
-        applyTower();
-        win.webContents.send('deck:settings-changed', s);
-      }
-    },
-    {
-      label: 'Show the Orb', type: 'checkbox', checked: orbSettings().on,
-      click: (item) => {
-        s.orb = { ...(s.orb || {}), on: item.checked };
-        store.set('settings', s);
-        applyOrb();
-        win.webContents.send('deck:settings-changed', s);
-      }
-    },
     { type: 'separator' },
     { label: 'Quit', click: () => { app.isQuitting = true; app.quit(); } }
   ]));
@@ -236,8 +213,6 @@ function registerIpc() {
       if (win) win.setTitle(value.consoleName || 'Command Deck');
       applyWindowMode();
       applyAutoStart();
-      applyTower();
-      applyOrb();
     }
     return ok;
   });
@@ -447,307 +422,11 @@ app.on('second-instance', () => {
   if (win) { win.show(); win.focus(); }
 });
 
-// ---------------------------------------------------------------- Comm Tower 1
-// The dial (v1.31): a small always-on-top core that opens into a fan of keys (record,
-// terminal, browser, note, files, your own shortcuts). One frameless, see-through window,
-// only ever as big as what shows: the core (closed), the fan (open), or the core plus the
-// pop-up terminal. The hub keeps its place on screen while the window changes around it.
-// Geometry lives in src/tower-util.js. The deck window still does the work.
-const TU = require('./src/tower-util');
-let towerLay = { state: 'closed', popH: 400 };
-let towerTheme = null; // the deck theme's colors, for the "Match theme" skin
-let towerRec = null; // the last recording state, so a rebuilt dial still shows a recording in progress
-// Rebuild the dial's window from scratch. Coming back from sleep (or after the graphics
-// driver resets), Windows can leave a see-through always-on-top window frozen: drawn, but
-// deaf to clicks. A fresh window fixes that. Debounced, so a burst of wake-up events
-// (resume, unlock, displays returning) rebuilds it once, after the displays settle.
-let towerRebuildT = null;
-function rebuildTower(why, ms = 2500) {
-  clearTimeout(towerRebuildT);
-  towerRebuildT = setTimeout(() => {
-    if (!towerSettings().on) return;
-    if (tower && !tower.isDestroyed()) tower.destroy();
-    tower = null;
-    createTower();
-  }, ms);
-}
-function towerSettings() {
-  const t = settings().tower || {};
-  return {
-    on: t.on !== false,
-    name: String(t.name || 'COMM TOWER 1').trim().toUpperCase() || 'COMM TOWER 1',
-    operator: settings().operatorName || '',
-    skin: TU.SKINS.includes(t.skin) ? t.skin : 'eclipse',
-    style: TU.STYLES.includes(t.style) ? t.style : 'sentinel',
-    layer: t.layer === 'desktop' ? 'desktop' : 'top',
-    shortcuts: TU.cleanShortcuts(t.shortcuts).map(({ id, name, kind }) => ({ id, name, kind })),
-    max: TU.MAX_SHORTCUTS
-  };
-}
-function towerDisplays() {
-  return { list: screen.getAllDisplays(), main: screen.getPrimaryDisplay().id };
-}
-// The hub's centre on screen (locked to a corner, or wherever it was left).
-function towerAnchor() {
-  const { list, main } = towerDisplays();
-  return TU.anchor(store.get().towerPos, list, main);
-}
-function towerPlace(center = towerAnchor()) {
-  const d = center.display || screen.getDisplayNearestPoint({ x: Math.round(center.x), y: Math.round(center.y) });
-  return { ...TU.place(center, towerLay.state, towerLay.popH, d.workArea), pin: center.pin || null };
-}
-// Size and place the window for the state it's in, and tell the page where its hub is.
-function towerApply() {
-  if (!tower || tower.isDestroyed()) return;
-  const p = towerPlace();
-  const cur = tower.getBounds();
-  const b = p.bounds;
-  if (cur.x !== b.x || cur.y !== b.y || cur.width !== b.width || cur.height !== b.height) tower.setBounds(b);
-  sendTower('tower:layout', { state: p.state, hx: p.hx, hy: p.hy, h: p.h, v: p.v, pin: p.pin });
-}
-function createTower() {
-  if (tower && !tower.isDestroyed()) return;
-  towerLay = { state: 'closed', popH: 400 };
-  const p = towerPlace();
-  tower = new BrowserWindow({
-    ...p.bounds,
-    frame: false, transparent: true, resizable: false, movable: true, hasShadow: false,
-    skipTaskbar: true, show: false, focusable: false, alwaysOnTop: towerSettings().layer === 'top', minimizable: false, maximizable: false,
-    backgroundColor: '#00000000', title: 'Comm Tower 1',
-    webPreferences: { preload: path.join(__dirname, 'tower-preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false }
-  });
-  towerLayer();
-  tower.loadURL('deck://app/renderer/tower.html');
-  tower.once('ready-to-show', () => { if (tower && !tower.isDestroyed()) tower.showInactive(); });
-  tower.webContents.on('did-finish-load', () => {
-    sendTower('tower:config', towerSettings());
-    if (towerTheme) sendTower('tower:state', { theme: towerTheme });
-    if (towerRec) sendTower('tower:state', { rec: towerRec });
-    towerApply();
-  });
-  // If the dial's page crashes or hangs, start it over.
-  tower.webContents.on('render-process-gone', () => rebuildTower('crash', 500));
-  tower.on('unresponsive', () => rebuildTower('hang', 500));
-  tower.webContents.on('will-navigate', (e) => e.preventDefault());
-  tower.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  tower.on('closed', () => { if (tower && tower.isDestroyed()) tower = null; });
-}
-function sendTower(ch, data) {
-  if (tower && !tower.isDestroyed()) tower.webContents.send(ch, data);
-}
-// ON TOP: above every window. DESKTOP: an ordinary window that others cover; opening it
-// (a click on what shows, or Ctrl + Alt + T) brings it to the front until you use another window.
-function towerLayer() {
-  if (!tower || tower.isDestroyed()) return;
-  const top = towerSettings().layer === 'top';
-  tower.setAlwaysOnTop(top, top ? 'floating' : 'normal');
-}
-function towerFront() {
-  if (!tower || tower.isDestroyed()) return;
-  if (!tower.isVisible()) tower.showInactive();
-  tower.moveTop();
-}
-function applyTower() {
-  const t = towerSettings();
-  if (t.on) { createTower(); towerLayer(); sendTower('tower:config', t); }
-  else if (tower && !tower.isDestroyed()) tower.destroy();
-}
-function saveTowerSettings(patch) {
-  const s = settings();
-  s.tower = { ...(s.tower || {}), ...patch };
-  store.set('settings', s);
-  if (win && !win.isDestroyed()) win.webContents.send('deck:settings-changed', s);
-  sendTower('tower:config', towerSettings());
-}
-// The keys that open something on the computer.
-function towerLaunch(a) {
-  const t = settings().tower || {};
-  const fail = (what) => sendTower('tower:state', { line: { k: 'err', t: `Couldn't open ${what}.` } });
-  if (a.kind === 'browser') {
-    shell.openExternal(TU.cleanUrl(t.browserUrl) || 'https://www.google.com').catch(() => fail('the browser'));
-  } else if (a.kind === 'files') {
-    if (process.platform === 'win32') {
-      try { require('child_process').spawn('explorer.exe', [], { detached: true, stdio: 'ignore' }).unref(); } catch { fail('File Explorer'); }
-    } else shell.openPath(app.getPath('home'));
-  } else if (a.kind === 'shortcut') {
-    const sc = TU.cleanShortcuts(t.shortcuts).find((x) => x.id === a.id);
-    if (!sc) return;
-    if (sc.kind === 'web') shell.openExternal(sc.target).catch(() => fail(sc.name));
-    else shell.openPath(sc.target).then((err) => { if (err) fail(sc.name); });
-  }
-}
-function registerTowerIpc() {
-  // The page says which state it's in (closed / open / term); the window follows.
-  ipcMain.on('tower:layout', (_e, state, popH) => {
-    towerLay = { state: ['open', 'term'].includes(state) ? state : 'closed', popH: Math.max(200, Math.min(520, Number(popH) || 400)) };
-    towerApply();
-    if (towerLay.state !== 'closed') towerFront();
-  });
-  // Press and drag the closed core to move it. Let go near a screen corner and it locks there.
-  let dragFrom = null;
-  ipcMain.on('tower:drag', (_e, phase, sx, sy) => {
-    if (!tower || tower.isDestroyed()) return;
-    if (phase === 'start') { const bb = tower.getBounds(); dragFrom = { ...bb, sx, sy }; return; }
-    if (!dragFrom) return;
-    tower.setBounds({ x: Math.round(dragFrom.x + sx - dragFrom.sx), y: Math.round(dragFrom.y + sy - dragFrom.sy), width: dragFrom.width, height: dragFrom.height });
-    if (phase === 'end') {
-      dragFrom = null;
-      const bb = tower.getBounds();
-      const c = { x: bb.x + bb.width / 2, y: bb.y + bb.height / 2 };
-      const d = screen.getDisplayNearestPoint({ x: Math.round(c.x), y: Math.round(c.y) });
-      store.set('towerPos', TU.dropped(c, d, screen.getPrimaryDisplay().id));
-      towerApply();
-    }
-  });
-  ipcMain.on('tower:home', () => { store.set('towerPos', null); towerApply(); });
-  // The pop-up terminal: what you type goes to the deck, which does the work.
-  ipcMain.on('tower:send', (_e, text) => {
-    if (win && !win.isDestroyed() && text) win.webContents.send('tower:text', String(text).slice(0, 500));
-  });
-  // REC controls in the pop-up (start / stop / pause / resume / discard a meeting recording).
-  ipcMain.on('tower:rec', (_e, a) => {
-    if (win && !win.isDestroyed() && a && a.action) win.webContents.send('tower:rec', { action: String(a.action), title: String(a.title || '').slice(0, 80), sys: a.sys !== false, mic: a.mic !== false });
-  });
-  // The window only takes keyboard focus while the fan or the terminal is open.
-  ipcMain.on('tower:focus', (_e, on) => {
-    if (!tower || tower.isDestroyed()) return;
-    tower.setFocusable(!!on);
-    if (on) { tower.focus(); tower.webContents.focus(); }
-  });
-  ipcMain.on('tower:launch', (_e, a) => { if (a && a.kind) towerLaunch({ kind: String(a.kind), id: String(a.id || '') }); });
-  // Your own shortcuts (the + key): add, remove, or pick a program / folder with the system dialog.
-  ipcMain.handle('tower:shortcut', async (_e, a) => {
-    const t = settings().tower || {};
-    const list = TU.cleanShortcuts(t.shortcuts);
-    if (!a || !a.action) return { ok: false };
-    if (a.action === 'pick') {
-      const folder = a.what === 'folder';
-      const res = await dialog.showOpenDialog(tower && !tower.isDestroyed() ? tower : win, {
-        title: folder ? 'Pick a folder' : 'Pick a program or file',
-        properties: [folder ? 'openDirectory' : 'openFile'],
-        ...(folder ? {} : { filters: [{ name: 'Programs and shortcuts', extensions: ['exe', 'lnk', 'bat', 'cmd', 'url'] }, { name: 'Any file', extensions: ['*'] }] })
-      });
-      return res.canceled || !res.filePaths[0] ? { ok: false } : { ok: true, path: res.filePaths[0] };
-    }
-    if (a.action === 'add') {
-      if (list.length >= TU.MAX_SHORTCUTS) return { ok: false, error: `The dial holds ${TU.MAX_SHORTCUTS} shortcuts. Remove one first.` };
-      const n = TU.normalizeShortcut({ name: a.name, target: a.target });
-      if (!n.ok) return n;
-      saveTowerSettings({ shortcuts: [...list, { id: `sc_${Date.now().toString(36)}`, name: n.name, kind: n.kind, target: n.target }] });
-      return { ok: true, name: n.name };
-    }
-    if (a.action === 'remove') {
-      saveTowerSettings({ shortcuts: list.filter((x) => x.id !== String(a.id)) });
-      return { ok: true };
-    }
-    return { ok: false };
-  });
-  // Deck → dial: reply lines, busy, recording state, and the deck theme's colors.
-  ipcMain.on('tower:state', (_e, st) => {
-    if (st && st.theme) towerTheme = st.theme;
-    if (st && st.rec && st.rec.state) { const { levels, ...r } = st.rec; towerRec = r; }
-    sendTower('tower:state', st);
-  });
-  // Displays come and go (and Windows renumbers them): put the dial back where it belongs.
-  for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, () => towerApply());
-  // Health check: once a minute, ask the dial's page to answer. No answer within 5 s means it's
-  // frozen: rebuild it.
-  setInterval(() => {
-    if (!tower || tower.isDestroyed() || !towerSettings().on) return;
-    let answered = false;
-    tower.webContents.executeJavaScript('1').then(() => { answered = true; }).catch(() => {});
-    setTimeout(() => { if (!answered && tower && !tower.isDestroyed()) rebuildTower('frozen', 0); }, 5000);
-  }, 60 * 1000);
-  // Waking up: rebuild the dial once things settle (see rebuildTower()).
-  powerMonitor.on('resume', () => { rebuildTower('resume'); rebuildOrb('resume'); });
-  powerMonitor.on('unlock-screen', () => { rebuildTower('unlock'); rebuildOrb('unlock'); });
-  app.on('child-process-gone', (_e, d) => { if (d && d.type === 'GPU') { rebuildTower('gpu', 1500); rebuildOrb('gpu', 1500); } });
-}
-
-// ---------------------------------------------------------------- the Orb (v1.35)
-// Command Deck as a ball of living light on the second screen. One frameless, see-through
-// window at desktop level (other windows cover it), unless ON TOP is picked. Closed, it's a
-// box the orb drifts around in; click the orb and the window grows to hold the six screens
-// that come out of it. Placement rules live in src/orb-util.js; the deck window does the work
-// (it sends a snapshot of the day, and runs what the Orb asks for).
-const OU = require('./src/orb-util');
-let orbLay = 'closed';
-let orbSnap = null; // the deck's last snapshot, so a rebuilt Orb has something to show at once
-let orbRec = null; // the last recording state
-let orbDrag = null;
-let orbRebuildT = null;
-function orbSettings() {
-  const o = settings().orb || {};
-  return { on: o.on !== false, layer: o.layer === 'top' ? 'top' : 'desktop' };
-}
-function orbHome() {
-  return OU.home(store.get().orbPos, screen.getAllDisplays(), screen.getPrimaryDisplay().id);
-}
-function orbApply() {
-  if (!orb || orb.isDestroyed()) return;
-  const h = orbHome();
-  if (!h.display) return;
-  const b = OU.box(h, orbLay, h.display.workArea);
-  const cur = orb.getBounds();
-  if (cur.x !== b.x || cur.y !== b.y || cur.width !== b.width || cur.height !== b.height) orb.setBounds(b);
-  sendOrb('orb:layout', { state: orbLay, x: b.x, y: b.y, w: b.width, h: b.height, hx: h.x, hy: h.y });
-}
-function createOrb() {
-  if (orb && !orb.isDestroyed()) return;
-  orbLay = 'closed';
-  const h = orbHome();
-  const b = h.display ? OU.box(h, 'closed', h.display.workArea) : { x: 0, y: 0, width: 720, height: 520 };
-  orb = new BrowserWindow({
-    ...b,
-    frame: false, transparent: true, resizable: false, movable: true, hasShadow: false,
-    skipTaskbar: true, show: false, focusable: true, alwaysOnTop: orbSettings().layer === 'top', minimizable: false, maximizable: false,
-    backgroundColor: '#00000000', title: 'The Orb',
-    webPreferences: { preload: path.join(__dirname, 'orb-preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false }
-  });
-  orbLayer();
-  orb.loadURL('deck://app/renderer/orb.html');
-  orb.once('ready-to-show', () => { if (orb && !orb.isDestroyed()) orb.showInactive(); });
-  orb.webContents.on('did-finish-load', () => {
-    orbApply();
-    if (orbSnap) sendOrb('orb:state', { snap: orbSnap });
-    if (orbRec) sendOrb('orb:state', { rec: orbRec });
-    if (win && !win.isDestroyed()) win.webContents.send('orb:hello'); // ask the deck for a fresh snapshot
-  });
-  orb.webContents.on('render-process-gone', () => rebuildOrb('crash', 500));
-  orb.on('unresponsive', () => rebuildOrb('hang', 500));
-  orb.webContents.on('will-navigate', (e) => e.preventDefault());
-  orb.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  orb.on('closed', () => { if (orb && orb.isDestroyed()) orb = null; });
-}
-function sendOrb(ch, data) {
-  if (orb && !orb.isDestroyed()) orb.webContents.send(ch, data);
-}
-function orbLayer() {
-  if (!orb || orb.isDestroyed()) return;
-  const top = orbSettings().layer === 'top';
-  orb.setAlwaysOnTop(top, top ? 'floating' : 'normal');
-}
-function orbFront() {
-  if (!orb || orb.isDestroyed()) return;
-  if (!orb.isVisible()) orb.showInactive();
-  orb.moveTop();
-}
-function applyOrb() {
-  if (orbSettings().on) { createOrb(); orbLayer(); }
-  else if (orb && !orb.isDestroyed()) orb.destroy();
-}
-// Same recovery as the dial: a fresh window after sleep, a lock or a graphics reset.
-function rebuildOrb(why, ms = 2500) {
-  clearTimeout(orbRebuildT);
-  orbRebuildT = setTimeout(() => {
-    if (!orbSettings().on) return;
-    if (orb && !orb.isDestroyed()) orb.destroy();
-    orb = null;
-    createOrb();
-  }, ms);
-}
+// ---------------------------------------------------------------- deck buttons
+// Address and shortcut rules live in src/links.js.
+const TU = require('./src/links');
 // The deck's Browser button (v1.36): the page from Settings › System › BROWSER BUTTON, else the
-// dial's old setting, else Google. Only http(s) addresses get through cleanUrl.
+// old dial's setting, else Google. Only http(s) addresses get through cleanUrl.
 ipcMain.handle('deck:browser', async () => {
   const s = settings();
   const url = TU.cleanUrl(s.browserUrl) || TU.cleanUrl((s.tower || {}).browserUrl) || 'https://www.google.com';
@@ -773,52 +452,6 @@ ipcMain.handle('deck:keys', async (_e, a) => {
   }
   return { ok: false };
 });
-function registerOrbIpc() {
-  ipcMain.on('orb:layout', (_e, state) => {
-    orbLay = state === 'open' ? 'open' : 'closed';
-    orbApply();
-    if (orbLay === 'open') orbFront();
-  });
-  // Drag the closed orb to give it a new home (anywhere, on any screen).
-  ipcMain.on('orb:drag', (_e, phase, sx, sy) => {
-    if (!orb || orb.isDestroyed()) return;
-    if (phase === 'start') { const h = orbHome(); orbDrag = { ...orb.getBounds(), sx, sy, hx: h.x, hy: h.y }; return; }
-    if (!orbDrag) return;
-    const dx = Math.round(sx - orbDrag.sx), dy = Math.round(sy - orbDrag.sy);
-    orb.setBounds({ x: orbDrag.x + dx, y: orbDrag.y + dy, width: orbDrag.width, height: orbDrag.height });
-    if (phase === 'end') {
-      const pos = OU.dropped({ x: orbDrag.hx + dx, y: orbDrag.hy + dy }, screen.getAllDisplays(), screen.getPrimaryDisplay().id);
-      orbDrag = null;
-      if (pos) store.set('orbPos', pos);
-      orbApply();
-    }
-  });
-  ipcMain.on('orb:home', () => { store.set('orbPos', null); orbApply(); });
-  // What the Orb asks the deck to do: send a line to the terminal, finish a task, run the recorder.
-  ipcMain.on('orb:act', (_e, a) => {
-    if (!a || !a.kind || !win || win.isDestroyed()) return;
-    const kind = String(a.kind);
-    if (kind === 'send') win.webContents.send('orb:act', { kind, text: String(a.text || '').slice(0, 500) });
-    else if (kind === 'done') win.webContents.send('orb:act', { kind, id: String(a.id || '') });
-    else if (kind === 'rec') win.webContents.send('orb:act', { kind, action: String(a.action || ''), title: String(a.title || '').slice(0, 80), sys: a.sys !== false, mic: a.mic !== false });
-    else if (kind === 'deck') { if (!win.isVisible()) win.show(); win.focus(); }
-  });
-  // From the deck: the day's snapshot, terminal lines, the recorder's state.
-  ipcMain.on('orb:state', (_e, st) => {
-    if (!st) return;
-    if (st.snap) orbSnap = st.snap;
-    if (st.rec && st.rec.state) { const { levels, ...r } = st.rec; orbRec = r; }
-    sendOrb('orb:state', st);
-  });
-  for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, () => orbApply());
-  setInterval(() => {
-    if (!orb || orb.isDestroyed() || !orbSettings().on) return;
-    let answered = false;
-    orb.webContents.executeJavaScript('1').then(() => { answered = true; }).catch(() => {});
-    setTimeout(() => { if (!answered && orb && !orb.isDestroyed()) rebuildOrb('frozen', 0); }, 5000);
-  }, 60 * 1000);
-}
-
 // ---------------------------------------------------------------- Discord voice
 // The mute / deafen icons beside Hail. Runs here (the pipe to Discord is a local socket);
 // the deck window gets each change as 'discord:state'.
@@ -942,13 +575,9 @@ app.whenReady().then(() => {
 
   serveFiles();
   registerIpc();
-  registerTowerIpc();
-  registerOrbIpc();
   registerDiscordIpc();
   allowFirebaseFromApp();
   createWindow();
-  applyTower();
-  applyOrb();
   startDiscord();
   watchAway();
   createTray();
@@ -957,22 +586,12 @@ app.whenReady().then(() => {
   setupLighting();
 
   globalShortcut.register('Control+Alt+Space', toggleWindow);
-  // Ctrl + Alt + T: opens Comm Tower 1's dial from any app (or the deck's terminal, if the dial is hidden).
+  // Ctrl + Alt + T: opens the deck's terminal from any app.
   globalShortcut.register('Control+Alt+T', () => {
-    if (tower && !tower.isDestroyed()) {
-      towerFront();
-      sendTower('tower:open');
-    } else if (win && !win.isDestroyed()) {
-      if (!win.isVisible()) win.show();
-      win.focus();
-      win.webContents.send('term:open');
-    }
-  });
-  // Ctrl + Alt + O: brings the Orb forward and opens it (or folds it away again).
-  globalShortcut.register('Control+Alt+O', () => {
-    if (!orb || orb.isDestroyed()) return;
-    orbFront();
-    sendOrb('orb:toggle');
+    if (!win || win.isDestroyed()) return;
+    if (!win.isVisible()) win.show();
+    win.focus();
+    win.webContents.send('term:open');
   });
 });
 

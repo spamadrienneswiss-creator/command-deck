@@ -72,6 +72,7 @@
       <span class="trim-badge" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
       <span id="operatorLabel" class="brand-op">// OPERATOR</span>
       <button type="button" class="ra-tag" id="raTag" title="Show the queue"></button>
+      <button type="button" class="rec-tag" id="recTag" title="Recording a meeting. Click to stop and recap it" hidden></button>
     </div>
     <div class="controls">
       <div class="ctl">
@@ -291,7 +292,7 @@
         <section class="grid-stack-item-content panel" aria-label="Task queue">
           <i class="br br-tr amber"></i><i class="br br-bl lime"></i>
           <div class="p-head">
-            <span class="p-label tk-head"><span>06 ·</span><span class="tk-views" role="tablist" aria-label="Task view"><button type="button" role="tab" data-tkview="queue" class="on">QUEUE</button><button type="button" role="tab" data-tkview="projects">PROJECTS</button><button type="button" role="tab" data-tkview="schedule">SCHEDULE</button></span><span id="tkCount" class="amber-t"></span></span>
+            <span class="p-label tk-head"><span>06 ·</span><span class="tk-views" role="tablist" aria-label="Task view"><button type="button" role="tab" data-tkview="queue" class="on">QUEUE</button><button type="button" role="tab" data-tkview="schedule">SCHEDULE</button></span><span id="tkCount" class="amber-t"></span></span>
             <button type="button" class="accent-btn" id="btnAddTask">+ ADD TASK</button>
           </div>
           <div class="chips" id="tkChips"></div>

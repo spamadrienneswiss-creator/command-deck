@@ -86,7 +86,7 @@ Switching is instant and nothing else changes. In Cockpit and Hairline, Calendar
 
 The terminal is keyboard-only. Everything you'd have said works typed:
 - Deletes ask first: tap **CONFIRM** / **CANCEL** or type **y** / **n**.
-- The chips: *Status report* runs straight away; *Take a note*, *New project* and *Add to calendar* fill in the start of the command ("take a note: ", "new project ", "schedule ") so you just finish typing.
+- The chips: *Status report* runs straight away; *Take a note* and *Add to calendar* fill in the start of the command ("take a note: ", "new project ", "schedule ") so you just finish typing.
 - **help** lists examples. **CLEAR** (top right) or typing **clear** wipes the screen; **CLOSE TERMINAL** next to it puts the terminal away. The transcript stays while you switch apps and is wiped when you close Field Unit completely (swipe it away in the app switcher). If iPhone closes it in the background to save memory, that counts too.
 - Sound: **Settings › Comms terminal sound**: *Mainframe* (readout chirps, relay clicks, low computer-room hum), *Soft*, or *Off*. The iPhone's silent switch mutes it.
 
@@ -102,14 +102,12 @@ The terminal is keyboard-only. Everything you'd have said works typed:
 ## Everyday notes
 
 - **Swipe a task left** for Snooze, Done and Delete. Tap a task to edit everything.
-- **Projects:** Tasks › **PROJECTS**. Tap **+** to start one, tap a card to see its tasks and add more.
 - **No signal?** Field Unit says "Data stored locally" and transmits automatically when signal returns. The same goes for Command Deck.
 - **COMMAND OFFLINE** on the phone means the computer is off, asleep or Command Deck isn't running. The phone keeps working. While Command is offline, timers and reminders ring on the phone whenever Field Unit is open.
 - **Calendars** on the phone are the ones Command Deck reads, relayed when the console is running. Events added on the phone go to the console's Local calendar.
 - **Meeting recaps:** record in Voice Memos, **Save to Files**, then **Notes › DATA RECAP** in Field Unit. The main console transcribes it and files the recap under **RECAPS** (README › *Data Recap*). For the summary and action items, paste a free Gemini key in Command Deck › **Settings › Field Unit › DATA RECAP**. Nothing extra to deploy: recordings travel through the same free Firebase project in small pieces and are deleted from it as soon as the deck has them.
 - **Another phone?** Show a new pairing code and repeat Part 4.
 - **Another computer?** Install Command Deck there, then in its Settings › Field Unit enter the same web address and a pairing code from the main console under **JOIN DECK** (README › *A second Command Deck*). No extra deploy is needed.
-- **Wine Log:** the tasting journal is published with Field Unit at your Hosting URL + `/wine/`. Add it to the Home Screen from Safari and pair it with a code like a phone (README › *Wine Log*). Label reading uses a free Gemini key pasted in Wine Log › Settings. Nothing extra to deploy.
 - **Remove a phone:** in Command Deck › Settings › Field Unit, press **UNPAIR** next to it (the phone returns to its pairing screen), or on the phone, *Settings › Unpair this device*.
 
 ## Updating Field Unit later

@@ -944,6 +944,7 @@ export function openSettings(welcome = false) {
     if (saved) return;
     app.previewOpacity(app.S.settings.opacity ?? 1);
     app.previewDarkness(app.S.settings.frameDarkness ?? 0.8);
+    app.previewPanels(app.S.settings.panelOpacity ?? 1);
     app.previewTheme(app.S.settings.theme || 'dusk');
     app.previewFont(app.S.settings.font || 'auto');
     app.previewInk(app.S.settings.ink || 'theme');
@@ -1051,6 +1052,7 @@ export function openSettings(welcome = false) {
           <div class="f"><span class="f-label">SOUND EFFECTS</span>${dd('sound', pills([['full', 'FULL'], ['key', 'KEY MOMENTS'], ['silent', 'SILENT']], draft.sound))}</div>
         </div>
         <div class="sys-sl"><label class="f-label" for="sOpacity">CONSOLE OPACITY</label><input id="sOpacity" class="range" type="range" min="30" max="100" step="5" value="${Math.round((draft.opacity ?? 1) * 100)}"><span id="sOpacityVal" class="amber-t">${Math.round((draft.opacity ?? 1) * 100)}%</span></div>
+        <div class="sys-sl"><label class="f-label" for="sPanels">PANEL OPACITY</label><input id="sPanels" class="range" type="range" min="10" max="100" step="5" value="${Math.round((draft.panelOpacity ?? 1) * 100)}"><span id="sPanelsVal" class="amber-t">${Math.round((draft.panelOpacity ?? 1) * 100)}%</span></div>
         <div class="sys-sl"><label class="f-label" for="sDark">BACKGROUND DARKNESS</label><input id="sDark" class="range" type="range" min="20" max="97" step="1" value="${Math.round((draft.frameDarkness ?? 0.8) * 100)}"><span id="sDarkVal" class="amber-t">${Math.round((draft.frameDarkness ?? 0.8) * 100)}%</span></div>
 
         <div class="sys-h">WINDOW &amp; LAYOUT</div>
@@ -1502,6 +1504,7 @@ export function openSettings(welcome = false) {
         });
       };
       slider('#sDark', 'frameDarkness', (v) => v / 100, (v) => app.previewDarkness(v));
+      slider('#sPanels', 'panelOpacity', (v) => v / 100, (v) => app.previewPanels(v));
       slider('#sDepth', 'voiceDepth', (v) => v);
       slider('#sStrength', 'voiceFxStrength', (v) => v);
       slider('#sHumor', 'humor', (v) => v);

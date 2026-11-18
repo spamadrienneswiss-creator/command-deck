@@ -2199,3 +2199,9 @@ body.motion-still .rec-tag::before { animation: none; }
 .dd-v i { flex: none; margin-right: 8px; }
 .dd-menu .pill i { margin-right: 8px; }
 @media (max-width: 900px) { .sys-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sys-row > .f-label:first-child, .sys-sl { grid-template-columns: 140px minmax(0, 1fr) 44px; } .sys-row > .f-label:first-child { width: 140px; } }
+
+/* ================================================================ v1.38.1: panel opacity
+   Settings › System › PANEL OPACITY fades only the panels' own fill (--panel-alpha), so the text
+   stays solid. Meridian's panels have no fill (its bone frame does), so it only shows there. */
+:root { --panel-alpha: 1; }
+body:not([data-theme="meridian"]) .panel, body[data-frame="bone"] .panel { background: color-mix(in srgb, var(--panel) calc(var(--panel-alpha) * 100%), transparent); }

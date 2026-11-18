@@ -182,6 +182,10 @@ Command Deck has two arrangements of the same panels. The **standard** layout su
 - Each layout remembers its own panel arrangement (unlock the layout to drag and resize), and **Reset layout** restores the one you're looking at.
 - On the Xeneon Edge, Windows display scale of 100% or 125% gives the panels the most room; 150% works, but lists show fewer rows.
 
+### Look sliders
+
+**Settings › System › LOOK** has three sliders: **CONSOLE OPACITY** fades the whole deck, text included; **PANEL OPACITY** fades only the panels' backgrounds so the text stays crisp; **BACKGROUND DARKNESS** sets the space between the panels. All three preview live as you drag. (Meridian's panels have no background of their own, so PANEL OPACITY only shows there with the Bone frame.)
+
 ### Pages
 
 The deck has two pages. **Page 1 (MAIN)** is always the whole deck, in your own arrangement. **Page 2 (WORK)** holds just the panels you pick, so they can be much bigger: by default a slim clock strip across the top with **Tasks** and **Notepad** filling the rest. Every tab still works on page 2 (QUEUE and SCHEDULE on Tasks; NOTES and RECAPS on Notepad).

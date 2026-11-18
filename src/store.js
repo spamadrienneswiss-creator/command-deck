@@ -58,6 +58,7 @@ const DEFAULTS = {
     voiceRate: 1,
     opacity: 1, // whole-console opacity, 0.3 – 1
     frameDarkness: 0.8, // darkness behind/between panels, 0.2 – 0.97
+    panelOpacity: 1, // v1.38.1: how solid the panels' own backgrounds are, 0.1 – 1 (text stays solid)
     windowMode: 'top', // top | desk
     clock24: false,
     tempUnit: 'F',

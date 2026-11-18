@@ -15,7 +15,7 @@ import { DEFAULT_TYPES, TYPE_COLORS, weekStart, addDays, weekLabel, weekDays, ym
 
 const { $, $$, esc } = U;
 const deck = window.deck;
-const VERSION = 'v1.38.0';
+const VERSION = 'v1.38.1';
 
 const PRI = {
   high: { n: 3, color: 'var(--coral)', label: 'HIGH' },
@@ -194,6 +194,7 @@ function applySettings() {
   document.body.classList.remove('motion-full', 'motion-subtle', 'motion-still');
   document.body.classList.add(`motion-${s.motion}`);
   document.documentElement.style.setProperty('--frame-alpha', String(s.frameDarkness ?? 0.8));
+  document.documentElement.style.setProperty('--panel-alpha', String(s.panelOpacity ?? 1));
   applyLook(s.theme, s.font, s.ink);
   document.body.dataset.frame = s.frame || 'dark';
   document.body.dataset.trim = s.trim || 'none';
@@ -3557,6 +3558,7 @@ async function start() {
     loadTts,
     previewOpacity: (v) => deck.setOpacity(v),
     previewDarkness: (v) => document.documentElement.style.setProperty('--frame-alpha', String(v)),
+    previewPanels: (v) => document.documentElement.style.setProperty('--panel-alpha', String(v)),
     previewTheme: (t) => applyLook(t, look.font),
     pagePreview,
     previewFont: (f) => applyLook(look.theme, f),

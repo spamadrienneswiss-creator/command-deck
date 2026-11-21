@@ -2,8 +2,8 @@
   "size": "1440x900",
   "combos": [
     {
-      "name": "dusk",
-      "theme": "dusk",
+      "name": "bp-now",
+      "theme": "blueprint",
       "wait": 11000
     }
   ],

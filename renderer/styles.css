@@ -2205,3 +2205,158 @@ body.motion-still .rec-tag::before { animation: none; }
    stays solid. Meridian's panels have no fill (its bone frame does), so it only shows there. */
 :root { --panel-alpha: 1; }
 body:not([data-theme="meridian"]) .panel, body[data-frame="bone"] .panel { background: color-mix(in srgb, var(--panel) calc(var(--panel-alpha) * 100%), transparent); }
+
+/* ================================================================ CALIBRATION (v1.40)
+   A bright instrument panel in graphite and orange, from Nick's "Calibration" boards (the panel-format
+   Edge board was the pick). Panels are framed in graphite with a dark title tab carrying an orange code
+   and an orange corner mark; behind them a calibration plate (grid, a slowly turning target,
+   registration marks) shows through as PANEL OPACITY comes down. Rajdhani stands in for the mockup's
+   Saira (new font packages can't be installed from cloud sessions). */
+body[data-theme="calibration"] {
+  --frame: rgba(217, 222, 227, calc(0.6 + var(--frame-alpha) * 0.4));
+  --panel: rgba(240, 243, 245, 0.88); --panel-solid: #F0F3F5; --bone-panel: #F0F3F5;
+  --line: #B9C0C6; --line-2: #C9CFD4; --line-3: #8E959C; --ctl-line: #9AA1A8;
+  --text: #2A2F35; --text-hi: #15191D; --text-2: #3C4249; --muted: #5E656C; --muted-2: #6B7279; --dim: #8E959C;
+  --amber: #F2682A; --accent-rgb: 242, 104, 42; --accent-hi: #C9501A;
+  --peach: #E45F22; --peach-rgb: 228, 95, 34;
+  --lav: #4A5560; --lav-rgb: 74, 85, 96;
+  --coral: #E04A12; --coral-rgb: 224, 74, 18; --coral-hi: #C23C0A;
+  --lime: #2A2F35; --lime-rgb: 42, 47, 53;
+  --pink: #E45F22; --teal: #4A5560; --teal-rgb: 74, 85, 96;
+  --ink-rgb: 42, 47, 53;
+  --modal-bg: rgba(240, 243, 245, 0.99); --modal-back: rgba(42, 47, 53, 0.35); --sel-bg: #FFFFFF; --alert-bg: #2A2F35; --boot-bg: rgba(217, 222, 227, 0.97);
+  --chamfer: inset(0); --chamfer-lg: inset(0); --oct: circle(50%);
+  --cb-k: #2A2F35; --cb-o: #F2682A; --cb-stripe: repeating-linear-gradient(-45deg, #F2682A 0 10px, #E45F22 10px 20px);
+}
+body[data-theme="calibration"][data-font="rajdhani"] { --mono: 'Rajdhani Scaled', 'Rajdhani', 'Segoe UI', sans-serif; }
+body[data-theme="calibration"][data-frame="dark"] .console {
+  background-image: radial-gradient(1100px 700px at 45% 35%, rgba(242, 244, 246, 0.9), rgba(217, 222, 227, 0) 70%);
+  box-shadow: inset 0 0 0 2px var(--cb-k);
+}
+body[data-theme="calibration"] .scanline { display: none; }
+.cbr-plate { display: none; }
+body[data-theme="calibration"][data-frame="dark"] .cbr-plate { display: block; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+body[data-theme="calibration"] .cbr-plate .cp-tgt { transform-box: view-box; transform-origin: 1180px 380px; }
+body.motion-full[data-theme="calibration"] .cbr-plate .cp-tgt { animation: merTurn 240s linear infinite; }
+body.motion-subtle[data-theme="calibration"] .cbr-plate .cp-tgt { animation: merTurn 600s linear infinite; }
+body[data-theme="calibration"] .deck-header, body[data-theme="calibration"] .grid-wrap, body[data-theme="calibration"] .deck-footer { position: relative; z-index: 1; }
+
+/* Header: square chips, graphite when on. */
+body[data-theme="calibration"] .brand { color: var(--cb-k); }
+body[data-theme="calibration"] .brand-name { font-weight: 700; letter-spacing: 0.12em; color: var(--cb-k); }
+body[data-theme="calibration"] .brand-op { color: var(--muted); }
+body[data-theme="calibration"] .seg { box-shadow: inset 0 0 0 1.5px var(--line); }
+body[data-theme="calibration"]:not([data-frame="bone"]) .seg button.on { background: var(--cb-k); color: #FFFFFF; box-shadow: none; }
+body[data-theme="calibration"] .seg button { font-weight: 600; }
+body[data-theme="calibration"] .ra-tag { background: var(--cb-o); }
+
+/* Panels: graphite frame, dark title tab, orange corner mark. */
+body[data-theme="calibration"] .panel { box-shadow: inset 0 0 0 2px var(--cb-k); padding-top: 0; }
+body[data-theme="calibration"] .panel .br { display: none; }
+body[data-theme="calibration"] .panel::after { content: ''; position: absolute; right: 8px; bottom: 8px; width: 14px; height: 14px; border-right: 3px solid var(--cb-o); border-bottom: 3px solid var(--cb-o); pointer-events: none; }
+body.unlocked[data-theme="calibration"] .panel { box-shadow: inset 0 0 0 2px var(--cb-o); }
+body[data-theme="calibration"] .p-head { min-height: 34px; margin: 0 -20px 0 -20px; padding-right: 16px; font: 600 11px/1 var(--display); letter-spacing: 0.1em; color: var(--muted); }
+body[data-theme="calibration"] .p-head > .p-label:first-child { align-self: stretch; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; background: var(--cb-k); color: #FFFFFF; font: 700 15px/1 var(--display); letter-spacing: 0.06em; }
+body[data-theme="calibration"] .p-head > .p-label:first-child::before { color: var(--cb-o); }
+body[data-theme="calibration"] .grid-stack-item[gs-id="clock"] .p-label::before { content: 'H1'; }
+body[data-theme="calibration"] .grid-stack-item[gs-id="weather"] .p-label::before { content: 'A2'; }
+body[data-theme="calibration"] .grid-stack-item[gs-id="computer"] .p-label::before { content: 'S3'; }
+body[data-theme="calibration"] .grid-stack-item[gs-id="calendar"] .p-label::before { content: 'C4'; }
+body[data-theme="calibration"] .grid-stack-item[gs-id="events"] .p-label::before { content: 'E5'; }
+body[data-theme="calibration"] .grid-stack-item[gs-id="tasks"] .p-label::before { content: 'R6'; }
+body[data-theme="calibration"] .grid-stack-item[gs-id="notes"] .p-label::before { content: 'N7'; }
+body[data-theme="calibration"] .tk-head > span:first-child { display: none; }
+body[data-theme="calibration"] :is(.tk-views, .nt-views) { box-shadow: none; gap: 2px; }
+body[data-theme="calibration"] :is(.tk-views, .nt-views) button { height: 24px; line-height: 24px; color: #C3C9CF; font: 600 11px/24px var(--display); letter-spacing: 0.08em; }
+body[data-theme="calibration"] :is(.tk-views, .nt-views) button.on { background: var(--cb-o); color: #FFFFFF; box-shadow: none; }
+body[data-theme="calibration"] .nt-views button i { color: inherit; opacity: 0.7; }
+body[data-theme="calibration"] .p-meta, body[data-theme="calibration"] .peach-t { color: var(--muted); }
+body[data-theme="calibration"] .live { color: var(--cb-k); }
+body[data-theme="calibration"] .dot { background: var(--cb-o) !important; }
+body[data-theme="calibration"] :is(.mini-btn, .ghost-btn, .chip, .sq-btn, .icon-btn) { box-shadow: inset 0 0 0 1.5px var(--line); color: var(--cb-k); }
+body[data-theme="calibration"] .accent-btn { background: var(--cb-o); color: #FFFFFF; box-shadow: none; font-weight: 600; }
+body[data-theme="calibration"] .accent-btn:hover { background: #E45F22; }
+body[data-theme="calibration"] .chip.on { background: var(--cb-k); color: #FFFFFF; box-shadow: none; }
+body[data-theme="calibration"] .quick { box-shadow: inset 0 0 0 2px var(--cb-k); background: rgba(255, 255, 255, 0.55); }
+body[data-theme="calibration"] .quick-caret { color: var(--cb-o); font-weight: 700; }
+
+/* Clock: big tabular time, orange seconds; the 24-hour dial beside it. */
+body[data-theme="calibration"] .clk-time { font-weight: 500; letter-spacing: -0.01em; color: var(--cb-k); text-shadow: none; }
+body[data-theme="calibration"] .clk-sec { font: 500 30px/1 var(--display); color: var(--cb-o); }
+body[data-theme="calibration"] .clk-ampm, body[data-theme="calibration"] .clk-date { color: var(--muted); }
+body[data-theme="calibration"] .clk-day { color: var(--cb-k); font-weight: 700; letter-spacing: 0.24em; }
+body[data-theme="calibration"] .clk-art.cbr { display: block; }
+body[data-theme="calibration"] .clk-art.cbr text { font-family: var(--display); }
+body[data-theme="calibration"] .cycle-bar i { background: var(--line-2); }
+body[data-theme="calibration"] .cycle-bar i.on { background: var(--cb-k); box-shadow: none; }
+body[data-theme="calibration"] .cycle-bar i.tip { background: var(--cb-o); }
+@container (min-width: 471px) and (min-height: 191px) { body[data-theme="calibration"] .cycle { visibility: hidden; } }
+body[data-theme="calibration"][data-layout="edge"] .clk-art.cbr { display: block !important; height: min(170px, calc(100% - 110px)); top: 44px; right: 12px; }
+
+/* Weather. */
+body[data-theme="calibration"] #wxTemp { font-weight: 500; color: var(--cb-k); }
+body[data-theme="calibration"] .wx-unit { color: var(--cb-o); font-weight: 600; }
+body[data-theme="calibration"] .wx-icon { filter: grayscale(1) brightness(0.35); }
+body[data-theme="calibration"] .wx-hours, body[data-theme="calibration"] .cmp-log { box-shadow: inset 0 1.5px 0 var(--line); }
+
+/* Ship Computer: the terminal key is a dark disc inside a turning bearing ring with an orange sweep. */
+.hail-cbr { display: none; }
+body[data-theme="calibration"] .hail-cbr { display: block; position: absolute; inset: -16%; width: 132%; height: 132%; pointer-events: none; overflow: visible; }
+body[data-theme="calibration"] .hail-cbr g { transform-box: view-box; transform-origin: 60px 60px; }
+body.motion-full[data-theme="calibration"] .hail-cbr .hc-bear { animation: merTurn 40s linear infinite; }
+body.motion-full[data-theme="calibration"] .hail-cbr .hc-sweep { animation: merTurn 6s linear infinite; }
+body[data-theme="calibration"] .hail-wrap { margin: 10px; }
+body[data-theme="calibration"] .hail { inset: 18%; background: var(--cb-k); box-shadow: 0 0 0 2px var(--cb-o); color: var(--cb-o); }
+body[data-theme="calibration"] .hail:hover { background: #15191D; }
+body[data-theme="calibration"] .hail-term { font: 700 24px/1 var(--display); }
+body[data-theme="calibration"] .hail-ring { inset: 18%; box-shadow: inset 0 0 0 2px var(--cb-o); }
+body[data-theme="calibration"] .cmp-title { color: var(--cb-k); font-weight: 700; }
+body[data-theme="calibration"] .hexs .hx-tag, body[data-theme="calibration"] .hexs .hx-track b.hi { color: var(--cb-o); }
+body[data-theme="calibration"] .dv-ic { box-shadow: inset 0 0 0 2px var(--cb-k); background: rgba(255, 255, 255, 0.55); color: var(--cb-k); }
+body[data-theme="calibration"] .dv-ic:hover { background: #FFFFFF; }
+body[data-theme="calibration"] .dv[data-status="live"] .dv-ic:not(.off) { background: var(--cb-k); color: var(--cb-o); }
+body[data-theme="calibration"] .dv-ic.off { background: var(--cb-o); color: #FFFFFF; box-shadow: none; }
+body[data-theme="calibration"] .dv-lab { color: var(--muted); font-weight: 600; }
+
+/* Calendar: today filled orange, event days underlined. */
+body[data-theme="calibration"] .cal-month { font-weight: 700; letter-spacing: 0.12em; color: var(--cb-k); }
+body[data-theme="calibration"] .cal-cell { font: 500 15px/1 var(--display); color: #3C4249; }
+body[data-theme="calibration"] .cal-cell.wkend { color: var(--muted); }
+body[data-theme="calibration"] .cal-cell.out, body[data-theme="calibration"] .cal-cell.out.wkend { color: #B0B6BC; }
+body[data-theme="calibration"] .cal-cell.today { background: var(--cb-o); color: #FFFFFF; box-shadow: none; font-weight: 700; }
+body[data-theme="calibration"] .cal-cell.sel:not(.today) { box-shadow: inset 0 0 0 2px var(--cb-k); }
+body[data-theme="calibration"] .cal-cell:has(.cal-dots i) { box-shadow: inset 0 -3px 0 var(--cb-o); }
+body[data-theme="calibration"] .cal-cell.today:has(.cal-dots i) { box-shadow: none; }
+body[data-theme="calibration"] .cal-dots { display: none; }
+
+/* Events: rows on rules; the next timed event becomes the striped countdown. */
+body[data-theme="calibration"] .ev { box-shadow: inset 0 -1.5px 0 var(--line); }
+body[data-theme="calibration"] .ev-day { color: var(--muted); font-weight: 600; }
+body[data-theme="calibration"] .ev-day.today { color: var(--cb-o); }
+body[data-theme="calibration"] .ev-title { color: var(--cb-k); }
+body[data-theme="calibration"] .ev:has(.ev-in) { background: var(--cb-stripe); padding-left: 10px; padding-right: 10px; box-shadow: none; }
+body[data-theme="calibration"] .ev:has(.ev-in) :is(.ev-day, .ev-time, .ev-title, .ev-meta) { color: #2A2F35; }
+body[data-theme="calibration"] .ev-in { display: block; margin-top: 5px; font: 700 18px/1 var(--display); letter-spacing: 0.04em; color: #FFFFFF; }
+body[data-theme="calibration"] .ev.now .ev-title::before { background: var(--cb-o); }
+
+/* Notes. */
+body[data-theme="calibration"] .nt-row { box-shadow: inset 0 -1.5px 0 var(--line); }
+body[data-theme="calibration"] .nt-row.sel { background: #FFFFFF; }
+
+/* Tasks: round check, overdue rows lit orange. */
+body[data-theme="calibration"] .tk { box-shadow: inset 0 -1.5px 0 var(--line); }
+body[data-theme="calibration"] .tk-box { border-radius: 50%; box-shadow: inset 0 0 0 2px var(--cb-k); }
+body[data-theme="calibration"] .tk-box:hover { box-shadow: inset 0 0 0 2px var(--cb-o); }
+body[data-theme="calibration"] .tk.done .tk-box { background: var(--cb-k); box-shadow: none; }
+body[data-theme="calibration"] .tk-title { color: var(--cb-k); }
+body[data-theme="calibration"] .tk.overdue { background: var(--cb-o); box-shadow: none; padding-left: 8px; padding-right: 8px; }
+body[data-theme="calibration"] .tk.overdue :is(.tk-title, .tk-meta, .tk-meta .over, .tk-meta .ic, .tk-pri span) { color: #FFFFFF !important; }
+body[data-theme="calibration"] .tk.overdue .tk-box { box-shadow: inset 0 0 0 2px #FFFFFF; }
+body[data-theme="calibration"] .tk.overdue .tk-pri i { background: rgba(255, 255, 255, 0.45); }
+body[data-theme="calibration"] .tk.overdue .tk-pri i.lit { background: #FFFFFF; }
+body[data-theme="calibration"] .tk-sep { color: var(--cb-k); font-weight: 700; }
+
+/* Bigger touch targets on the Xeneon Edge. */
+body[data-theme="calibration"][data-layout="edge"] .p-head { min-height: 40px; }
+body[data-theme="calibration"][data-layout="edge"] .p-head > .p-label:first-child { font-size: 18px; }
+body[data-theme="calibration"][data-layout="edge"] .tk-box { width: 24px; height: 24px; }

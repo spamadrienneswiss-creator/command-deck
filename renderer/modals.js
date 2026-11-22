@@ -17,7 +17,8 @@ const THEMES = [
   ['moonbase', "MOONBASE '79", ['#F05A1A', '#E4E6E9']], ['blueprint', 'BLUEPRINT', ['#8EC5FF', '#0E2A47']],
   ['cryo', 'CRYO', ['#2D8CFF', '#D6E7F3']], ['freighter', 'FREIGHTER', ['#9CF2A8', '#E8C547']],
   ['skydock', 'SKYDOCK', ['#1FB8F0', '#F2F4F7']], ['vector', 'VECTOR', ['#FF7A2F', '#62D9FF']], ['horizon', 'HORIZON', ['#F2C38B', '#FFF4E3']], ['hivis', 'HI-VIS', ['#C6F432', '#FF3D6E']],
-  ['lumen', 'LUMEN', ['#FFFFFF', '#FF6A3D']], ['meridian', 'MERIDIAN', ['#FFFFFF', '#8B9295']]
+  ['lumen', 'LUMEN', ['#FFFFFF', '#FF6A3D']], ['meridian', 'MERIDIAN', ['#FFFFFF', '#8B9295']],
+  ['calibration', 'CALIBRATION', ['#F2682A', '#2A2F35']]
 ];
 const FONTS = [
   ['auto', 'THEME DEFAULT', ''], ['chakra', 'CHAKRA', "'Chakra Petch'"], ['michroma', 'MICHROMA', "'Michroma'"],
@@ -88,7 +89,7 @@ function wirePills(container, onPick) {
 // Only starred themes show in Settings; ALL THEMES lists every one with a star to
 // keep it. Nothing is removed: unstarred themes stay installed. The list is shared
 // with Field Unit (meta/themes). null = never edited, so every theme shows.
-const THEME_BG = { dusk: '#14121A', space: '#070B14', red: '#140708', terminal: '#050A07', retro: '#0E0716', moonbase: '#E4E6E9', blueprint: '#0E2A47', cryo: '#D6E7F3', freighter: '#0B0F0A', skydock: '#F2F4F7', vector: '#0A0D12', horizon: '#0A0806', hivis: '#0B0B0B', lumen: '#07080B', meridian: '#15191A' };
+const THEME_BG = { dusk: '#14121A', space: '#070B14', red: '#140708', terminal: '#050A07', retro: '#0E0716', moonbase: '#E4E6E9', blueprint: '#0E2A47', cryo: '#D6E7F3', freighter: '#0B0F0A', skydock: '#F2F4F7', vector: '#0A0D12', horizon: '#0A0806', hivis: '#0B0B0B', lumen: '#07080B', meridian: '#15191A', calibration: '#D9DEE3' };
 export function themeFavs(s) {
   const all = THEMES.map((t) => t[0]);
   const favs = Array.isArray(s.themeFavs) ? s.themeFavs.filter((v) => all.includes(v)) : all;

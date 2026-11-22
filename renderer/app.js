@@ -155,15 +155,16 @@ function saveMeta() {
 
 // ---------------------------------------------------------------- settings
 // Each theme has its own typeface; the Typeface setting can override it.
-const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody', lumen: 'exo2', meridian: 'jura' };
-const LIGHT_THEMES = new Set(['moonbase', 'cryo', 'skydock']);
+const THEME_FONT = { dusk: 'chakra', space: 'chakra', red: 'chakra', terminal: 'chakra', retro: 'sharetech', moonbase: 'michroma', blueprint: 'spacemono', cryo: 'exo2', freighter: 'b612', skydock: 'quantico', vector: 'tektur', horizon: 'jura', hivis: 'anybody', lumen: 'exo2', meridian: 'jura', calibration: 'rajdhani' };
+const LIGHT_THEMES = new Set(['moonbase', 'cryo', 'skydock', 'calibration']);
 // Some themes rename panels to fit their world. Only the label text changes.
 const PANEL_NAMES = {
   skydock: { computer: '03 · STATION COMPUTER' },
   vector: { clock: 'PRIMARY · CHRONO', weather: 'EXTERNAL', computer: 'CO-PILOT', calendar: 'FLIGHT PLAN', events: 'WAYPOINTS', notes: 'LOGBOOK' },
   hivis: { clock: '01 / TIME', weather: '02 / ATMOS', computer: '03 / VOICE', calendar: '04 / CYCLE', events: '05 / NEXT', notes: '07 / MEMO' },
   horizon: { clock: '01 · MISSION CLOCK', weather: '02 · CONDITIONS', calendar: '04 · MISSION CALENDAR', notes: '07 · FIELD NOTES' },
-  meridian: { clock: 'MERIDIAN', weather: 'ATMOSPHERE', computer: 'SHIP COMPUTER', calendar: 'ALMANAC', events: 'TRANSITS', notes: 'NOTEBOOK' }
+  meridian: { clock: 'MERIDIAN', weather: 'ATMOSPHERE', computer: 'SHIP COMPUTER', calendar: 'ALMANAC', events: 'TRANSITS', notes: 'NOTEBOOK' },
+  calibration: { clock: 'CHRONO', weather: 'ATMOS', computer: 'SHIP COMPUTER', calendar: 'CALENDAR', events: 'COMING UP', notes: 'NOTES' }
 };
 function applyPanelNames(theme) {
   const names = PANEL_NAMES[theme] || {};
@@ -342,6 +343,13 @@ function renderClock(now = new Date()) {
     $('#merMin').setAttribute('transform', `rotate(${(mn * 6).toFixed(1)} 98 98)`);
     $('#merHour').setAttribute('transform', `rotate(${(((now.getHours() % 12) + mn / 60) * 30).toFixed(1)} 98 98)`);
     $('#merSec').setAttribute('transform', `rotate(${now.getSeconds() * 6 - 90} 98 98)`);
+  }
+  // Calibration's dial: the orange arc is the day so far on a 24-hour ring, the pointer rides the seconds.
+  if (look.theme === 'calibration') {
+    const day = (now.getHours() * 60 + now.getMinutes()) / 1440;
+    $('#cbrDay').setAttribute('stroke-dasharray', `${(day * 515.2).toFixed(1)} 516`);
+    $('#cbrMark').setAttribute('transform', `rotate(${(day * 360).toFixed(1)} 100 100)`);
+    $('#cbrSec').setAttribute('transform', `rotate(${now.getSeconds() * 6} 100 100)`);
   }
   $('#clkAmpm').textContent = h24 ? '24H' : (now.getHours() < 12 ? 'AM' : 'PM');
   $('#clkDay').textContent = U.DAY_FULL[now.getDay()].toUpperCase();
@@ -3450,7 +3458,7 @@ function retirePainted() {
 
 // New themes join a starred list once (v1.31: Lumen, Meridian), so they show in Settings
 // without a trip to ALL THEMES. Unstar them there like any other.
-const NEW_THEMES = ['lumen', 'meridian'];
+const NEW_THEMES = ['lumen', 'meridian', 'calibration'];
 function starNewThemes() {
   const s = S.settings;
   const seen = Array.isArray(s.themesSeen) ? s.themesSeen : [];

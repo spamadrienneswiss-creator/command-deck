@@ -2360,3 +2360,6 @@ body[data-theme="calibration"] .tk-sep { color: var(--cb-k); font-weight: 700; }
 body[data-theme="calibration"][data-layout="edge"] .p-head { min-height: 40px; }
 body[data-theme="calibration"][data-layout="edge"] .p-head > .p-label:first-child { font-size: 18px; }
 body[data-theme="calibration"][data-layout="edge"] .tk-box { width: 24px; height: 24px; }
+/* The overdue alert in the theme's own orange. */
+body.red-alert[data-theme="calibration"] .alert-edge { box-shadow: inset 0 0 0 5px #F2682A, inset 0 0 0 7px rgba(242, 104, 42, 0.45), inset 0 0 110px rgba(242, 104, 42, 0.32); }
+body[data-theme="calibration"] .alert-edge::after { background: rgba(242, 104, 42, 0.08); box-shadow: inset 0 0 0 9px #F2682A, inset 0 0 200px rgba(242, 104, 42, 0.6); }

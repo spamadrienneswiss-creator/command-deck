@@ -1,0 +1,3 @@
+Downloading Electron binary...
+THEME cal-edge {"t":"calibration","body":"calibration","keys":["settings","tasks","localEvents","timers","projects","notes","schedule","layout","layoutEdge","layoutP2","layoutEdgeP2","layoutMine","window","discord","ai","aiChat","aiMemory","meta","push"]}
+THEME cal-edge-30 {"t":"calibration","body":"calibration","keys":["settings","tasks","localEvents","timers","projects","notes","schedule","layout","layoutEdge","layoutP2","layoutEdgeP2","layoutMine","window","discord","ai","aiChat","aiMemory","meta","push"]}

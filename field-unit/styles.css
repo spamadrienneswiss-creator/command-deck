@@ -1098,3 +1098,50 @@ body[data-theme="meridian"] .cal-cell.today > span:first-child::after { content:
 
 /* v1.34: the AI's longer answers keep their line breaks. */
 .ct-fu .tx { white-space: pre-line; }
+
+/* ================================================================ CALIBRATION (v1.40)
+   The deck's bright instrument-panel theme on the phone and the link pages: graphite frames, dark
+   title tabs with orange codes, orange for what needs you, a calibration plate behind it all. */
+body[data-theme="calibration"] {
+  --bg: #D9DEE3;
+  --glow-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 390 844' preserveAspectRatio='xMidYMid slice'%3E%3Cdefs%3E%3Cpattern id='a' width='26' height='26' patternUnits='userSpaceOnUse'%3E%3Cpath d='M26 0H0V26' fill='none' stroke='%239AA1A8' stroke-width='.5' stroke-opacity='.4'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='390' height='844' fill='url(%23a)'/%3E%3Cg fill='none' stroke='%237D848B' stroke-opacity='.45'%3E%3Ccircle cx='330' cy='600' r='70' stroke-width='0.8'/%3E%3Ccircle cx='330' cy='600' r='130' stroke-width='0.8'/%3E%3Ccircle cx='330' cy='600' r='200' stroke-width='1.4'/%3E%3Ccircle cx='330' cy='600' r='290' stroke-width='0.8'/%3E%3Ccircle cx='330' cy='600' r='380' stroke-width='1.4'/%3E%3Cpath d='M710 600L694 600M709 620L702 620M708 640L701 639M705 659L698 658M702 679L695 678M697 698L690 697M691 717L685 715M685 736L678 734M677 755L671 752M669 773L662 769M659 790L645 782M649 807L643 803M637 823L632 819M625 839L620 835M612 854L607 850M599 869L594 864M584 882L580 877M569 895L565 890M553 907L549 902M537 919L533 913M520 929L512 915M503 939L499 932M485 947L482 941M466 955L464 948M447 961L445 955M428 967L427 960M409 972L408 965M389 975L388 968M370 978L369 971M350 979L350 972M330 980L330 964M310 979L310 972M290 978L291 971M271 975L272 968M251 972L252 965M232 967L233 960M213 961L215 955M194 955L196 948M175 947L178 941M157 939L161 932M140 929L148 915M123 919L127 913M107 907L111 902M91 895L95 890M76 882L80 877M61 869L66 864M48 854L53 850M35 839L40 835M23 823L28 819M11 807L17 803M1 790L15 782M-9 773L-2 769M-17 755L-11 752M-25 736L-18 734M-31 717L-25 715M-37 698L-30 697M-42 679L-35 678M-45 659L-38 658M-48 640L-41 639M-49 620L-42 620M-50 600L-34 600M-49 580L-42 580M-48 560L-41 561M-45 541L-38 542M-42 521L-35 522M-37 502L-30 503M-31 483L-25 485M-25 464L-18 466M-17 445L-11 448M-9 427L-2 431M1 410L15 418M11 393L17 397M23 377L28 381M35 361L40 365M48 346L53 350M61 331L66 336M76 318L80 323M91 305L95 310M107 293L111 298M123 281L127 287M140 271L148 285M157 261L161 268M175 253L178 259M194 245L196 252M213 239L215 245M232 233L233 240M251 228L252 235M271 225L272 232M290 222L291 229M310 221L310 228M330 220L330 236M350 221L350 228M370 222L369 229M389 225L388 232M409 228L408 235M428 233L427 240M447 239L445 245M466 245L464 252M485 253L482 259M503 261L499 268M520 271L512 285M537 281L533 287M553 293L549 298M569 305L565 310M584 318L580 323M599 331L594 336M612 346L607 350M625 361L620 365M637 377L632 381M649 393L643 397M659 410L645 418M669 427L662 431M677 445L671 448M685 464L678 466M691 483L685 485M697 502L690 503M702 521L695 522M705 541L698 542M708 560L701 561M709 580L702 580' stroke='%235E656C'/%3E%3Cpath d='M0 600H390M330 0V844' stroke='%235E656C'/%3E%3C/g%3E%3Cpath d='M142 668A200 200 0 0 1 157 500' fill='none' stroke='%23F2682A' stroke-opacity='.55' stroke-width='5'/%3E%3Cg fill='none' stroke='%23F2682A' stroke-width='1.6' stroke-opacity='.8'%3E%3Cpath d='M24 720h20M34 710v20'/%3E%3Ccircle cx='34' cy='720' r='5'/%3E%3C/g%3E%3C/svg%3E"), radial-gradient(120% 80% at 40% 20%, #F2F4F6, #D9DEE3 70%, #C9D0D6);
+  --panel: rgba(240, 243, 245, 0.9); --panel-solid: #F0F3F5;
+  --line: #B9C0C6; --line-2: #C9CFD4; --line-3: #8E959C;
+  --text: #2A2F35; --text-hi: #15191D; --text-2: #3C4249; --muted: #5E656C; --muted-2: #6B7279; --dim: #8E959C;
+  --amber: #F2682A; --accent-rgb: 242, 104, 42; --accent-hi: #FFFFFF;
+  --peach: #E45F22; --lav: #4A5560; --coral: #E04A12; --coral-hi: #C23C0A; --lime: #2A2F35; --teal: #4A5560; --teal-rgb: 74, 85, 96;
+  --ink-rgb: 42, 47, 53;
+  --card-text: #2A2F35; --card-text-hi: #15191D; --card-text-2: #3C4249; --card-muted: #5E656C; --card-dim: #8E959C; --card-line: #B9C0C6; --card-line-2: #C9CFD4; --card-line-3: #8E959C; --card-ink-rgb: 42, 47, 53;
+  --tab-bg: rgba(42, 47, 53, 0.98); --oct-bg: #2A2F35; --sheet-bg: #EEF1F4; --sheet-back: rgba(42, 47, 53, 0.35);
+  --term-bg: #E6EAEE; --term-panel: #F0F3F5; --term-foot: rgba(217, 222, 227, 0.94);
+  --chamfer: none; --oct: circle(50%);
+}
+body[data-theme="calibration"][data-font="rajdhani"] { --mono: 'Rajdhani Scaled', 'Rajdhani', system-ui, sans-serif; }
+body[data-theme="calibration"] .card { box-shadow: inset 0 0 0 2px #2A2F35; }
+body[data-theme="calibration"] .card .br { display: none; }
+body[data-theme="calibration"] .card::after { content: ''; position: absolute; right: 7px; bottom: 7px; width: 12px; height: 12px; border-right: 3px solid #F2682A; border-bottom: 3px solid #F2682A; pointer-events: none; }
+body[data-theme="calibration"] .eyebrow { display: inline-block; padding: 6px 10px; background: #2A2F35; color: #FFFFFF; font: 700 12px/1 var(--display); letter-spacing: 0.08em; }
+body[data-theme="calibration"] .eyebrow::before { content: '■ '; color: #F2682A; }
+body[data-theme="calibration"] .h1 { font-weight: 600; letter-spacing: 0; }
+body[data-theme="calibration"] :is(.label, .group-h) { font-weight: 700; letter-spacing: 0.12em; color: #2A2F35; }
+body[data-theme="calibration"] .group-h.red { color: #F2682A; }
+body[data-theme="calibration"] :is(.chip, .wx-chip, .tmr) { box-shadow: inset 0 0 0 1.5px #B9C0C6; font-weight: 600; }
+body[data-theme="calibration"] :is(.chip.on, .seg button.on) { background: #2A2F35; color: #FFFFFF; box-shadow: none; }
+body[data-theme="calibration"] .btn { font-weight: 700; }
+body[data-theme="calibration"] :is(.btn.primary, .ct-send) { clip-path: none; background: #F2682A; color: #FFFFFF; }
+body[data-theme="calibration"] .tabbar { box-shadow: inset 0 3px 0 #F2682A; --muted: #9AA1A8; }
+body[data-theme="calibration"] .tab.on { color: #F2682A; }
+body[data-theme="calibration"] .hail-oct { border-radius: 50%; color: #F2682A; background: #2A2F35; box-shadow: 0 0 0 2px #F2682A, 0 0 0 6px #2A2F35, 0 0 0 7px #8E959C; }
+body[data-theme="calibration"] .next .tm { color: #F2682A; font-weight: 700; }
+body[data-theme="calibration"] .bar i { background: #C9CFD4; }
+body[data-theme="calibration"] .bar i.on { background: #2A2F35; }
+body[data-theme="calibration"] .cmd-status.on i { background: #F2682A; }
+body[data-theme="calibration"] .trow { box-shadow: inset 0 -1.5px 0 #B9C0C6; }
+body[data-theme="calibration"] .ttitle { font-weight: 600; }
+body[data-theme="calibration"] .tbox i { border-radius: 50%; box-shadow: inset 0 0 0 2px #2A2F35; }
+body[data-theme="calibration"] .tbox.over i { box-shadow: inset 0 0 0 2px #F2682A; background: rgba(242, 104, 42, 0.15); }
+body[data-theme="calibration"] .trow.done .tbox i { background: #2A2F35; }
+body[data-theme="calibration"] .tmeta .over { padding: 3px 6px 2px; background: #F2682A; color: #FFFFFF; font-weight: 700; letter-spacing: 0.1em; }
+body[data-theme="calibration"] .cal-cell { font: 600 16px/1 var(--display); }
+body[data-theme="calibration"] .cal-cell.today { background: #F2682A; color: #FFFFFF; box-shadow: none; }
+body[data-theme="calibration"] .dots i { border-radius: 0; }

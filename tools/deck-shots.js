@@ -21,6 +21,7 @@ app.on('browser-window-created', (_e, win) => {
       win.setSize(W, H); await wait(4000);
       if (SEED) await js(SEED).catch((e) => console.log('SEED err', e.message));
       for (const c of combos) {
+        if (c.size) { const [cw, ch] = c.size.split('x').map(Number); win.setSize(cw, ch); await wait(800); }
         await js(`(async()=>{const d=await deck.load(); const s={...d.settings, theme:'${c.theme}', font:'auto', frame:'${c.frame || 'dark'}', trim:'${c.trim || 'none'}', motion:'full', ink:'theme', windowMode:'top'}; await deck.save('settings', s);})()`).catch(() => {});
         if (c.seed) await js(c.seed).catch((e) => console.log('seed err', e.message));
         win.webContents.reloadIgnoringCache();

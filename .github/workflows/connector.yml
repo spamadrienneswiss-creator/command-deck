@@ -1,0 +1,60 @@
+# Publishes the Command Deck connector (connector/) to Cloudflare Workers.
+# Runs when connector/ changes on main, or by hand from the Actions tab.
+# Needs one repository secret: CLOUDFLARE_API_TOKEN (Cloudflare › My Profile › API Tokens ›
+# "Edit Cloudflare Workers" template). The token-sealing key ENC_KEY is created on the first run.
+name: Connector
+
+on:
+  push:
+    branches: [main]
+    paths: ['connector/**', '.github/workflows/connector.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: connector
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Test
+        run: node test/connector-test.mjs
+      - name: Check the Cloudflare key
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error title=No Cloudflare key::Add the CLOUDFLARE_API_TOKEN secret (Settings › Secrets and variables › Actions)."
+            exit 1
+          fi
+      - name: Deploy
+        working-directory: connector
+        run: |
+          set -o pipefail
+          npx --yes wrangler@4 deploy 2>&1 | tee deploy.log || {
+            msg=$(tail -n 25 deploy.log | sed 's/\x1b\[[0-9;]*m//g' | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+            echo "::error title=Connector deploy failed::$msg"; exit 1; }
+      - name: Token key (first run only)
+        working-directory: connector
+        run: |
+          if npx --yes wrangler@4 secret list 2>/dev/null | grep -q '"ENC_KEY"'; then
+            echo "ENC_KEY already set."
+          else
+            openssl rand -base64 48 | tr -d '\n' | npx --yes wrangler@4 secret put ENC_KEY
+          fi
+      - name: Address
+        working-directory: connector
+        run: |
+          url=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' deploy.log | head -n 1)
+          echo "Connector address: ${url}/mcp"
+          echo "### Connector address" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`${url}/mcp\`" >> "$GITHUB_STEP_SUMMARY"

@@ -838,7 +838,7 @@ export function openNoteEditor(note) {
   const isNew = !note;
   const n = U.clone(note || { id: U.uid(), title: '', body: '', pinned: false, src: 'typed' });
   const srcLabel = { scan: 'SCANNED ON FIELD UNIT', voice: 'SAID TO THE COMPUTER', comms: 'SENT FROM THE COMMS TERMINAL', typed: 'TYPED' }[n.src] || 'TYPED';
-  const where = n.editedOn === 'field' ? 'FIELD UNIT' : 'COMMAND';
+  const where = n.editedOn === 'field' ? 'FIELD UNIT' : n.editedOn === 'claude' ? 'CLAUDE' : 'COMMAND';
   const stamp = n.editedAt ? `${srcLabel} · LAST EDITED ON ${where} · ${U.dayLabel(new Date(n.editedAt))} ${U.fmtTimeShort(new Date(n.editedAt), app.S.settings.clock24)}` : 'NEW NOTE';
   const m = mount(`
     <i class="br br-tr amber"></i><i class="br br-bl lav"></i>
@@ -1176,7 +1176,7 @@ export function openSettings(welcome = false) {
       const left = pairing ? Math.max(0, Math.round((pairing.expires - Date.now()) / 1000)) : 0;
       const devices = fu.devices.length ? fu.devices.map((d) => `
           <div class="row-item dev">
-            <div><div class="dev-name">${esc(d.name || (d.console ? 'Command Deck' : 'Field Unit'))}</div><div class="f-hint">${d.console ? `Console · joined ${d.joinedAt ? esc(new Date(d.joinedAt).toLocaleDateString()) : ''}` : `Paired ${d.joinedAt ? esc(new Date(d.joinedAt).toLocaleDateString()) : ''} · alerts ${d.alerts ? '<span class="ok-t">on</span>' : 'off'}`}</div></div>
+            <div><div class="dev-name">${esc(d.name || (d.console ? 'Command Deck' : 'Field Unit'))}</div><div class="f-hint">${d.console ? `Console · joined ${d.joinedAt ? esc(new Date(d.joinedAt).toLocaleDateString()) : ''}` : d.kind === 'claude' ? `Claude connector · paired ${d.joinedAt ? esc(new Date(d.joinedAt).toLocaleDateString()) : ''}` : `Paired ${d.joinedAt ? esc(new Date(d.joinedAt).toLocaleDateString()) : ''} · alerts ${d.alerts ? '<span class="ok-t">on</span>' : 'off'}`}</div></div>
             <button type="button" class="btn danger" data-unpair="${esc(d.id)}" data-console="${d.console ? '1' : ''}">${d.console ? 'REMOVE' : 'UNPAIR'}</button>
           </div>`).join('') : '<div class="f-hint">No phones paired yet.</div>';
       return `

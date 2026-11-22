@@ -1,0 +1,11 @@
+# Command Deck connector (Cloudflare Worker). Deployed by .github/workflows/connector.yml.
+name = "command-deck-connector"
+main = "worker.js"
+compatibility_date = "2025-09-01"
+workers_dev = true
+
+[vars]
+FIREBASE_PROJECT = "command-deck-c3000"
+DEFAULT_TZ = "America/Los_Angeles"
+
+# ENC_KEY (secret) seals the OAuth tokens. The deploy workflow creates it once.

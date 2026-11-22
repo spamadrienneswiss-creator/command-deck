@@ -246,6 +246,16 @@ What to expect:
 - Phones pair with the main console only. Phone notifications come from the main console; when it's off, the phone rings reminders itself whenever Field Unit is open, as before.
 - The main console lists the second computer under **PAIRED DEVICES**, where **REMOVE** takes it off the deck. On the second computer, **LEAVE THIS DECK** does the same; its own copy of everything stays.
 
+### Claude connector (talk to your deck from Claude)
+
+Claude (web, desktop and phone apps) can read and change your deck through a custom connector. It pairs like a phone and has the same access: tasks, the shared schedule, notes and upcoming events. Changes show up on the deck and phone within seconds; tasks it adds or finishes say **ADDED BY CLAUDE** / **DONE BY CLAUDE**, and it asks before deleting anything.
+
+1. In Claude, open **Settings › Connectors › Add custom connector**, name it *Command Deck*, and paste the connector address (it ends in `/mcp`).
+2. Click **Connect**. On the deck open **Settings › Field Unit › SHOW PAIRING CODE** and type the code into the page that opens.
+3. Claude now appears under **PAIRED DEVICES**. **UNPAIR** there cuts it off at once.
+
+The connector runs on Cloudflare's free plan (`connector/`), published by the **Connector** workflow, which needs the `CLOUDFLARE_API_TOKEN` repository secret. It stores nothing itself.
+
 ### Wine Log
 
 Wine Log was set aside in v1.38 and may come back as its own app. Its tastings are still kept with the deck, and its last code is on the `wine-log-archive` branch. Opening the old Home Screen icon shows a short note; you can remove it.
